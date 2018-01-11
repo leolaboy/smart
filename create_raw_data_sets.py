@@ -128,7 +128,7 @@ def get_headers(in_dir):
             if config.params['gunzip'] is True and filename.endswith('gz'):
                 os.system('gunzip ' + full_filename)
                 full_filename = full_filename.rstrip('.gz')
-            headers[full_filename] = fits.getheader(full_filename)
+            headers[full_filename] = fits.getheader(full_filename, ignore_missing_end=True)
         
     return headers
 
@@ -152,10 +152,10 @@ def obj_criteria_met(header, failed2reduce):
         if header['IMAGETYP'].lower() != 'object':
 #           failed2reduce['itype'] += 1
             return False
-    if config.params['cmnd_line_mode'] == False:
-        if header['DISPERS'].lower() != 'high':
-            failed2reduce['dispmode'] += 1
-            return False
+   # if config.params['cmnd_line_mode'] == False:
+   #     if header['DISPERS'].lower() != 'high':
+   #         failed2reduce['dispmode'] += 1
+   #         return False
     if header['NAXIS1'] != nirspec_constants.N_COLS:
         failed2reduce['n1'] += 1
         return False
@@ -205,21 +205,28 @@ def is_valid_pair(obj_A_header, obj_B_header):
             return False
     return True
 
+#def dark_criteria_met(obj_header, dark_header):
+#    """
+#    Takes an object frame header and a dark field frame header and determines if 
+#    the dark satisfies the criteria for association with the object frame
+#    
+#    params
+#        obj_header Object frame header.
+#        dark_header Dark frame header.
+#        
+#    return
+#        True if the dark corresponds to the object frame, False otherwise.
+#        
+#    """
+#    eq_kwds = ['elaptime']
+#    for kwd in eq_kwds:
+#        if obj_header[kwd] != dark_header[kwd]:
+#            return False
+#    return True
+
 def dark_criteria_met(obj_header, dark_header):
     """
-    Takes an object frame header and a dark field frame header and determines if 
-    the dark satisfies the criteria for association with the object frame
-    
-    params
-        obj_header Object frame header.
-        dark_header Dark frame header.
-        
-    return
-        True if the dark corresponds to the object frame, False otherwise.
-        
+    Deprecated. We don't use this criteria.
+    @Dino Hsu
     """
-    eq_kwds = ['elaptime']
-    for kwd in eq_kwds:
-        if obj_header[kwd] != dark_header[kwd]:
-            return False
     return True
