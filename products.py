@@ -59,8 +59,16 @@ subdirs = dict([
                 ('snr.png',             'previews/snr'      ),
                 ('trace.fits',          'fits/trace'        ),
                 ('trace.png',           'previews/trace'    ),
-#               ('spectra.png',     'previews/spectra'  ),
+                ('noise.fits',          'fits/noise'        ),
+                ('noise.png',           'previews/noise'    ),
+                ('flux_vs_noise.fits',  'fits/flux_vs_noise'),
+                ('flux_vs_noise.png',   'previews/flux_vs_noise'), 
+                ('spectra.png',         'previews/spectra'  ),
+                ('wave.fits',           'fits/wave'         ),
+                ('all.fits',            'fits/all'          ),  
                ])
+
+#add noise in products
 
 
 def constructFileName(outpath, base_name, order, fn_suffix):
@@ -268,6 +276,19 @@ def gen(reduced, out_dir):
             fitsSpectrum(out_dir, reduced.baseNames[frame], 'flux', order.flatOrder.orderNum, 
                 'counts', order.objSpec[frame], order.waveScale, header)
 
+        # wavelength fits
+        for frame in reduced.frames:
+
+            fitsSpectrumWave(out_dir, reduced.baseNames[frame], 'wave', order.flatOrder.orderNum, 
+                'counts', order.objSpec[frame], order.waveScale, header)
+
+        # full spectrum with wavelength, flux, noise, and sky
+        for frame in reduced.frames:
+
+            fitsSpectrumAll(out_dir, reduced.baseNames[frame], 'all', order.flatOrder.orderNum, 
+                order.objSpec[frame], order.waveScale, order.noiseSpec[frame], order.skySpec[frame],header)
+
+
         #
         # sky spectrum plot and 1-d FITS file
         #
@@ -283,6 +304,7 @@ def gen(reduced, out_dir):
             fitsSpectrum(out_dir, reduced.baseNames[frame], 'sky', order.flatOrder.orderNum, 
                 'counts', order.skySpec[frame], order.waveScale, header)
         
+
         #
         # noise spectrum
         #
@@ -296,7 +318,29 @@ def gen(reduced, out_dir):
                 '', np.absolute(order.objSpec[frame]/order.noiseSpec[frame]), order.waveScale, 
                 header)
 
+        for frame in reduced.frames:
+            spectrumPlot(out_dir, reduced.baseNames[frame], 'noise', order.flatOrder.orderNum, 
+                'counts', order.noiseSpec[frame], order.waveScale, order.calMethod)
+              
+            fitsSpectrum(out_dir, reduced.baseNames[frame], 'noise', order.flatOrder.orderNum, 
+                'counts', order.noiseSpec[frame], order.waveScale, header)
 
+        for frame in reduced.frames:
+            spectrumPlot2(out_dir, reduced.baseNames[frame], 'flux_vs_noise', order.flatOrder.orderNum, 
+                '', order.objSpec[frame], order.noiseSpec[frame], order.waveScale, order.calMethod)
+              
+            fitsSpectrum2(out_dir, reduced.baseNames[frame], 'flux_vs_noise', order.flatOrder.orderNum, 
+                '', order.objSpec[frame], order.noiseSpec[frame], order.waveScale, header)
+
+        #
+        # generate multiSplectrumPlot to spectra
+        #
+        """
+        for frame in reduced.frames:
+            multiSpectrumPlot(out_dir, reduced.baseNames[frame], order.flatOrder.orderNum, 'counts',
+                order.objSpec[frame], order.skySpec[frame], order.noiseSpec[frame], order.waveScale)
+
+"""
         #
         # rectified order plot 2-d image plot and FITS file
         #
@@ -701,7 +745,101 @@ def fitsSpectrum(outpath, base_name, title, order_num, y_units, cont, wave, head
     hdulist.writeto(fn, clobber=True)
     log_fn(fn)
     return
+
+def fitsSpectrumWave(outpath, base_name, title, order_num, y_units, cont, wave, header):
+    """
+    Generate a fits file of wavelength for the corresponding spectra
+    """
+    hdu = fits.PrimaryHDU(wave)
+    hdulist = fits.HDUList(hdu)
+    hdr = hdulist[0].header
+    for k, v in header.items():
+        try:
+            hdr[k] = v
+        except Exception as e:
+            #obj_logger.warning(e.message)
+            pass
+            
+    fn = constructFileName(outpath, base_name, order_num, title + '.fits')     
+    hdulist.writeto(fn, clobber=True)
+    log_fn(fn)
+    return
+
+def fitsSpectrumAll(outpath, base_name, title, order_num, cont, wave, noise, sky, header):
+    """
+    Generating a fits file of wavelength, flux, noise, and sky.
+    Number of index is from 0 to 3.
+    """
+    hdu = fits.PrimaryHDU(wave)
+    hdu1 = fits.PrimaryHDU(cont)
+    hdu2 = fits.PrimaryHDU(noise)
+    hdu3 = fits.PrimaryHDU(sky)
+    hdulist = fits.HDUList(hdu)
+    hdulist.insert(1, hdu1)
+    hdulist.insert(2, hdu2)
+    hdulist.insert(3, hdu3)
+    hdr = hdulist[0].header
+    for k, v in header.items():
+        try:
+            hdr[k] = v
+        except Exception as e:
+            #obj_logger.warning(e.message)
+            pass
+            
+    fn = constructFileName(outpath, base_name, order_num, title + '.fits')     
+    hdulist.writeto(fn, clobber=True)
+    log_fn(fn)
+    return
+
+#Add spectrumPlot2 and fitsSpectrum2 by Dino
+
+def spectrumPlot2(outpath, base_name, title, order_num, y_units, cont1, cont2, wave, 
+                 wave_note='unknown'):
+    """
+    Borrow from the code in NSDRP: products.py: to compare flux and noise
+    """
+    pl.figure(title, facecolor='white')
+    pl.clf()
+    pl.title(title + ', ' + base_name + ", order " + str(order_num), fontsize=12)
+    pl.xlabel('wavelength ($\AA$) (' + wave_note + ')')
+    if len(y_units) > 0:
+        pl.ylabel(title + '(' + y_units + ')')
+    else:
+        pl.ylabel(title)
+    pl.grid(True)
+    pl.plot(wave[:1004], cont1[:1004], "k-", wave[:1004], cont2[:1004], "r-", mfc="none", ms=3.0, linewidth=1)
     
+    ymin, ymax = pl.ylim()
+    pl.plot(wave, cont1, "k-", wave, cont2, "r-", mfc="none", ms=3.0, linewidth=1)
+    pl.ylim(ymin, ymax)
+    
+#     axes = pl.gca()
+    #axes.set_ylim(0, 300)
+    
+    fn = constructFileName(outpath, base_name, order_num, title + '.png')
+    savePreviewPlot(fn)
+    log_fn(fn)
+    return
+    
+
+
+def fitsSpectrum2(outpath, base_name, title, order_num, y_units, cont, wave1, wave2, header):
+    
+    hdu = fits.PrimaryHDU(cont)
+    hdulist = fits.HDUList(hdu)
+    hdr = hdulist[0].header
+    for k, v in header.items():
+        try:
+            hdr[k] = v
+        except Exception as e:
+            #obj_logger.warning(e.message)
+            pass
+            
+    fn = constructFileName(outpath, base_name, order_num, title + '.fits')     
+    hdulist.writeto(fn, clobber=True)
+    log_fn(fn)
+    return
+
     
 def multiSpectrumPlot(outpath, base_name, order, y_units, cont, sky, noise, wave):
     
