@@ -1,6 +1,6 @@
-# nsdrp (Modified by Dino Hsu)
+# nsdrp (modified by Dino Hsu)
 
-This version is modified by Dino Hsu. This includes some bugs fixed in Python 3, where the modifications are mentioned in the codes. Ideally, this version of NSDRP needs to be processed together with [nirspec_pip](https://github.com/chihchunhsu/nirspec_pip).
+This version is modified by Dino Hsu. This includes some bugs fixed in Python 3, with the modifications mentioned in the codes. Ideally, this version of NSDRP needs to be processed together with [nirspec_pip](https://github.com/chihchunhsu/nirspec_pip).
 
 PREREQUISITES:
 
