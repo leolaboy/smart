@@ -1,4 +1,7 @@
-# nsdrp
+# nsdrp (Modified by Dino Hsu)
+
+This version is modified by Dino Hsu. This includes some bugs fixed in Python 3, where the modifications are mentioned in the codes. Ideally, this version of NSDRP needs to be processed together with [nirspec_pip](https://github.com/chihchunhsu/nirspec_pip).
+
 PREREQUISITES:
 
 1)    NSDRP was developed with Anaconda python and that distribution is recommended, but can be run with Ureka or other python installations. Anaconda comes installed with the required modules: numpy, os, math, subprocess, fnmatch, logging, pylab, errno, datetime, warnings, astropy, scipy, argparse, and statsmodels. Depending on your python distribution of choice, you may be required to manually download and install one or more of these modules.
