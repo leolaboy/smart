@@ -468,7 +468,6 @@ def process_darks(raw, reduced):
         reduced.hasDark = True
         logger.info(str(len(raw.darkFns)) + ' darks: ' + 
             ', '.join(str(x) for x in ([s[s.find("NS"):s.rfind(".")] for s in raw.darkFns])))
-        logger.info('combining:' + raw.darkFns)
         reduced.dark = raw.combineDarks()
         if len(raw.darkFns) > 1:
             logger.info(str(len(raw.darkFns)) + ' darks have been median combined')
