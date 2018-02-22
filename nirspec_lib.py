@@ -5,6 +5,7 @@ import logging
 import config
 
 import tracer
+import matplotlib.pyplot as plt
 
 logger = logging.getLogger('obj')
       
@@ -142,9 +143,26 @@ def find_spectral_trace(data):
     # transpose the array because spectroid can only read horizontal peaks for now
     data_t = data.transpose()
 
+    ### TESTING
+    print('SKY', SKY_SIGMA)
+    #plt.imshow(data_t)
+    #plt.show()
+
 #     data_t = data_t[:, padding + 5:data_t.shape[1] - 5 - padding]
     data_t = data_t[:, 5:data_t.shape[1] - 5]
     s = np.sum(data_t[:, 0:5], axis=1)
+    print(s, s.shape, s.mean())
+
+    plt.figure(1)
+    plt.imshow(data_t, aspect='auto')
+    plt.show(block=False)
+    plt.figure(2)
+    plt.imshow(data_t[:, 0:5], aspect='auto')
+    plt.show()
+
+    print('SKY2', SKY_SIGMA * s.mean())
+    #print('SKY2', SKY_SIGMA * s.median())
+    #sys.exit()
     
 #     import pylab as pl
 #     pl.figure(facecolor='white')
@@ -161,6 +179,7 @@ def find_spectral_trace(data):
     # find indices in maxima_c of maxima with intensity 
     # greater than SKY_SIGMA * mean extrema height
     locmaxes = np.where(s[maxima_c[0]] > SKY_SIGMA * s.mean())
+    print('MAXES', locmaxes)
     
     # indices in s or peaks
     maxes = np.array(maxima_c[0][locmaxes[0]])

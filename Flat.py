@@ -12,6 +12,7 @@ import FlatOrder
 import nirspec_lib
 import image_lib
 from numpy.testing.utils import measure
+import matplotlib.pyplot as plt
 
 class Flat:
 
@@ -68,6 +69,7 @@ class Flat:
     def reduce(self):
         """
         """
+        print('REDUCING!')
         self.logger.info('reducing flat {}'.format(self.baseName))
         
         self.findEdgeProfilePeaks()
@@ -76,6 +78,7 @@ class Flat:
         firstOrderFound = False
         
         for orderNum in range(config.get_starting_order(self.filterName), 0, -1):
+            print('ORDERNUM', orderNum)
             
             self.logger.info('***** flat order {} *****'.format(orderNum))
 
@@ -155,7 +158,8 @@ class Flat:
     def findEdgeProfilePeaks(self):
         
         # make top and bottom edge profile images
-        rolled = np.roll(self.flatImg, 5, axis=0)   
+        rolled = np.roll(self.flatImg, 5, axis=0) 
+
         self.topEdgeImg = rolled - self.flatImg
         self.botEdgeImg = self.flatImg - rolled
         

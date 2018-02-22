@@ -52,10 +52,12 @@ starting_order = {
         'NIRSPEC-4': 61, 
         'NIRSPEC-5': 53, 
         'NIRSPEC-6': 49, 
-        'NIRSPEC-7': 41 
+        'NIRSPEC-7': 41,
+        'K-AO': 38 
 }
 
 def get_starting_order(filtername):
+    
     return starting_order[filtername.upper()[:9]]
 
 # order edge location error threshold
@@ -66,7 +68,8 @@ max_edge_location_error = {
         'NIRSPEC-4': 20, 
         'NIRSPEC-5': 50, 
         'NIRSPEC-6': 20, 
-        'NIRSPEC-7': 60 
+        'NIRSPEC-7': 60, 
+        'K-AO': 20 
 }
 
 def get_max_edge_location_error(filtername, slit):
@@ -87,7 +90,8 @@ long_slit_cutout_padding = {
         'NIRSPEC-4': 0, 
         'NIRSPEC-5': 0, 
         'NIRSPEC-6': 15, 
-        'NIRSPEC-7': 30          
+        'NIRSPEC-7': 30,
+        'K-AO': 0          
 }
 short_slit_cutout_padding = {
         'NIRSPEC-1': 0, 
@@ -96,7 +100,8 @@ short_slit_cutout_padding = {
         'NIRSPEC-4': 15, 
         'NIRSPEC-5': 15, 
         'NIRSPEC-6': 15, 
-        'NIRSPEC-7': 30          
+        'NIRSPEC-7': 30,
+        'K-AO': 0          
 }
 
 def get_cutout_padding(filtername, slit):

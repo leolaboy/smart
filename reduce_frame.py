@@ -14,6 +14,8 @@ from logging import INFO
 import Order
 import image_lib
 import imp
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 
 logger = logging.getLogger('obj')
 # main_logger = logging.getLogger('main')
@@ -61,6 +63,10 @@ def reduce_frame(raw, out_dir, flatCacher=None):
 
     else:
         logger.info('cosmic ray cleaning object frame A')
+        ### TESTING
+        #plt.imshow(reduced.objImg['A'], norm=colors.LogNorm())
+        #plt.show()
+        ### TESTING
         reduced.objImg['A'] = image_lib.cosmic_clean(reduced.objImg['A'])
         logger.debug('cosmic ray cleaning object frame A complete')
         if reduced.isPair:
@@ -168,6 +174,7 @@ def reduce_orders(reduced):
         logger.info('***** order ' + str(flatOrder.orderNum) + ' *****')
             
         order = Order.Order(reduced.frames, reduced.baseNames, flatOrder)
+        print('OBJECT', reduced.baseNames)
         
         order.isPair = reduced.isPair
         
@@ -258,10 +265,12 @@ def find_global_wavelength_soln(reduced):
     
     for order in reduced.orders:
         for line in order.lines:
+            print('LINE', line.col, line.centroid, line.waveAccepted)
             col.append(line.col)
             centroid.append(line.centroid)
             order_inv.append(1.0 / order.flatOrder.orderNum)
             accepted.append(line.waveAccepted)
+    sys.exit()
             
     reduced.nLinesFound = len(col)
     for l in loggers:

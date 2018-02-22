@@ -63,6 +63,8 @@ import scipy.signal as signal
 import scipy.ndimage as ndimage
 #import pyfits
 from astropy.io import fits
+import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 
 
 # We define the laplacian kernel to be used
@@ -410,6 +412,10 @@ class cosmicsImage:
         conved = signal.convolve2d(subsam, laplkernel, mode="same", boundary="symm")
         cliped = conved.clip(min=0.0)
         #cliped = np.abs(conved) # unfortunately this does not work to find holes as well ...
+        ### TESTING
+        #plt.imshow(cliped, norm=colors.LogNorm())
+        #plt.show()
+        ### TESTING
         lplus = rebin2x2(cliped)
             
         if verbose:
@@ -709,12 +715,12 @@ def rebin(a, newshape):
     Auxiliary function to rebin an ndarray a.
     U{http://www.scipy.org/Cookbook/Rebinning}
 
-            >>> a=rand(6,4); b=rebin(a,(3,2))
-        """
+    >>> a=rand(6,4); b=rebin(a,(3,2))
+    """
     
-    shape = a.shape
+    shape    = a.shape
     lenShape = len(shape)
-    factor = np.asarray(shape)/np.asarray(newshape)
+    factor   = np.asarray(shape)//np.asarray(newshape)
     #print(factor)
     evList = ['a.reshape('] + \
              ['newshape[%d],factor[%d],'%(i,i) for i in range(lenShape)] + \
@@ -733,5 +739,5 @@ def rebin2x2(a):
         raise RuntimeError("I want even image shapes !")
 
     
-    return rebin(a, inshape/2)
+    return rebin(a, inshape//2)
 

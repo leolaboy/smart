@@ -42,26 +42,39 @@ def create(in_dir):
     rawDataSets = []
 
     for filename, header in headers.items():
-            if obj_criteria_met(header, failed2reduce):
-                rawDataSets.append(RawDataSet.RawDataSet(filename, None, header))
+        print(filename)
+        #print(config.params['cmnd_line_mode'])
+        print(failed2reduce.get('dispmode'), failed2reduce.get('dispmode') is not None)
+        #print(failed2reduce.get('n1') is not None)
+        #print(failed2reduce.get('n2') is not None)
+        #print(failed2reduce.get('fil') is not None)
+        #print(obj_criteria_met(header, failed2reduce))
+        if obj_criteria_met(header, failed2reduce):
+            rawDataSets.append(RawDataSet.RawDataSet(filename, None, header))
+
     
     if obj_criteria_met(header, failed2reduce) is False:
 #        if failed2reduce.get('itype') > 0:
 #            logger.info('Ignored {} files because they are not object frames'.format(
 #                    failed2reduce.get('itype')))
-        if failed2reduce.get('dismode') is not None:
+        if failed2reduce.get('dispmode') != 0:
+            print('FAIL1')
             logger.info('Failed to reduced {} files because of low dispersion mode'.format(
                     failed2reduce.get('dispmode')))
-        elif failed2reduce.get('n1') is not None:
+        elif failed2reduce.get('n1') != 0:
+            print('FAIL2')
             logger.info('Failed to reduced {} files because NAXIS1 != 1024'.format(
                     failed2reduce.get('n1')))
-        elif failed2reduce.get('n2') is not None:
+        elif failed2reduce.get('n2') != 0:
+            print('FAIL3')
             logger.info('Failed to reduced {} files because NAXIS2 != 1024'.format(
                     failed2reduce.get('n2')))
-        elif failed2reduce.get('fil') is not None:
+        elif failed2reduce.get('fil') != 0:
+            print('FAIL4')
             logger.info('Failed to reduce {} files because of unsupported filter'.format(
                     failed2reduce.get('fil')))
         else:
+            print('PASSED!')
             pass
 #        if failed2reduce.get('dmode') > 0:
 #            logger.info('Failed to reduce {} files because SCAM mode'.format(
@@ -152,10 +165,14 @@ def obj_criteria_met(header, failed2reduce):
         if header['IMAGETYP'].lower() != 'object':
 #           failed2reduce['itype'] += 1
             return False
-   # if config.params['cmnd_line_mode'] == False:
-   #     if header['DISPERS'].lower() != 'high':
-   #         failed2reduce['dispmode'] += 1
-   #         return False
+    #if config.params['cmnd_line_mode'] == False:
+    #    if header['DISPERS'].lower() != 'high':
+    #        failed2reduce['dispmode'] += 1
+    #        return False
+    #print(header['DISPERS'].lower(), header['DISPERS'].lower().strip()==header['DISPERS'].lower() != 'high')
+    if header['DISPERS'].lower() != 'high':
+        failed2reduce['dispmode'] += 1
+        return False
     if header['NAXIS1'] != nirspec_constants.N_COLS:
         failed2reduce['n1'] += 1
         return False
