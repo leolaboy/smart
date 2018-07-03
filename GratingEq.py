@@ -22,8 +22,8 @@ class GratingEq:
     
         coeffs = dict()
         coeffs['K-AO']      = { 'c1': 0.24792775, 'c2': -35906.947, 'y0': 15955.4515,
-                                'r1': 0.23482994, 'r2': -33591.707, 'z0': 14891.3158};  
-
+                                'r1': 0.23482994, 'r2': -33591.707, 'z0': 14891.3158}; 
+                                
         coeffs['NIRSPEC-7'] = { 'c1': 0.24792775, 'c2': -35906.947, 'y0': 15955.4515,
                                 'r1': 0.23482994, 'r2': -33591.707, 'z0': 14891.3158};    
                                       
@@ -44,7 +44,7 @@ class GratingEq:
     
         coeffs['NIRSPEC-1'] = { 'c1': 0.49777509, 'c2': -38653.878, 'y0': 17488.344,
                                 'r1': 0.4713783,  'r2': -38876.842, 'z0': 17880.5877};      
-
+                             
         c1 = coeffs[filtername.upper()[:9]]['c1']
         c2 = coeffs[filtername.upper()[:9]]['c2']
         y0 = coeffs[filtername.upper()[:9]]['y0']
@@ -186,7 +186,6 @@ class GratingEq:
      
         self.logger.debug('applying ' + str(wavelength_shift) + ' Angstrom order-dependent wavelength shift')
         wavelength_scale += wavelength_shift
-        #print('WAVE', wavelength_scale)
      
         return left_top_row, left_bot_row, wavelength_scale
     

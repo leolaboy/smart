@@ -14,14 +14,12 @@ from logging import INFO
 import Order
 import image_lib
 import imp
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 
 logger = logging.getLogger('obj')
 # main_logger = logging.getLogger('main')
 # main_logger = logging.getLogger('main')
 
-def reduce_frame(raw, out_dir, flatCacher=None):
+def reduce_frame(raw, out_dir, flatCacher=None, eta=None):
     """
     
     Arguments:
@@ -63,16 +61,16 @@ def reduce_frame(raw, out_dir, flatCacher=None):
 
     else:
         logger.info('cosmic ray cleaning object frame A')
-        ### TESTING
-        #plt.imshow(reduced.objImg['A'], norm=colors.LogNorm())
-        #plt.show()
-        ### TESTING
         reduced.objImg['A'] = image_lib.cosmic_clean(reduced.objImg['A'])
         logger.debug('cosmic ray cleaning object frame A complete')
         if reduced.isPair:
             logger.info('cosmic ray cleaning object frame B')
             reduced.objImg['B'] = image_lib.cosmic_clean(reduced.objImg['B'])
             logger.debug('cosmic ray cleaning object frame B complete')
+        if eta != None:
+            logger.info('cosmic ray cleaning etalon frame')
+            reduced.etaImg = image_lib.cosmic_clean(reduced.etaImg)
+            logger.debug('cosmic ray cleaning etalon frame complete')
         reduced.cosmicCleaned = True 
            
     # if darks are available, combine them if there are more than one
@@ -85,7 +83,7 @@ def reduce_frame(raw, out_dir, flatCacher=None):
 
     # reduce orders
     try:
-        reduce_orders(reduced)
+        reduce_orders(reduced, eta=eta)
     except IOError as e:
         # might want to do something else here
         raise
@@ -101,6 +99,48 @@ def reduce_frame(raw, out_dir, flatCacher=None):
             order.calMethod = 'grating equation'
     
     return(reduced)
+
+
+def getEtas(raw, etaCacher):
+    """Given a raw data set and a etalon cacher, creates and returns a etalon object XXX Do we need this?
+    
+    If there is no etalon cacher then we are in command line mode where there is a single
+    etalon and the etalons are not reused.  In this case 1. the etalon image data is read from the 
+    etlon file specified in the raw data set, 2. unless cosmic ray rejection is inhibited
+    cosmic ray artifacts are removed from the etalon, and 3. a Etalon object is created from 
+    the etalon image data.
+    
+    If there is a etalon cacher then a possibly cached Etalon object is retrieved from it.
+    
+    Note that in either case, the Etalon object represents a fully reduced etalon, with orders on
+    the etalon identified, traced, cut out and rectified.
+    
+    Args:
+        raw: A RawDataSet object containing, among other things, one or more etalon file names
+        etaCacher: A EtalonCacher object or None 
+        
+    Returns:
+        A Flat object
+    
+    """
+    
+    if etaCacher is None:
+        # in command line mode with only one flat
+        if config.params['no_cosmic']:
+            logger.info('cosmic ray rejection on flat inhibited by command line flag')
+            eta_data = fits.PrimaryHDU.readfrom(raw.etaFns[0], ignore_missing_end=True).data
+        else:
+            logger.info('starting cosmic ray cleaning flat')
+            eta_data = image_lib.cosmic_clean(fits.PrimaryHDU.readfrom(
+                    raw.etaFns[0], ignore_missing_end=True).data)
+            logger.info('cosmic ray cleaning on flat complete')
+        
+        return(Eta.Eta(
+                raw.etaFns[0], [raw.etaFns[0]],
+                fits.PrimaryHDU.readfrom(raw.etaFns[0], ignore_missing_end=True).header, 
+                eta_data))
+    else:
+        return(etaCacher.getEta(raw.etaFns))
  
  
 def getFlat(raw, flatCacher):
@@ -145,7 +185,7 @@ def getFlat(raw, flatCacher):
         return(flatCacher.getFlat(raw.flatFns))
      
  
-def reduce_orders(reduced):
+def reduce_orders(reduced, eta=None):
     """Reduces each order in the frame.  
     
     Starting order is determined from a lookup table indexed by filter name.
@@ -172,9 +212,14 @@ def reduce_orders(reduced):
             continue        
         
         logger.info('***** order ' + str(flatOrder.orderNum) + ' *****')
+
+        if flatOrder.orderNum != 33: continue #XXX
             
-        order = Order.Order(reduced.frames, reduced.baseNames, flatOrder)
-        print('OBJECT', reduced.baseNames)
+        if eta != None:
+            order = Order.Order(reduced.frames, reduced.baseNames, flatOrder, reduced.etaImg)
+
+        else:
+            order = Order.Order(reduced.frames, reduced.baseNames, flatOrder)
         
         order.isPair = reduced.isPair
         
@@ -183,11 +228,11 @@ def reduce_orders(reduced):
                     flatOrder.highestPoint, flatOrder.lowestPoint, flatOrder.cutoutPadding))  
         
         order.integrationTime = reduced.getIntegrationTime() # used in noise calc
-            
+        
         try:
             
             # reduce order, i.e. rectify, extract spectra, identify sky lines
-            reduce_order.reduce_order(order)
+            reduce_order.reduce_order(order, eta=eta)
     
             # add reduced order to list of reduced orders in Reduced object
             reduced.orders.append(order)                      
@@ -265,12 +310,10 @@ def find_global_wavelength_soln(reduced):
     
     for order in reduced.orders:
         for line in order.lines:
-            print('LINE', line.col, line.centroid, line.waveAccepted)
             col.append(line.col)
             centroid.append(line.centroid)
             order_inv.append(1.0 / order.flatOrder.orderNum)
             accepted.append(line.waveAccepted)
-    sys.exit()
             
     reduced.nLinesFound = len(col)
     for l in loggers:
@@ -441,34 +484,9 @@ def log_start_summary(reduced):
     logger.info('cross disperser angle = ' + str(reduced.getDispPos()) + ' deg')
     return
 
-#def process_darks(raw, reduced):
-#    """
-#    
-#    """
-#    
-#    #TODO if there are < 3 darks should cosmic clean
-#
-#    if len(raw.darkFns) > 0:
-#        reduced.hasDark = True
-#        logger.info(str(len(raw.darkFns)) + ' darks: ' + 
-#            ', '.join(str(x) for x in ([s[s.find("NS"):s.rfind(".")] for s in raw.darkFns])))
-#        reduced.dark = raw.combineDarks()
-#        if len(raw.darkFns) > 1:
-#            logger.info(str(len(raw.darkFns)) + ' darks have been median combined')
-#    else:
-#        logger.info('no darks')
-#
-#    # if dark(s) exist, subtract from obj and flat
-#    if reduced.hasDark:
-#        reduced.subtractDark()
-#        #logger.info('dark subtracted from obj and flat')
-#        logger.info('dark subtracted from flat (no obj)') #Modified by Dino Hsu
-#        
-#    return
-    
 def process_darks(raw, reduced):
     """
-    Modified version @Dino Hsu
+    
     """
     
     #TODO if there are < 3 darks should cosmic clean
@@ -486,7 +504,7 @@ def process_darks(raw, reduced):
     # if dark(s) exist, subtract from obj and flat
     if reduced.hasDark:
         reduced.subtractDark()
-        #logger.info('dark subtracted from obj and flat')
-        logger.info('dark subtracted from flat (no obj)') #Modified by Dino Hsu
+        logger.info('dark subtracted from obj and flat')
         
     return
+    

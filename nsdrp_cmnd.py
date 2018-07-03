@@ -10,7 +10,7 @@ import products
 import dgn
 import DrpException
 
-def process_frame(fn1, fn2, obj_B_fn, out_dir):
+def process_frame(fn1, fn2, obj_B_fn, out_dir, eta=None, override=False):
     
     flat_fn = None
     obj_fn = None
@@ -18,7 +18,13 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir):
     fn1_header = fits.PrimaryHDU.readfrom(fn1, ignore_missing_end=True).header
     fn2_header = fits.PrimaryHDU.readfrom(fn2, ignore_missing_end=True).header
 
-    
+    # Do the case for the etalon lamp
+    if eta != None:
+        eta_header = fits.PrimaryHDU.readfrom(eta, ignore_missing_end=True).header
+        if eta_header['etalon'] == 1 and eta_header['calmpos'] == 1:
+            eta_fn = eta
+
+    # Get the flat and object fits
     if fn1_header['flat'] == 1 and fn1_header['calmpos'] == 1:
         flat_fn = fn1
         obj_fn = fn2
@@ -55,8 +61,8 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir):
             raise DrpException.DrpException('frames A and B are the same')
         
         obj_B_header = fits.PrimaryHDU.readfrom(obj_B_fn, ignore_missing_end=True).header
-        if create_raw_data_sets.is_valid_pair(obj_header, obj_B_header):
-            print('Reducing AB pair, A=' + obj_fn + ', B=' + obj_B_fn)
+        if create_raw_data_sets.is_valid_pair(obj_header, obj_B_header, override=override):
+            #print('Reducing AB pair, A=' + obj_fn + ', B=' + obj_B_fn)
             rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header)
         else:
             raise DrpException.DrpException('frames A and B are not a valid pair')
@@ -75,7 +81,7 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir):
     logger = logging.getLogger('main')
 
     # generate reduced data set by reducing raw data set
-    reducedDataSet = reduce_frame.reduce_frame(rawDataSet, out_dir)
+    reducedDataSet = reduce_frame.reduce_frame(rawDataSet, out_dir, eta=eta)
     
     # write reduction summary to log file
     write_summary(reducedDataSet)

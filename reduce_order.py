@@ -11,9 +11,12 @@ import wavelength_utils
 import Line
 import DrpException
 
+import CAT_Functions as cat
+import matplotlib.pyplot as plt 
+
 logger = logging.getLogger('obj')
 
-def reduce_order(order):
+def reduce_order(order, eta=None):
         
     # flatten object images for this order
     __flatten(order)
@@ -34,6 +37,20 @@ def reduce_order(order):
     
     # characterize spatial profile by fitting to Gaussian
     __characterize_spatial_profile(order)
+
+    # Try to find the spectral trace using Etalon lamps if provided XXX
+    print('ETA030', eta)
+    if eta != None:
+        print('YESSSSS')
+        print(dir(order))
+        print(order.etaImg)
+        plt.imshow(order.etaImg)
+        plt.show()
+        sys.exit()
+        order.spectralTrace = cat.spectral_trace(
+                nirspec_lib.find_spectral_trace(
+                        order.etaImg['A']), order.etaImg['A'].shape[0])
+
 
     # Find and smooth spectral trace, always use frame A
     try:
@@ -119,7 +136,7 @@ def reduce_order(order):
                         
     return
 
-def __flatten(order):
+def __flatten(order, eta=None):
     """Flat field object image[s] but keep originals for noise calculation.
     """
     
@@ -132,7 +149,18 @@ def __flatten(order):
         if frame != 'AB':
             if np.amin(order.ffObjImg[frame]) < 0:
                 order.ffObjImg[frame] -= np.amin(order.ffObjImg[frame])
+
+    if eta != None:
+
+        order.etaImg[frame] = np.array(order.objCutout[frame]) 
         
+        order.ffEtaImg[frame] = np.array(order.objCutout[frame] / order.flatOrder.normFlatImg)
+        
+        if frame != 'AB':
+            if np.amin(order.ffObjImg[frame]) < 0:
+                order.ffObjImg[frame] -= np.amin(order.ffObjImg[frame])
+
+    
     order.flattened = True
     logger.info('order has been flat fielded')
     return
@@ -140,13 +168,54 @@ def __flatten(order):
 
 def __rectify_spatial(order):
     """
-    """        
+    """     
+    #print(order.flatOrder.smoothedSpatialTrace)
+    #print(len(order.flatOrder.smoothedSpatialTrace))
+    #print(order.flatOrder.smoothedSpatialTrace.shape)
+    polyVals = cat.CreateSpatialMap(order)   
+    #print(polyVals)
+    
     for frame in order.frames:
+        """
         order.objImg[frame] = image_lib.rectify_spatial(
                 order.objImg[frame], order.flatOrder.smoothedSpatialTrace)
         order.ffObjImg[frame] = image_lib.rectify_spatial(
                 order.ffObjImg[frame], order.flatOrder.smoothedSpatialTrace)
-    
+        """
+        order.objImg[frame] = image_lib.rectify_spatial(
+                order.objImg[frame], polyVals)
+        order.ffObjImg[frame] = image_lib.rectify_spatial(
+                order.ffObjImg[frame], polyVals)
+
+    """ XXX      
+    plt.figure(1)
+    plt.imshow(order.objImg[frame], origin='lower')
+
+    #plt.show()
+
+    flux1 =    np.array([np.sum(order.objImg[frame][75:80, i]) for i in range(order.objImg[frame].shape[1])])
+    #flux1 =    np.array([np.sum(data[60:70, i]) for i in range(data.shape[1])])
+    flux2 = -1*np.array([np.sum(order.objImg[frame][105:110, i]) for i in range(order.objImg[frame].shape[1])])
+
+    norm10 = np.median(flux1)
+    norm20 = np.median(flux2)
+
+    flux11 =    np.array([np.sum(order.ffObjImg[frame][75:80, i]) for i in range(order.ffObjImg[frame].shape[1])])
+    #flux1 =    np.array([np.sum(data[60:70, i]) for i in range(data.shape[1])])
+    flux22 = -1*np.array([np.sum(order.ffObjImg[frame][105:110, i]) for i in range(order.ffObjImg[frame].shape[1])])
+
+    norm101 = np.median(flux11)
+    norm202 = np.median(flux22)
+
+    plt.figure(2, figsize=(15,5))
+    plt.plot(flux1/norm10, alpha=0.5, label='A', lw=1)
+    plt.plot(flux2/norm20, alpha=0.5, label='B', lw=1)
+
+    plt.plot(flux11/norm101+1, alpha=0.5, label='A', lw=1)
+    plt.plot(flux22/norm202+1, alpha=0.5, label='B', lw=1)
+    plt.show()
+    sys.exit()
+    """
     order.spatialRectified = True
     logger.info('order has been rectified in the spatial dimension')
         
@@ -167,12 +236,13 @@ def __trim(order):
 
 def __rectify_spectral(order):
     """
-    """        
+    """   
+    """     
     for frame in order.frames:
         order.objImg[frame] = image_lib.rectify_spectral(order.objImg[frame], order.spectralTrace)
         order.ffObjImg[frame] = image_lib.rectify_spectral(
                 order.ffObjImg[frame], order.spectralTrace)
-        
+    """
     return     
 
               
@@ -296,7 +366,6 @@ def __find_spatial_profile_and_peak(order):
     MARGIN = 5
     
     for frame in order.frames:
-        print('FRAME', frame)
         
         # find spatial profile(s)
         order.spatialProfile[frame] = order.ffObjImg[frame].mean(axis=1)
@@ -311,8 +380,8 @@ def __find_spatial_profile_and_peak(order):
                 frame, order.peakLocation[frame]))
     
         # fit peak to Gaussian, save Gaussian parameters and real centroid location
-        p0 = order.peakLocation[frame] - (config.params['obj_window'] // 2)
-        p1 = order.peakLocation[frame] + (config.params['obj_window'] // 2)
+        p0 = order.peakLocation[frame] - (config.params['obj_window'] / 2)
+        p1 = order.peakLocation[frame] + (config.params['obj_window'] / 2)
         order.centroid[frame] = (scipy.ndimage.measurements.center_of_mass(
             order.spatialProfile[frame][p0:p1]))[0] + p0 
         logger.info('frame {} spatial profile peak centroid row {:.1f}'.format(

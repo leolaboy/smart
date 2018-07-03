@@ -42,39 +42,26 @@ def create(in_dir):
     rawDataSets = []
 
     for filename, header in headers.items():
-        print(filename)
-        #print(config.params['cmnd_line_mode'])
-        print(failed2reduce.get('dispmode'), failed2reduce.get('dispmode') is not None)
-        #print(failed2reduce.get('n1') is not None)
-        #print(failed2reduce.get('n2') is not None)
-        #print(failed2reduce.get('fil') is not None)
-        #print(obj_criteria_met(header, failed2reduce))
-        if obj_criteria_met(header, failed2reduce):
-            rawDataSets.append(RawDataSet.RawDataSet(filename, None, header))
-
+            if obj_criteria_met(header, failed2reduce):
+                rawDataSets.append(RawDataSet.RawDataSet(filename, None, header))
     
     if obj_criteria_met(header, failed2reduce) is False:
 #        if failed2reduce.get('itype') > 0:
 #            logger.info('Ignored {} files because they are not object frames'.format(
 #                    failed2reduce.get('itype')))
-        if failed2reduce.get('dispmode') != 0:
-            print('FAIL1')
+        if failed2reduce.get('dismode') is not None:
             logger.info('Failed to reduced {} files because of low dispersion mode'.format(
                     failed2reduce.get('dispmode')))
-        elif failed2reduce.get('n1') != 0:
-            print('FAIL2')
+        elif failed2reduce.get('n1') is not None:
             logger.info('Failed to reduced {} files because NAXIS1 != 1024'.format(
                     failed2reduce.get('n1')))
-        elif failed2reduce.get('n2') != 0:
-            print('FAIL3')
+        elif failed2reduce.get('n2') is not None:
             logger.info('Failed to reduced {} files because NAXIS2 != 1024'.format(
                     failed2reduce.get('n2')))
-        elif failed2reduce.get('fil') != 0:
-            print('FAIL4')
+        elif failed2reduce.get('fil') is not None:
             logger.info('Failed to reduce {} files because of unsupported filter'.format(
                     failed2reduce.get('fil')))
         else:
-            print('PASSED!')
             pass
 #        if failed2reduce.get('dmode') > 0:
 #            logger.info('Failed to reduce {} files because SCAM mode'.format(
@@ -93,8 +80,13 @@ def create(in_dir):
                 if len(rawDataSet.darkFns) < config.params['max_n_darks']:
                     if dark_criteria_met(rawDataSet.objHeader, header):
                         rawDataSet.darkFns.append(filename)
+            elif (header['ETALON'] == 1):
+                if len(rawDataSet.etaFns) < config.params['max_n_etas']:
+                    if eta_criteria_met(rawDataSet.objHeader, header):
+                        rawDataSet.etaFns.append(filename)
         rawDataSet.flatFns.sort()
         rawDataSet.darkFns.sort()
+        rawDataSet.etaFns.sort()
         
     rawDataSets.sort(key=lambda x: x.baseNames['A'])
                  
@@ -141,7 +133,7 @@ def get_headers(in_dir):
             if config.params['gunzip'] is True and filename.endswith('gz'):
                 os.system('gunzip ' + full_filename)
                 full_filename = full_filename.rstrip('.gz')
-            headers[full_filename] = fits.getheader(full_filename, ignore_missing_end=True)
+            headers[full_filename] = fits.getheader(full_filename)
         
     return headers
 
@@ -165,14 +157,10 @@ def obj_criteria_met(header, failed2reduce):
         if header['IMAGETYP'].lower() != 'object':
 #           failed2reduce['itype'] += 1
             return False
-    #if config.params['cmnd_line_mode'] == False:
-    #    if header['DISPERS'].lower() != 'high':
-    #        failed2reduce['dispmode'] += 1
-    #        return False
-    #print(header['DISPERS'].lower(), header['DISPERS'].lower().strip()==header['DISPERS'].lower() != 'high')
-    if header['DISPERS'].lower() != 'high':
-        failed2reduce['dispmode'] += 1
-        return False
+    if config.params['cmnd_line_mode'] == False:
+        if header['DISPERS'].lower() != 'high':
+            failed2reduce['dispmode'] += 1
+            return False
     if header['NAXIS1'] != nirspec_constants.N_COLS:
         failed2reduce['n1'] += 1
         return False
@@ -204,7 +192,7 @@ def flat_criteria_met(obj_header, flat_header, ignore_dispers=False):
             return False
     return True
 
-def is_valid_pair(obj_A_header, obj_B_header):
+def is_valid_pair(obj_A_header, obj_B_header, override=False):
     """Determines if the frames associated with the two headers passed as arguments
     comprise a valid AB pair.
     
@@ -216,34 +204,34 @@ def is_valid_pair(obj_A_header, obj_B_header):
         True if valid pair.
         False if not valid pair.
     """
+
+    # Subvert this function
+    # useful if you use an object and a sky for instance
+    if override: 
+        return True
+
+    # Run this function
     kwds = ['disppos', 'echlpos', 'filname', 'slitname', 'itime']
     for kwd in kwds:
         if obj_A_header[kwd] != obj_B_header[kwd]:
             return False
     return True
 
-#def dark_criteria_met(obj_header, dark_header):
-#    """
-#    Takes an object frame header and a dark field frame header and determines if 
-#    the dark satisfies the criteria for association with the object frame
-#    
-#    params
-#        obj_header Object frame header.
-#        dark_header Dark frame header.
-#        
-#    return
-#        True if the dark corresponds to the object frame, False otherwise.
-#        
-#    """
-#    eq_kwds = ['elaptime']
-#    for kwd in eq_kwds:
-#        if obj_header[kwd] != dark_header[kwd]:
-#            return False
-#    return True
-
 def dark_criteria_met(obj_header, dark_header):
     """
-    Deprecated. We don't use this criteria.
-    @Dino Hsu
+    Takes an object frame header and a dark field frame header and determines if 
+    the dark satisfies the criteria for association with the object frame
+    
+    params
+        obj_header Object frame header.
+        dark_header Dark frame header.
+        
+    return
+        True if the dark corresponds to the object frame, False otherwise.
+        
     """
+    eq_kwds = ['elaptime']
+    for kwd in eq_kwds:
+        if obj_header[kwd] != dark_header[kwd]:
+            return False
     return True

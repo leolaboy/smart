@@ -33,6 +33,7 @@ params['jpg']                   = False     # if True then write preview plots i
 # configuration and tuning parameters
 params['max_n_flats']           = 8
 params['max_n_darks']           = 8
+params['max_n_etas']            = 4
 params['max_spatial_trace_res'] = 1.0
 
 
@@ -53,11 +54,10 @@ starting_order = {
         'NIRSPEC-5': 53, 
         'NIRSPEC-6': 49, 
         'NIRSPEC-7': 41,
-        'K-AO': 38 
+        'K-AO': 38
 }
 
 def get_starting_order(filtername):
-    
     return starting_order[filtername.upper()[:9]]
 
 # order edge location error threshold
@@ -69,7 +69,7 @@ max_edge_location_error = {
         'NIRSPEC-5': 50, 
         'NIRSPEC-6': 20, 
         'NIRSPEC-7': 60, 
-        'K-AO': 20 
+        'K-AO': 60  
 }
 
 def get_max_edge_location_error(filtername, slit):
@@ -91,7 +91,7 @@ long_slit_cutout_padding = {
         'NIRSPEC-5': 0, 
         'NIRSPEC-6': 15, 
         'NIRSPEC-7': 30,
-        'K-AO': 0          
+        'K-AO': 30          
 }
 short_slit_cutout_padding = {
         'NIRSPEC-1': 0, 
@@ -101,7 +101,7 @@ short_slit_cutout_padding = {
         'NIRSPEC-5': 15, 
         'NIRSPEC-6': 15, 
         'NIRSPEC-7': 30,
-        'K-AO': 0          
+        'K-AO': 30          
 }
 
 def get_cutout_padding(filtername, slit):

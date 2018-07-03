@@ -50,6 +50,7 @@ class RawDataSet:
         
         self.flatFns = []
         self.darkFns = []
+        self.etaFns = []
  
         
     def __deriveBaseName(self, fn):
@@ -138,3 +139,17 @@ class RawDataSet:
             for fn in self.darkFns:
                 darkData.append(fits.getdata(fn, ignore_missing_end=True))   
             return np.median(darkData, axis=0)
+
+
+    def combineEtas(self):       
+        """Median combines Etalons and returns resulting image array
+        """
+        if len(self.etaFns) == 0:
+            return None
+        if len(self.eatFns) == 1:
+            return(fits.getdata(self.etaFns[0], ignore_missing_end=True))
+        if len(self.eatFns) > 0:
+            eatData = []
+            for fn in self.eatFns:
+                eatData.append(fits.getdata(fn, ignore_missing_end=True))   
+            return np.median(etaData, axis=0)

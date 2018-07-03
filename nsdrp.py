@@ -21,7 +21,7 @@ import nsdrp_koa
 #from DrpException import DrpException
 #import FlatCacher
 
-VERSION = '0.9.17'
+VERSION = '0.9.17.1'
 
 warnings.filterwarnings('ignore', category=UserWarning, append=True)
 
@@ -63,6 +63,9 @@ def main():
     if args.oh_filename is not None:
         config.params['oh_filename'] = args.oh_filename
         config.params['oh_envar_override'] = True
+    if args.eta_filename is not None:
+        config.params['eta_filename'] = args.eta_filename
+        config.params['eta_envar_override'] = True
     config.params['int_c'] = args.int_c
     config.params['lla'] = args.lla
     config.params['pipes'] = args.pipes
@@ -74,13 +77,14 @@ def main():
     if args.out_dir is not None:
         config.params['out_dir'] = args.out_dir
     config.params['jpg'] = args.jpg
+    config.params['override_ab'] = args.override_ab
     config.params['sowc'] = args.sowc;
 
     # initialize environment, setup main logger, check directories
 #     try:
     if config.params['cmnd_line_mode'] is True:
         init(config.params['out_dir'])
-        nsdrp_cmnd.process_frame(args.arg1, args.arg2, args.b, config.params['out_dir'])
+        nsdrp_cmnd.process_frame(args.arg1, args.arg2, args.b, config.params['out_dir'], eta=args.eta_filename, override=args.override_ab)
     else:
         init(args.arg2, args.arg1)
         nsdrp_koa.process_dir(args.arg1, args.arg2)
@@ -231,6 +235,7 @@ def parse_cmnd_line_args():
     parser.add_argument('-sky_separation', help='separation between object and sky windows in pixels')
     #default=config.DEFAULT_SKY_DIST)
     parser.add_argument('-oh_filename', help='path and filename of OH emission line catalog file')
+    parser.add_argument('-eta_filename', help='path and filename of Etalon line catalog file')
     parser.add_argument('-int_c', help='user integer column values rather than fractional values \
             determined by centroiding in wavelength fit',
             action='store_true')
@@ -261,6 +266,7 @@ def parse_cmnd_line_args():
     parser.add_argument('-jpg', help='store preview plots in JPG format instead of PNG',
             action='store_true')
     parser.add_argument('-sowc', help='enable simple order width calculation', action='store_true')
+    parser.add_argument('-override_ab', help='removes AB pair check for the same object', action='store_true')
 
     return(parser.parse_args())
           

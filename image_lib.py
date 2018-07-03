@@ -20,30 +20,30 @@ def rectify_spatial(data, curve):
 #     curve_p = -1.0 * (curve - (data.shape[0] / 2))
     curve_p = -1.0 * curve
     curve_p = curve_p - np.amin(curve_p)
+    """
+    import pylab as pl
+    pl.figure()
+    pl.cla()
+    pl.plot(curve, 'r-')
+    pl.plot(curve_p, 'g-')
+    pl.show()
     
-#     import pylab as pl
-#     pl.figure()
-#     pl.cla()
-#     pl.plot(curve, 'r-')
-#     pl.plot(curve_p, 'g-')
-#     pl.show()
-#     
-#     pl.figure()
-#     pl.cla()
-#     pl.imshow(data, vmin=0, vmax=256)
-#     pl.show()
-    
+    pl.figure()
+    pl.cla()
+    pl.imshow(data, vmin=0, vmax=256)
+    pl.show()
+    """
     rectified = []
     for i in range(0, len(curve_p)):
         s = data[:, i]
         rectified.append(ndimage.interpolation.shift(
                 s, curve_p[i], order=3, mode='nearest', prefilter=True))
-        
-#     pl.figure()
-#     pl.cla()
-#     pl.imshow((np.array(rectified)).transpose(), vmin=0, vmax=256)
-#     pl.show()
-    
+    """
+    pl.figure()
+    pl.cla()
+    pl.imshow((np.array(rectified)).transpose(), vmin=0, vmax=256)
+    pl.show()
+    """
     return((np.array(rectified)).transpose())
 
 
@@ -233,8 +233,8 @@ def cut_out(data, top, bot, padding):
             return data[0:int(top) + int(padding), :]
 
 def centroid(spec, width, window, approx):
-    p0 = max(0, approx - (window // 2))
-    p1 = min(width - 1, approx + (window // 2)) + 1
+    p0 = max(0, approx - (window / 2))
+    p1 = min(width - 1, approx + (window / 2)) + 1
     c = p0 + ndimage.center_of_mass(spec[p0:p1])[0]
     
     if abs(c - approx) > 1:

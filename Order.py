@@ -3,7 +3,7 @@
 
 class Order:
     
-    def __init__(self, frames, baseNames, flatOrder):
+    def __init__(self, frames, baseNames, flatOrder, etaImg=None):
         
         """
         Attributes:
@@ -44,6 +44,10 @@ class Order:
         self.objCutout = {}
         for frame in self.frames:
             self.objCutout[frame] = []
+
+        if etaImg != None:
+            self.etaCutout[frame] = []
+
         
         self.onOrderMask = []
         self.offOrderMask = []
@@ -72,9 +76,9 @@ class Order:
 #         self.topEdgeProfiles = None
 #         self.botEdgeProfiles = None
          
-        self.flatNormalized = False
-        self.flattened = False
-        self.spatialRectified = False
+        self.flatNormalized    = False
+        self.flattened         = False
+        self.spatialRectified  = False
         self.spectralRectified = False
 
         self.flatMean = 0.0
@@ -83,7 +87,7 @@ class Order:
         
         """
         self.flatImg = []        
-        self.normalizedFlatImg = []
+        self.normalizedFlatImg = []    
         
         self.objImg = {}
         self.ffObjImg = {}
