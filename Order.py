@@ -45,8 +45,9 @@ class Order:
         for frame in self.frames:
             self.objCutout[frame] = []
 
-        if etaImg != None:
-            self.etaCutout[frame] = []
+        if etaImg is not None:
+            self.etaImg = etaImg
+            self.etaCutout = []
 
         
         self.onOrderMask = []

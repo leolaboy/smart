@@ -47,6 +47,9 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None):
     
     if raw.isPair:
         reduced.objImg['B'] = fits.getdata(raw.objBFn, ignore_missing_end = True)
+
+    if eta is not None:
+        reduced.etaImg = fits.getdata(raw.etaFns, ignore_missing_end=True)
     
     # put object summary info into per-object log
     log_start_summary(reduced)
@@ -67,10 +70,11 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None):
             logger.info('cosmic ray cleaning object frame B')
             reduced.objImg['B'] = image_lib.cosmic_clean(reduced.objImg['B'])
             logger.debug('cosmic ray cleaning object frame B complete')
-        if eta != None:
+        if eta is not None:
             logger.info('cosmic ray cleaning etalon frame')
             reduced.etaImg = image_lib.cosmic_clean(reduced.etaImg)
             logger.debug('cosmic ray cleaning etalon frame complete')
+
         reduced.cosmicCleaned = True 
            
     # if darks are available, combine them if there are more than one
@@ -213,10 +217,10 @@ def reduce_orders(reduced, eta=None):
         
         logger.info('***** order ' + str(flatOrder.orderNum) + ' *****')
 
-        if flatOrder.orderNum != 33: continue #XXX
+        #if flatOrder.orderNum != 33: continue #XXX
             
-        if eta != None:
-            order = Order.Order(reduced.frames, reduced.baseNames, flatOrder, reduced.etaImg)
+        if eta is not None:
+            order = Order.Order(reduced.frames, reduced.baseNames, flatOrder, etaImg=reduced.etaImg)
 
         else:
             order = Order.Order(reduced.frames, reduced.baseNames, flatOrder)
@@ -225,6 +229,10 @@ def reduce_orders(reduced, eta=None):
         
         for frame in order.frames:
             order.objCutout[frame] = np.array(image_lib.cut_out(reduced.objImg[frame], 
+                    flatOrder.highestPoint, flatOrder.lowestPoint, flatOrder.cutoutPadding))  
+
+        if eta is not None:
+            order.etaCutout = np.array(image_lib.cut_out(reduced.etaImg, 
                     flatOrder.highestPoint, flatOrder.lowestPoint, flatOrder.cutoutPadding))  
         
         order.integrationTime = reduced.getIntegrationTime() # used in noise calc

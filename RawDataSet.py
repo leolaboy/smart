@@ -20,7 +20,7 @@ class RawDataSet:
 
     """
     
-    def __init__(self, objAFn, objBFn, objHeader):
+    def __init__(self, objAFn, objBFn, objHeader, eta=None, dark=None):
 
         if objAFn is None:
             raise DrpException('objAFn cannot be None')
@@ -50,7 +50,10 @@ class RawDataSet:
         
         self.flatFns = []
         self.darkFns = []
-        self.etaFns = []
+        self.etaFns  = []
+
+        if eta is not None:
+            self.etaFns = eta
  
         
     def __deriveBaseName(self, fn):
@@ -114,7 +117,7 @@ class RawDataSet:
                 self.objHeader['echlpos'], self.objHeader['filname'], self.objHeader['slitname'])
 
     
-    def combineFlats(self):
+    def combineFlats(self): # XXX Can't tell if this is being used, or if these functions are in Flat.py
         """Median combines flats and returns resulting image array
         """
         if len(self.flatFns) == 0:
@@ -127,7 +130,7 @@ class RawDataSet:
         return np.median(flatDataList, axis=0)
 
          
-    def combineDarks(self):       
+    def combineDarks(self): # XXX I don't think this is being implemented yet      
         """Median combines darks and returns resulting image array
         """
         if len(self.darkFns) == 0:
@@ -141,7 +144,7 @@ class RawDataSet:
             return np.median(darkData, axis=0)
 
 
-    def combineEtas(self):       
+    def combineEtas(self):   # XXX This is not working yet    
         """Median combines Etalons and returns resulting image array
         """
         if len(self.etaFns) == 0:

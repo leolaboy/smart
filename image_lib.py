@@ -47,7 +47,7 @@ def rectify_spatial(data, curve):
     return((np.array(rectified)).transpose())
 
 
-def rectify_spectral(data, curve):
+def rectify_spectral(data, curve, eta=None):
     """
     Shift data, row by row, along x-axis according to curve.
     
@@ -56,9 +56,14 @@ def rectify_spectral(data, curve):
     Throws IndexError exception if length of curve
     is not equal to number of rows in data.
     """
+
+    #print(curve)
+    #print(curve.shape)
+    #print(data.shape)
+    #sys.exit()
     
     # pivot curve around peak 
-    # and change sign so shift is corrective
+    # and change sign so shift is corrective (I don't think this is correct)
     profile = data.sum(axis=1)
     peak = np.argmax(profile)
     curve_p = -1.0 * (curve - curve[peak])

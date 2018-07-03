@@ -18,14 +18,33 @@ logger = logging.getLogger('obj')
 
 def reduce_order(order, eta=None):
         
+    #print('ETA BEGINNING', eta)
     # flatten object images for this order
-    __flatten(order)
+    if eta is not None:
+        __flatten(order, eta=eta)
+    else:    
+        __flatten(order)
+
+    #plt.figure(1)
+    #plt.imshow(order.ffEtaImg, origin='lower')
  
     # rectify obj and flattened obj in spatial dimension
-    __rectify_spatial(order)
+    if eta is not None:
+        __rectify_spatial(order, eta=eta)
+    else:    
+        __rectify_spatial(order)
+
+    #plt.figure(2)
+    #plt.imshow(order.ffEtaImg, origin='lower')
  
     # trim rectified order
-    __trim(order)
+    if eta is not None:
+        __trim(order, eta=eta)
+    else: 
+        __trim(order)
+
+    #plt.figure(3)
+    #plt.imshow(order.ffEtaImg, origin='lower')
     
     # save rectified images before spectral rectify for diagnostics 
     order.srNormFlatImg = order.flatOrder.rectFlatImg
@@ -39,34 +58,44 @@ def reduce_order(order, eta=None):
     __characterize_spatial_profile(order)
 
     # Try to find the spectral trace using Etalon lamps if provided XXX
-    print('ETA030', eta)
-    if eta != None:
-        print('YESSSSS')
-        print(dir(order))
-        print(order.etaImg)
-        plt.imshow(order.etaImg)
-        plt.show()
-        sys.exit()
-        order.spectralTrace = cat.spectral_trace(
-                nirspec_lib.find_spectral_trace(
-                        order.etaImg['A']), order.etaImg['A'].shape[0])
+    if eta is not None:
 
+        try:
+            order.spectralTrace = nirspec_lib.smooth_spectral_trace(
+                                        nirspec_lib.find_spectral_trace(
+                                        order.ffEtaImg, numrows=20, eta=eta), order.ffEtaImg.shape[0])
+        except Exception as e:
+            logger.warning('not rectifying order {} in spectral dimension'.format(
+                    order.flatOrder.orderNum))
+        
+        else:
+            order.flatOrder.rectFlatImg = image_lib.rectify_spectral(
+                                                 order.flatOrder.rectFlatImg, order.spectralTrace)
+            __rectify_spectral(order, eta=eta)
+            order.spectralRectified = True
+            #print('Etalon Rectified')
 
-    # Find and smooth spectral trace, always use frame A
-    try:
-        order.spectralTrace = nirspec_lib.smooth_spectral_trace(
-                nirspec_lib.find_spectral_trace(
-                        order.ffObjImg['A']), order.ffObjImg['A'].shape[0])
-    except Exception as e:
-        logger.warning('not rectifying order {} in spectral dimension'.format(
-                order.flatOrder.orderNum))
- 
     else:
-        order.flatOrder.rectFlatImg = image_lib.rectify_spectral(
-                order.flatOrder.rectFlatImg, order.spectralTrace)
-        __rectify_spectral(order)
-        order.spectralRectified = True
+        # Find and smooth spectral trace, always use frame A
+        try:
+            order.spectralTrace = nirspec_lib.smooth_spectral_trace(
+                    nirspec_lib.find_spectral_trace(
+                            order.ffObjImg['A']), order.ffObjImg['A'].shape[0])
+        except Exception as e:
+            logger.warning('not rectifying order {} in spectral dimension'.format(
+                    order.flatOrder.orderNum))
      
+        else:
+            order.flatOrder.rectFlatImg = image_lib.rectify_spectral(
+                    order.flatOrder.rectFlatImg, order.spectralTrace)
+            __rectify_spectral(order)
+            order.spectralRectified = True
+     
+
+    #plt.figure(666) #XXX
+    #plt.imshow(order.ffEtaImg, origin='lower')
+    #plt.show()
+
     # compute noise image
     order.noiseImg = nirspec_lib.calc_noise_img(
             order.objImg['A'], order.flatOrder.rectFlatImg, order.integrationTime)
@@ -77,28 +106,39 @@ def reduce_order(order, eta=None):
     # calculate approximate SNR
     __calc_approximate_snr(order)
             
-    # find and identify sky lines   
+    # find and identify sky/etalon lines   
     line_pairs = None # line_pairs are (column number, accepted wavelength)
     try:
-        oh_wavelengths, oh_intensities = wavelength_utils.get_oh_lines()
+        if eta is not None:
+            etalon_wavelengths, etalon_intensities = wavelength_utils.get_etalon_lines()
+        else:
+            oh_wavelengths, oh_intensities = wavelength_utils.get_oh_lines()
     except IOError as e:
-        logger.critical('cannot read OH line file: ' + str(e))
+        logger.critical('cannot read OH/Etalon line file: ' + str(e))
         raise
         
     try:
-        # synthesize sky spectrum and store in order object
-        order.synthesizedSkySpec = wavelength_utils.synthesize_sky(
-                oh_wavelengths, oh_intensities, order.flatOrder.gratingEqWaveScale)
+        # synthesize sky/etalon spectrum and store in order object
+        if eta is not None:
+            order.synthesizedSkySpec = wavelength_utils.synthesize_sky(
+                    etalon_wavelengths, etalon_intensities, order.flatOrder.gratingEqWaveScale)
          
-        # identify lines and return list of (column number, accepted wavelength) tuples
-        line_pairs = wavelength_utils.line_id(order, oh_wavelengths, oh_intensities)
+            # identify lines and return list of (column number, accepted wavelength) tuples
+            line_pairs = wavelength_utils.line_id(order, etalon_wavelengths, etalon_intensities)
+
+        else:
+            order.synthesizedSkySpec = wavelength_utils.synthesize_sky(
+                    oh_wavelengths, oh_intensities, order.flatOrder.gratingEqWaveScale)
+         
+            # identify lines and return list of (column number, accepted wavelength) tuples
+            line_pairs = wavelength_utils.line_id(order, oh_wavelengths, oh_intensities)
         
     except (IOError, ValueError) as e:
-        logger.warning('sky line matching failed: ' + str(e))
+        logger.warning('sky/etalon line matching failed: ' + str(e))
         
     if line_pairs is not None:
         
-        logger.info(str(len(line_pairs)) + ' matched sky lines found in order')
+        logger.info(str(len(line_pairs)) + ' matched sky/etalon lines found in order')
 
         # add line pairs to Order object as Line objects
         for line_pair in line_pairs:
@@ -136,29 +176,24 @@ def reduce_order(order, eta=None):
                         
     return
 
+
 def __flatten(order, eta=None):
     """Flat field object image[s] but keep originals for noise calculation.
     """
     
     for frame in order.frames:
         
-        order.objImg[frame] = np.array(order.objCutout[frame]) 
-        
+        order.objImg[frame]   = np.array(order.objCutout[frame]) 
         order.ffObjImg[frame] = np.array(order.objCutout[frame] / order.flatOrder.normFlatImg)
         
         if frame != 'AB':
             if np.amin(order.ffObjImg[frame]) < 0:
                 order.ffObjImg[frame] -= np.amin(order.ffObjImg[frame])
 
-    if eta != None:
+    if eta is not None:
 
-        order.etaImg[frame] = np.array(order.objCutout[frame]) 
-        
-        order.ffEtaImg[frame] = np.array(order.objCutout[frame] / order.flatOrder.normFlatImg)
-        
-        if frame != 'AB':
-            if np.amin(order.ffObjImg[frame]) < 0:
-                order.ffObjImg[frame] -= np.amin(order.ffObjImg[frame])
+        order.etaImg   = np.array(order.etaCutout) 
+        order.ffEtaImg = np.array(order.etaCutout / order.flatOrder.normFlatImg)
 
     
     order.flattened = True
@@ -166,26 +201,31 @@ def __flatten(order, eta=None):
     return
 
 
-def __rectify_spatial(order):
+def __rectify_spatial(order, eta=None):
     """
     """     
-    #print(order.flatOrder.smoothedSpatialTrace)
-    #print(len(order.flatOrder.smoothedSpatialTrace))
-    #print(order.flatOrder.smoothedSpatialTrace.shape)
-    polyVals = cat.CreateSpatialMap(order)   
-    #print(polyVals)
+ 
+    #polyVals = cat.CreateSpatialMap(order)  
     
     for frame in order.frames:
-        """
+        
         order.objImg[frame] = image_lib.rectify_spatial(
                 order.objImg[frame], order.flatOrder.smoothedSpatialTrace)
         order.ffObjImg[frame] = image_lib.rectify_spatial(
                 order.ffObjImg[frame], order.flatOrder.smoothedSpatialTrace)
-        """
-        order.objImg[frame] = image_lib.rectify_spatial(
-                order.objImg[frame], polyVals)
-        order.ffObjImg[frame] = image_lib.rectify_spatial(
-                order.ffObjImg[frame], polyVals)
+        
+        #order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals)
+        #order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals)
+
+    if eta is not None:
+
+        order.etaImg   = image_lib.rectify_spatial(
+                order.etaImg, order.flatOrder.smoothedSpatialTrace)
+        order.ffEtaImg = image_lib.rectify_spatial(
+                order.ffEtaImg, order.flatOrder.smoothedSpatialTrace)
+
+        #order.etaImg   = image_lib.rectify_spatial(order.etaImg, polyVals)
+        #order.ffEtaImg = image_lib.rectify_spatial(order.ffEtaImg, polyVals)
 
     """ XXX      
     plt.figure(1)
@@ -222,7 +262,7 @@ def __rectify_spatial(order):
     return   
  
     
-def __trim(order):
+def __trim(order, eta=None):
     """
     """
     for frame in order.frames:
@@ -230,19 +270,29 @@ def __trim(order):
                 order.objImg[frame][order.flatOrder.botTrim:order.flatOrder.topTrim, :]
         order.ffObjImg[frame] = \
                 order.ffObjImg[frame][order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+
+    if eta is not None:
+
+        order.etaImg   = \
+                order.etaImg[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+        order.ffEtaImg = \
+                order.ffEtaImg[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
         
     return
 
 
-def __rectify_spectral(order):
+def __rectify_spectral(order, eta=None):
     """
     """   
-    """     
+       
     for frame in order.frames:
-        order.objImg[frame] = image_lib.rectify_spectral(order.objImg[frame], order.spectralTrace)
-        order.ffObjImg[frame] = image_lib.rectify_spectral(
-                order.ffObjImg[frame], order.spectralTrace)
-    """
+        order.objImg[frame]   = image_lib.rectify_spectral(order.objImg[frame], order.spectralTrace)
+        order.ffObjImg[frame] = image_lib.rectify_spectral(order.ffObjImg[frame], order.spectralTrace)
+
+    if eta is not None:
+        order.etaImg   = image_lib.rectify_spectral(order.etaImg, order.spectralTrace)
+        order.ffEtaImg = image_lib.rectify_spectral(order.ffEtaImg, order.spectralTrace)
+    
     return     
 
               
@@ -300,6 +350,7 @@ def __extract_spectra(order):
             
     return
 
+
 def __calc_approximate_snr(order):
     
     if order.isPair:
@@ -335,6 +386,7 @@ def __calc_approximate_snr(order):
         
     return
     
+
 def __characterize_spatial_profile(order):
     
     for frame in order.frames:
@@ -358,6 +410,7 @@ def __characterize_spatial_profile(order):
                     frame, abs(order.gaussianParams[frame][2])))
         
     return
+
 
 def __find_spatial_profile_and_peak(order):
     """
@@ -388,6 +441,7 @@ def __find_spatial_profile_and_peak(order):
                 frame, float(order.centroid[frame])))     
     
     return
+
 
 def __calculate_SNR(order):
     

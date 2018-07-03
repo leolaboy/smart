@@ -1,7 +1,10 @@
 import numpy as np
 import scipy.ndimage
 
-def trace_edge(data, start, searchWidth, bgWidth, jumpThresh):
+import CAT_Functions as cat
+import scipy.optimize as op
+
+def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, eta=None):
 
     # initialize trace array
     trace = np.zeros(data.shape[1])
@@ -14,7 +17,21 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh):
         
     # find centroids for the rest of the columns in data
 
+    if start == 49: 
+        PLOT = False
+        import matplotlib.pyplot as plt
+        plt.imshow(data, origin='lower')
+        plt.show(block=False)
+    else: 
+        PLOT = False
+
+    if eta is not None: 
+        stepcount = 5
+    else: 
+        stepcount = 1
+
     for i in range(1, data.shape[1]):
+        #print('I',i)
         
         # define search window
         ymin = int(trace[i - 1] - searchWidth)
@@ -49,26 +66,76 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh):
                 bgMean = (data[bgMin, i] + data[bgMax, i]) / 2.0
             except:
                 bgMean = 0.0
-    
-        trace[i] = scipy.ndimage.measurements.center_of_mass(
-                data[int(ymin):int(ymax) + 1, i] - bgMean)[0] + ymin
-                
-#         import pylab as pl
-#         x0 = max(0, int(trace[i - 1]) - 50)
-#         x1 = min(1023, int(trace[i-1]) + 50)
-#         pl.figure()
-#         pl.cla()
-#         pl.plot(np.arange(x0, x1), data[x0:x1, i])
-#         pl.plot([trace[i], trace[i]], pl.ylim())
 
+
+        if eta is not None:
+            #print('TEST', data[int(ymin):int(ymax) + 1, i:i+stepcount] - bgMean)
+            #print('TEST', np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount]))
+
+            #print('TEST', np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=0))
+            #print('TEST', np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=1))
+            #sys.exit()
+            #print(scipy.ndimage.measurements.center_of_mass(np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=1) - bgMean))
+            #trace[i] = scipy.ndimage.measurements.center_of_mass(
+            #              np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=1) - bgMean)[0] + ymin
+            Xs = np.arange(len(np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=1)))
+            Ys = np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=1) 
+            guess1 = np.where(Ys == np.max(Ys))[0][0]
+            popt, pcov = op.curve_fit(cat.NormDist, Xs, 
+                                                    Ys, 
+                                                    p0=[guess1, 2, np.median(Ys), np.max(Ys)], maxfev=1000000) # Where should a pixel start? (0, 1, 0.5?)
+            trace[i] = popt[0] + ymin
+        else: 
+            trace[i] = scipy.ndimage.measurements.center_of_mass(
+                              data[int(ymin):int(ymax) + 1, i] - bgMean)[0] + ymin
         
-#         pl.plot(data[x0:x1, i], 'ro')
-#         pl.plot(data[int(ymin):int(ymax) + 1, i] - bgMean, 'go')
-#         pl.plot([trace[i], trace[i]], [0, pl.ylim()[0]], 'g-')
-#         print(trace[max(0, i-10):i])
-        
- 
-#         pl.show()
+        # if PLOT:        
+        #     import pylab as pl
+        #     x0 = max(0, int(trace[i - 1]) - 50)
+        #     x1 = min(1023, int(trace[i-1]) + 50)
+        #     print(np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=1))
+        #     print(np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=1))
+        #     Xs = np.arange(len(np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=1)))
+        #     Ys = np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=1) 
+        #     print(Xs)
+        #     print(Ys)
+        #     #plt.figure(199)
+        #     #plt.plot(Xs, Ys)
+        #     #plt.show()
+        #     #sys.exit()
+
+        #     guess1 = np.where(Ys == np.max(Ys))[0][0]
+        #     popt, pcov = op.curve_fit(cat.NormDist, Xs, 
+        #                                             Ys, 
+        #                                             p0=[guess1, 2, np.median(Ys), np.max(Ys)], maxfev=10000) # Where should a pixel start? (0, 1, 0.5?)
+        #     print('1', popt)
+        #     print('2', pcov)
+
+        #     plt.figure(198)
+        #     plt.plot(Xs, Ys)
+        #     plt.plot(Xs, cat.NormDist(Xs, *popt), 'r--')
+        #     plt.show()
+        #     #sys.exit()    
+
+            # pl.figure(101)
+            # pl.cla()
+            # pl.plot(np.arange(x0, x1), np.sum(data[x0:x1, i:i+5], axis=1))
+            # pl.plot([trace[i], trace[i]], pl.ylim())
+            # pl.plot([trace[i-1], trace[i-1]], pl.ylim(), 'r--')
+            # pl.plot([ymin, ymin], pl.ylim(), 'r-')
+            # pl.plot([ymax, ymax], pl.ylim(), 'r-')
+            # #pl.plot([trace[i], trace[i]], [0, pl.ylim()[0]], 'g-')
+
+            # pl.figure(102)
+            # pl.plot(data[x0:x1, i], 'ro')
+            # pl.plot(data[int(ymin):int(ymax) + 1, i] - bgMean, 'go')
+            # pl.plot([trace[i], trace[i]], [0, pl.ylim()[0]], 'g-')
+            # print(trace[max(0, i-10):i])
+            # print(np.abs(trace[i] - trace[i - 1]), trace[i], trace[i-1], jumpThresh)
+            # print('TEST2', np.flatnonzero(data[int(ymin):int(ymax) + 1, i] - bgMean).mean()+0.5)
+            # print(nJumps)
+            
+            # pl.show()
 
         if trace[i] is np.inf or trace[i] is -np.inf:  
             # went off array
@@ -87,6 +154,15 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh):
             else:
                 # use the first one found
                 trace[i] = trace[i - 1]
+
+        if PLOT:
+            #print('I2', i+np.floor(stepcount/2.))
+            #plt.scatter(i+np.floor(stepcount/2.), trace[i], alpha=0.5)
+            plt.scatter(i, trace[i], alpha=0.5)
         
+    if PLOT:
+        plt.show()
+        sys.exit()
+
     return trace, nJumps
 

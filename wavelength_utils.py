@@ -176,6 +176,52 @@ def get_oh_lines():
                 get_oh_lines.oh_intensities.append(float(tokens[1]))
     
         return get_oh_lines.oh_wavelengths, get_oh_lines.oh_intensities
+
+
+
+def get_etalon_lines():
+    """
+    Reads Etalon line wavelengths and intensities from data file.
+    Once the data is read, it is saved in static-like variables 
+    so the file is read only once.  
+    
+    Returns two parallel arrays, one containing wavelengths and
+    the other containing the corresponding intensities, as a tuple.
+    
+    Raises IOError if data file cannot be opened or read
+    """
+    
+    try:
+        return get_etalon_lines.etalon_wavelengths, get_etalon_lines.etalon_intensities
+    
+    except AttributeError:
+        
+        if config.params['etalon_envar_override']:
+            etalon_filename = config.params['etalon_filename']
+        else:
+            etalon_filename = os.environ.get(config.params['etalon_envar_name'])
+            if etalon_filename is None:
+                etalon_filename = config.params['etalon_filename']
+             
+        logger.info('reading Etalon line data from ' + etalon_filename)
+        
+        try:
+            lines = open(etalon_filename).readlines()
+        except:
+            logger.error('failed to open Etalon emission line file: ' + etalon_filename)
+            raise
+    
+        get_etalon_lines.etalon_wavelengths = []
+        get_etalon_lines.etalon_intensities = []
+    
+        for line in lines:
+            tokens = line.split(" ")
+            if float(tokens[1]) > 0:
+                get_etalon_lines.etalon_wavelengths.append(float(tokens[0]))
+                get_etalon_lines.etalon_intensities.append(float(tokens[1]))
+    
+        return get_etalon_lines.etalon_wavelengths, get_etalon_lines.etalon_intensities
+
  
 
 def gen_synthesized_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc):
@@ -186,7 +232,7 @@ def gen_synthesized_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc):
     if y.any():
         all_g = y[0]
     else:
-        logger.warning('no OH lines in wavelength range')
+        logger.warning('no OH/Etalon lines in wavelength range')
         return None
 
     for i in np.arange(0, x.size):
@@ -195,6 +241,7 @@ def gen_synthesized_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc):
             all_g = all_g + g
 
     return all_g
+
 
 def find_wavelength_shift(sky, gauss_sky, grating_eq_wave_scale):
     
@@ -568,6 +615,7 @@ LOWER_LEN_POINTS = 10.0
 #SIGMA_MAX = 0.3
 SIGMA_MAX = 1.0
 MIN_N_LINES = 6
+
 
 def twodfit(dataX, dataY, dataZ):
 #def twodfit(cols, orders, wavelengths):

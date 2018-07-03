@@ -43,42 +43,43 @@ def main():
         print('KOA mode')
     else:
         # command line mode
-        config.params['cmnd_line_mode'] = True
-        config.params['verbose'] = True
+        config.params['cmnd_line_mode']        = True
+        config.params['verbose']               = True
 
     # setup configuration parameters based on command line args
-    config.params['debug'] = args.debug
-    config.params['verbose'] = args.verbose
-    config.params['subdirs'] = args.subdirs
-    config.params['dgn'] = args.dgn
-    config.params['npy'] = args.npy
-    config.params['no_cosmic'] = args.no_cosmic
-    config.params['no_products'] = args.no_products
+    config.params['debug']                     = args.debug
+    config.params['verbose']                   = args.verbose
+    config.params['subdirs']                   = args.subdirs
+    config.params['dgn']                       = args.dgn
+    config.params['npy']                       = args.npy
+    config.params['no_cosmic']                 = args.no_cosmic
+    config.params['no_products']               = args.no_products
     if args.obj_window is not None:
-        config.params['obj_window'] = int(args.obj_window)
+        config.params['obj_window']            = int(args.obj_window)
     if args.sky_window is not None:
-        config.params['sky_window'] = int(args.sky_window)
+        config.params['sky_window']            = int(args.sky_window)
     if args.sky_separation is not None:
-        config.params['sky_separation'] = int(args.sky_separation)
+        config.params['sky_separation']        = int(args.sky_separation)
     if args.oh_filename is not None:
-        config.params['oh_filename'] = args.oh_filename
-        config.params['oh_envar_override'] = True
+        config.params['oh_filename']           = args.oh_filename
+        config.params['oh_envar_override']     = True
     if args.eta_filename is not None:
-        config.params['eta_filename'] = args.eta_filename
-        config.params['eta_envar_override'] = True
-    config.params['int_c'] = args.int_c
-    config.params['lla'] = args.lla
-    config.params['pipes'] = args.pipes
-    config.params['shortsubdir'] = args.shortsubdir
+        config.params['eta_filename']          = args.eta_filename
+        config.params['etalon_filename']       = args.etalon_filename
+        config.params['etalon_envar_override'] = True
+    config.params['int_c']                     = args.int_c
+    config.params['lla']                       = args.lla
+    config.params['pipes']                     = args.pipes
+    config.params['shortsubdir']               = args.shortsubdir
     if args.ut is not None:
-        config.params['ut'] = args.ut
-    config.params['gunzip'] = args.gunzip
-    config.params['spatial_jump_override'] = args.spatial_jump_override
+        config.params['ut']                    = args.ut
+    config.params['gunzip']                    = args.gunzip
+    config.params['spatial_jump_override']     = args.spatial_jump_override
     if args.out_dir is not None:
-        config.params['out_dir'] = args.out_dir
-    config.params['jpg'] = args.jpg
-    config.params['override_ab'] = args.override_ab
-    config.params['sowc'] = args.sowc;
+        config.params['out_dir']               = args.out_dir
+    config.params['jpg']                       = args.jpg
+    config.params['override_ab']               = args.override_ab
+    config.params['sowc']                      = args.sowc;
 
     # initialize environment, setup main logger, check directories
 #     try:
@@ -235,7 +236,8 @@ def parse_cmnd_line_args():
     parser.add_argument('-sky_separation', help='separation between object and sky windows in pixels')
     #default=config.DEFAULT_SKY_DIST)
     parser.add_argument('-oh_filename', help='path and filename of OH emission line catalog file')
-    parser.add_argument('-eta_filename', help='path and filename of Etalon line catalog file')
+    parser.add_argument('-eta_filename', help='path and filename of Etalon lamp fits file')
+    parser.add_argument('-etalon_filename', help='path and filename of Etalon line catalog file')
     parser.add_argument('-int_c', help='user integer column values rather than fractional values \
             determined by centroiding in wavelength fit',
             action='store_true')
