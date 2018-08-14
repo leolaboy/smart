@@ -151,27 +151,15 @@ class ReducedDataSet:
     def getObjectName(self):
         return self.header['OBJECT']
     
-    #def subtractDark(self):   
-    #    if self.hasDark:
-    #        frames = ['A']
-    #        if self.isPair:
-    #            frames.append('B')
-    #        for frame in frames:
-    #            self.objImg[frame]  = np.subtract(self.objImg[frame], self.dark)
-    #        self.flatImg = np.subtract(self.flatImg, self.dark)
-    #        self.darkSubtracted = True
-
     def subtractDark(self):   
-        """
-        Modified by previous one @Dino Hsu
-        Remove the dependency on the object, left with only dark subtracted flat frames
-        """
         if self.hasDark:
-            frames = ['A']
-            if self.isPair:
-                frames.append('B')
+            #frames = ['A']
+            #if self.isPair:
+            #    frames.append('B')
             #for frame in frames:
             #    self.objImg[frame]  = np.subtract(self.objImg[frame], self.dark)
             self.flatImg = np.subtract(self.flatImg, self.dark)
+            self.Flat.flatImg = self.flatImg #added by Dino Hsu
             self.darkSubtracted = True
+
             

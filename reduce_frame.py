@@ -72,7 +72,7 @@ def reduce_frame(raw, out_dir, flatCacher=None):
     # if darks are available, combine them if there are more than one
     # and subtract from object frame(s) and flat
     process_darks(raw, reduced)
-    
+
     # if AB pair then subtract B from A
     if reduced.isPair:
         reduced.objImg['AB'] = np.subtract(reduced.objImg['A'], reduced.objImg['B'])
@@ -432,34 +432,9 @@ def log_start_summary(reduced):
     logger.info('cross disperser angle = ' + str(reduced.getDispPos()) + ' deg')
     return
 
-#def process_darks(raw, reduced):
-#    """
-#    
-#    """
-#    
-#    #TODO if there are < 3 darks should cosmic clean
-#
-#    if len(raw.darkFns) > 0:
-#        reduced.hasDark = True
-#        logger.info(str(len(raw.darkFns)) + ' darks: ' + 
-#            ', '.join(str(x) for x in ([s[s.find("NS"):s.rfind(".")] for s in raw.darkFns])))
-#        reduced.dark = raw.combineDarks()
-#        if len(raw.darkFns) > 1:
-#            logger.info(str(len(raw.darkFns)) + ' darks have been median combined')
-#    else:
-#        logger.info('no darks')
-#
-#    # if dark(s) exist, subtract from obj and flat
-#    if reduced.hasDark:
-#        reduced.subtractDark()
-#        #logger.info('dark subtracted from obj and flat')
-#        logger.info('dark subtracted from flat (no obj)') #Modified by Dino Hsu
-#        
-#    return
-    
 def process_darks(raw, reduced):
     """
-    Modified version @Dino Hsu
+    
     """
     
     #TODO if there are < 3 darks should cosmic clean
@@ -478,6 +453,7 @@ def process_darks(raw, reduced):
     if reduced.hasDark:
         reduced.subtractDark()
         #logger.info('dark subtracted from obj and flat')
-        logger.info('dark subtracted from flat (no obj)') #Modified by Dino Hsu
-        
+        logger.info('dark subtracted from flat')
+
     return
+    

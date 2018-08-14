@@ -18,7 +18,7 @@ class FlatCacher:
         self.flatDir = flatDir  # directory in which FITS and pickle jars are stored
         self.fnToRawFlatList = dict()
         self.fnToFlat = dict()
-        
+
         if not os.path.exists(flatDir):
             try: 
                 os.makedirs(flatDir)

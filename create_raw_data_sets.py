@@ -226,7 +226,21 @@ def is_valid_pair(obj_A_header, obj_B_header):
 
 def dark_criteria_met(obj_header, dark_header):
     """
-    Deprecated. We don't use this criteria.
+    Takes an object frame header and a dark field frame header and determines if 
+    the dark satisfies the criteria for association with the object frame
+    Compare the filter and the slit names.
     @Dino Hsu
+
+    params
+        obj_header Object frame header.
+        dark_header Dark frame header.
+        
+    return
+        True if the dark corresponds to the object frame, False otherwise.
+        
     """
+    eq_kwds = ['FILNAME','SLITNAME']
+    for kwd in eq_kwds:
+        if obj_header[kwd] != dark_header[kwd]:
+            return False
     return True

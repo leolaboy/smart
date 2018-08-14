@@ -32,7 +32,6 @@ def calc_noise_img(obj, flat, integration_time):
     
     return noise
 
-
 ORDER_EDGE_SEARCH_WIDTH = 10
 ORDER_EDGE_BG_WIDTH = 30
 ORDER_EDGE_JUMP_THRESH = 1.9

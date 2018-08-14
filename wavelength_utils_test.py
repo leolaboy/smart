@@ -699,7 +699,7 @@ def twodfit(dataX, dataY, dataZ):
         pl.figure('fit')
         pl.cla()
         pl.plot(newoh, dataZ_new, marker='x')
-        #pl.show()
+        pl.show()
 
         if (len(dataZ_new) > len(p0)) and pcov is not None:
 
@@ -749,7 +749,7 @@ def twodfit(dataX, dataY, dataZ):
 
         k += 1
 
-    #ax2.plot(__residual(p1, dataZ_new_forplot, dataX_new_forplot, dataY_new_forplot), 'ko-')
+    ax2.plot(__residual(p1, dataZ_new_forplot, dataX_new_forplot, dataY_new_forplot), 'ko-')
     
 
     if sigma >= 100.0:

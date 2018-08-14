@@ -271,10 +271,10 @@ def gen(reduced, out_dir):
         for frame in reduced.frames:
             
             spectrumPlot(out_dir, reduced.baseNames[frame], 'flux', order.flatOrder.orderNum, 
-                'counts', order.objSpec[frame], order.waveScale, order.calMethod)
+                'counts/s', order.objSpec[frame]/order.integrationTime, order.waveScale, order.calMethod)
              
             fitsSpectrum(out_dir, reduced.baseNames[frame], 'flux', order.flatOrder.orderNum, 
-                'counts', order.objSpec[frame], order.waveScale, header)
+                'counts/s', order.objSpec[frame]/order.integrationTime, order.waveScale, header)
 
         # wavelength fits
         for frame in reduced.frames:
@@ -286,7 +286,11 @@ def gen(reduced, out_dir):
         for frame in reduced.frames:
 
             fitsSpectrumAll(out_dir, reduced.baseNames[frame], 'all', order.flatOrder.orderNum, 
-                order.objSpec[frame], order.waveScale, order.noiseSpec[frame], order.skySpec[frame],header)
+                order.objSpec[frame]/order.integrationTime, 
+                order.waveScale,
+                order.noiseSpec[frame]/order.integrationTime, 
+                order.skySpec[frame]/order.integrationTime,
+                header)
 
 
         #
@@ -299,14 +303,14 @@ def gen(reduced, out_dir):
         
         for frame in frames:
             spectrumPlot(out_dir, reduced.baseNames[frame], 'sky', order.flatOrder.orderNum, 
-                'counts', order.skySpec[frame], order.waveScale, order.calMethod)
+                'counts/s', order.skySpec[frame]/order.integrationTime, order.waveScale, order.calMethod)
     
             fitsSpectrum(out_dir, reduced.baseNames[frame], 'sky', order.flatOrder.orderNum, 
-                'counts', order.skySpec[frame], order.waveScale, header)
+                'counts/s', order.skySpec[frame]/order.integrationTime, order.waveScale, header)
         
 
         #
-        # noise spectrum
+        # noise spectrum (divided by the integration time)
         #
         for frame in reduced.frames:
 
@@ -320,17 +324,17 @@ def gen(reduced, out_dir):
 
         for frame in reduced.frames:
             spectrumPlot(out_dir, reduced.baseNames[frame], 'noise', order.flatOrder.orderNum, 
-                'counts', order.noiseSpec[frame], order.waveScale, order.calMethod)
+                'counts/s', order.noiseSpec[frame]/order.integrationTime, order.waveScale, order.calMethod)
               
             fitsSpectrum(out_dir, reduced.baseNames[frame], 'noise', order.flatOrder.orderNum, 
-                'counts', order.noiseSpec[frame], order.waveScale, header)
+                'counts/s', order.noiseSpec[frame]/order.integrationTime, order.waveScale, header)
 
         for frame in reduced.frames:
             spectrumPlot2(out_dir, reduced.baseNames[frame], 'flux_vs_noise', order.flatOrder.orderNum, 
-                '', order.objSpec[frame], order.noiseSpec[frame], order.waveScale, order.calMethod)
+                'counts/s', order.objSpec[frame]/order.integrationTime, order.noiseSpec[frame]/order.integrationTime, order.waveScale, order.calMethod)
               
             fitsSpectrum2(out_dir, reduced.baseNames[frame], 'flux_vs_noise', order.flatOrder.orderNum, 
-                '', order.objSpec[frame], order.noiseSpec[frame], order.waveScale, header)
+                'counts/s', order.objSpec[frame]/order.integrationTime, order.noiseSpec[frame]/order.integrationTime, order.waveScale, header)
 
         #
         # generate multiSplectrumPlot to spectra

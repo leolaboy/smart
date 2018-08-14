@@ -82,7 +82,7 @@ class Order:
         """
         
         """
-        self.flatImg = []        
+        self.flatImg = []      
         self.normalizedFlatImg = []
         
         self.objImg = {}
