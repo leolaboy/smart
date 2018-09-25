@@ -161,15 +161,15 @@ def fixpix_rs(im, iternum=3, quiet=True):
                 hoti    = np.where(box == hotval)[0][0]
 
                 # coords in original image
-                hotx    = hoti % 5 + i-2 
-                hoty    = hoti / 5 + j-2
+                hotx    = int(hoti % 5 + i-2) 
+                hoty    = int(hoti / 5 + j-2)
 
                 coldval = np.min(box)
                 coldi   = np.where(box == coldval)[0][0]
 
                 # coords in original image
-                coldx   = coldi % 5 + i-2
-                coldy   = coldi / 5 + j-2
+                coldx   = int(coldi % 5 + i-2)
+                coldy   = int(coldi / 5 + j-2)
 
                                     # begin the decision process for the hottest pixel
   

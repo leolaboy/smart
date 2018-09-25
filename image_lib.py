@@ -198,6 +198,21 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
     """
     #print('OBJ RANGE:', obj_range)
     #sys.exit()
+
+    ### TESTING AREA XXX
+    """
+    print(obj_range)
+    print(sky_range_top, sky_range_bot)
+    import matplotlib.pyplot as plt
+    plt.figure(20)
+    plt.imshow(obj)
+    plt.figure(21)
+    plt.imshow(flat)
+    plt.figure(22)
+    plt.imshow(noise)
+    #plt.show()
+    #sys.exit()
+    """
     
     obj_sum     = np.sum(obj[i, :] for i in obj_range)
     flat_sum    = np.sum(flat[i, :] for i in obj_range)
@@ -206,6 +221,8 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
 
     sky_top_sum = np.sum(obj[i, :] for i in sky_range_top)
     sky_bot_sum = np.sum(obj[i, :] for i in sky_range_bot)
+    #print(sky_top_sum)
+    #print(sky_bot_sum)
     
     if len(sky_range_top) > 0:
         top_bg_mean = (sky_top_sum / len(sky_range_top)).mean()
@@ -217,6 +234,12 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
         bot_bg_mean = None
     
     sky_mean = (sky_top_sum + sky_bot_sum) / (len(sky_range_top) + len(sky_range_bot))
+    """
+    print(top_bg_mean)
+    print(bot_bg_mean)
+    print(sky_mean)
+    """
+
 
 #     sky_mean -= np.median(sky_mean) 
 
@@ -228,8 +251,25 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
     sky_noise_top_sum = np.sum(noise[i, :] for i in sky_range_top)
     sky_noise_bot_sum = np.sum(noise[i, :] for i in sky_range_bot)
     
-    k = np.square(len(obj_range)) / np.square((len(sky_range_top) + len(sky_range_bot)))
+    k = float(np.square(len(obj_range))) / float(np.square((len(sky_range_top) + len(sky_range_bot))))
+    """
+    print(k)
+    print(np.square(len(obj_range)) / np.square((len(sky_range_top) + len(sky_range_bot))))
+    print(np.square(len(obj_range)))
+    print(np.square((len(sky_range_top) + len(sky_range_bot))))
+    print()
+    """
     noise_sp = np.sqrt(obj_noise_sum + (k * (sky_noise_top_sum + sky_noise_bot_sum)))
+    """
+    print(obj_noise_sum)
+    print((k * (sky_noise_top_sum + sky_noise_bot_sum)))
+    print(sky_noise_top_sum)
+    print(sky_noise_bot_sum)
+    print(noise_sp)
+
+    plt.show()
+    sys.exit()
+    """
     
     if eta is not None:
         #etalon_sum  = np.sum(eta[i, :] for i in obj_range) 

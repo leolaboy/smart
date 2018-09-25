@@ -15,18 +15,22 @@ def calc_noise_img(obj, flat, integration_time):
     flat is expected to be normalized and both obj and flat are expected to be rectified
     """
     
-    G  = 5.8     
-    RN = 23.0
-    DC = 0.8
+    G  = 5.8  # e-/ADU    
+    RN = 23.0 # e-
+    DC = 0.8  # e-/second/pixel
     
     # calculate photon noise
-    noise = obj / G
+    #noise = obj / G # What is this?
+    noise = obj # This is ALREADY in ADU!
+    #noise = obj * G # This is in electrons
     
     # add read noise
-    noise += np.square(RN / G)
+    noise += np.square(RN / G) # This is in ADU
+    #noise += np.square(RN) # This is in electrons
     
     # add dark current noise
-    noise += (DC / G) * integration_time
+    noise += (DC / G) * integration_time # This is in ADU
+    #noise += (DC / G) * integration_time # This is in electrons
     
     # divide by normalized flat squared
     noise /= np.square(flat)
