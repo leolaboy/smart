@@ -14,12 +14,13 @@ from logging import INFO
 import Order
 import image_lib
 import imp
+import fixpix
 
 logger = logging.getLogger('obj')
 # main_logger = logging.getLogger('main')
 # main_logger = logging.getLogger('main')
 
-def reduce_frame(raw, out_dir, flatCacher=None, eta=None):
+def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
     """
     
     Arguments:
@@ -50,6 +51,10 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None):
 
     if eta is not None:
         reduced.etaImg = fits.getdata(raw.etaFns, ignore_missing_end=True)
+
+    if dark is not None:
+        reduced.hasDark = True
+    #    reduced.darkImg = fits.getdata(raw.darkFns, ignore_missing_end=True)
     
     # put object summary info into per-object log
     log_start_summary(reduced)
@@ -76,6 +81,28 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None):
             logger.debug('cosmic ray cleaning etalon frame complete')
 
         reduced.cosmicCleaned = True 
+
+    ### XXX TESTING AREA
+    '''
+    if config.params['no_clean']:
+        logger.info("bad pixel rejection on object frame inhibited by command line flag")
+
+    else:
+        logger.info('bad pixel cleaning object frame A')
+        reduced.objImg['A'] = fixpix.fixpix_rs(reduced.objImg['A'])
+        logger.debug('bad pixel cleaning object frame A complete')
+        if reduced.isPair:
+            logger.info('bad pixel cleaning object frame B')
+            reduced.objImg['B'] = fixpix.fixpix_rs(reduced.objImg['B'])
+            logger.debug('bad pixel cleaning object frame B complete')
+        if eta is not None:
+            logger.info('bad pixel cleaning etalon frame')
+            reduced.etaImg = fixpix.fixpix_rs(reduced.etaImg)
+            logger.debug('bad pixel cleaning etalon frame complete')
+
+        reduced.pixelCleaned = True 
+    '''
+    ### XXX TESTING AREA
            
     # if darks are available, combine them if there are more than one
     # and subtract from object frame(s) and flat
@@ -311,10 +338,10 @@ def find_global_wavelength_soln(reduced):
         
     # create arrays of col, 1/order, accepted wavelength
     # TODO: modify twodfit() to take list of lines rather than these constructed arrays
-    col = []
-    centroid = []
+    col       = []
+    centroid  = []
     order_inv = []
-    accepted = []
+    accepted  = []
     
     for order in reduced.orders:
         for line in order.lines:
@@ -326,6 +353,9 @@ def find_global_wavelength_soln(reduced):
     reduced.nLinesFound = len(col)
     for l in loggers:
         logging.getLogger(l).log(INFO, 'n sky lines identified = {:d}'.format(reduced.nLinesFound))
+    reduced.nELinesFound = len(col)
+    for l in loggers:
+        logging.getLogger(l).log(INFO, 'n etalon lines identified = {:d}'.format(reduced.nELinesFound))
     
     if config.params['int_c'] is True:
         logger.warning('using integer column numbers in wavelength fit')
@@ -400,6 +430,8 @@ def apply_wavelength_soln(reduced):
         if np.all(dx <= 0) or np.all(dx >= 0):
             # wavelength scale is monotonic
             order.waveScale = order.frameCalWaveScale
+            print('TEST1', order.waveScale)
+            np.save('wave_%s.npy'%order.flatOrder.orderNum, order.waveScale) 
             order.calMethod = 'frame sky line cal'
         else:
             logger.warning('wavelength scale not monotonic for order {}'.format(
@@ -464,6 +496,8 @@ def init(baseName, out_dir):
             logger.critical('output directory cannot be created')
         return    
 
+
+
 def log_start_summary(reduced):
     """
     """
@@ -492,13 +526,14 @@ def log_start_summary(reduced):
     logger.info('cross disperser angle = ' + str(reduced.getDispPos()) + ' deg')
     return
 
+
+
 def process_darks(raw, reduced):
     """
     
     """
     
     #TODO if there are < 3 darks should cosmic clean
-
     if len(raw.darkFns) > 0:
         reduced.hasDark = True
         logger.info(str(len(raw.darkFns)) + ' darks: ' + 

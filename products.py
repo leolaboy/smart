@@ -90,7 +90,7 @@ def log_fn(fn):
         file_count[0] += 1 
         return
 
-def gen(reduced, out_dir):
+def gen(reduced, out_dir, eta=None):
     """
     Given a ReducedDataSet object and a root output directory, generate all
     data products and store results in output directory and subdirectories.
@@ -170,7 +170,7 @@ def gen(reduced, out_dir):
     for order in reduced.orders:
             
         # extend header further with per-order data
-        header['FLATSCAL'] = (round(order.flatOrder.mean, 5), 
+        header['FLATSCAL'] = (round(order.flatOrder.median, 5), 
                 'flat field normalization scale factor')
         header['ECHLORD'] = (order.flatOrder.orderNum, 
                 'Echelle order number')
@@ -271,10 +271,10 @@ def gen(reduced, out_dir):
         for frame in reduced.frames:
             
             spectrumPlot(out_dir, reduced.baseNames[frame], 'flux', order.flatOrder.orderNum, 
-                'counts', order.objSpec[frame], order.waveScale, order.calMethod)
+                'counts/s', order.objSpec[frame]/order.integrationTime, order.waveScale, order.calMethod)
              
             fitsSpectrum(out_dir, reduced.baseNames[frame], 'flux', order.flatOrder.orderNum, 
-                'counts', order.objSpec[frame], order.waveScale, header)
+                'counts/s', order.objSpec[frame]/order.integrationTime, order.waveScale, header)
 
         # wavelength fits
         for frame in reduced.frames:
@@ -286,7 +286,11 @@ def gen(reduced, out_dir):
         for frame in reduced.frames:
 
             fitsSpectrumAll(out_dir, reduced.baseNames[frame], 'all', order.flatOrder.orderNum, 
-                order.objSpec[frame], order.waveScale, order.noiseSpec[frame], order.skySpec[frame],header)
+                order.objSpec[frame]/order.integrationTime, 
+                order.waveScale,
+                order.noiseSpec[frame]/order.integrationTime, 
+                order.skySpec[frame]/order.integrationTime,
+                header)
 
 
         #
@@ -299,14 +303,14 @@ def gen(reduced, out_dir):
         
         for frame in frames:
             spectrumPlot(out_dir, reduced.baseNames[frame], 'sky', order.flatOrder.orderNum, 
-                'counts', order.skySpec[frame], order.waveScale, order.calMethod)
+                'counts/s', order.skySpec[frame]/order.integrationTime, order.waveScale, order.calMethod)
     
             fitsSpectrum(out_dir, reduced.baseNames[frame], 'sky', order.flatOrder.orderNum, 
-                'counts', order.skySpec[frame], order.waveScale, header)
+                'counts/s', order.skySpec[frame]/order.integrationTime, order.waveScale, header)
         
 
         #
-        # noise spectrum
+        # noise spectrum (divided by the integration time)
         #
         for frame in reduced.frames:
 
@@ -320,17 +324,17 @@ def gen(reduced, out_dir):
 
         for frame in reduced.frames:
             spectrumPlot(out_dir, reduced.baseNames[frame], 'noise', order.flatOrder.orderNum, 
-                'counts', order.noiseSpec[frame], order.waveScale, order.calMethod)
+                'counts/s', order.noiseSpec[frame]/order.integrationTime, order.waveScale, order.calMethod)
               
             fitsSpectrum(out_dir, reduced.baseNames[frame], 'noise', order.flatOrder.orderNum, 
-                'counts', order.noiseSpec[frame], order.waveScale, header)
+                'counts/s', order.noiseSpec[frame]/order.integrationTime, order.waveScale, header)
 
         for frame in reduced.frames:
             spectrumPlot2(out_dir, reduced.baseNames[frame], 'flux_vs_noise', order.flatOrder.orderNum, 
-                '', order.objSpec[frame], order.noiseSpec[frame], order.waveScale, order.calMethod)
+                'counts/s', order.objSpec[frame]/order.integrationTime, order.noiseSpec[frame]/order.integrationTime, order.waveScale, order.calMethod)
               
             fitsSpectrum2(out_dir, reduced.baseNames[frame], 'flux_vs_noise', order.flatOrder.orderNum, 
-                '', order.objSpec[frame], order.noiseSpec[frame], order.waveScale, header)
+                'counts/s', order.objSpec[frame]/order.integrationTime, order.noiseSpec[frame]/order.integrationTime, order.waveScale, header)
 
         #
         # generate multiSplectrumPlot to spectra
@@ -770,10 +774,10 @@ def fitsSpectrumAll(outpath, base_name, title, order_num, cont, wave, noise, sky
     Generating a fits file of wavelength, flux, noise, and sky.
     Number of index is from 0 to 3.
     """
-    hdu = fits.PrimaryHDU(wave)
-    hdu1 = fits.PrimaryHDU(cont)
-    hdu2 = fits.PrimaryHDU(noise)
-    hdu3 = fits.PrimaryHDU(sky)
+    hdu     = fits.PrimaryHDU(wave)
+    hdu1    = fits.PrimaryHDU(cont)
+    hdu2    = fits.PrimaryHDU(noise)
+    hdu3    = fits.PrimaryHDU(sky)
     hdulist = fits.HDUList(hdu)
     hdulist.insert(1, hdu1)
     hdulist.insert(2, hdu2)

@@ -10,10 +10,10 @@ import products
 import dgn
 import DrpException
 
-def process_frame(fn1, fn2, obj_B_fn, out_dir, eta=None, override=False):
+def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, override=False):
     
-    flat_fn = None
-    obj_fn = None
+    flat_fn    = None
+    obj_fn     = None
     
     fn1_header = fits.PrimaryHDU.readfrom(fn1, ignore_missing_end=True).header
     fn2_header = fits.PrimaryHDU.readfrom(fn2, ignore_missing_end=True).header
@@ -23,6 +23,14 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, eta=None, override=False):
         eta_header = fits.PrimaryHDU.readfrom(eta, ignore_missing_end=True).header
         if eta_header['etalon'] == 1 and eta_header['calmpos'] == 1:
             eta_fn = eta
+
+    # Get the master dark frame if given
+    if dark is not None:
+        dark_header = fits.PrimaryHDU.readfrom(dark, ignore_missing_end=True).header
+        if dark_header['flat'] == 0 and dark_header['calmpos'] == 1 and \
+           dark_header['neon'] != 1 and dark_header['argon'] != 1 and dark_header['krypton'] != 1 and \
+           dark_header['xenon'] != 1:
+            dark_fn = dark
 
     # Get the flat and object fits
     if fn1_header['flat'] == 1 and fn1_header['calmpos'] == 1:
@@ -54,6 +62,10 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, eta=None, override=False):
     
     if create_raw_data_sets.flat_criteria_met(obj_header, flat_header, ignore_dispers=True) is False:
         raise DrpException.DrpException('flat is not compatible with object frame')
+
+    if dark is not None:
+        if create_raw_data_sets.dark_criteria_met(obj_header, dark_header) is False:
+            raise DrpException.DrpException('dark is not compatible with object frame')
     
     if obj_B_fn is not None:
         # confirm that A and B are not the same files
@@ -63,7 +75,7 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, eta=None, override=False):
         obj_B_header = fits.PrimaryHDU.readfrom(obj_B_fn, ignore_missing_end=True).header
         if create_raw_data_sets.is_valid_pair(obj_header, obj_B_header, override=override):
             if eta is not None:
-                rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header, eta=eta)
+                rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header, eta=eta, dark=dark)
             else: 
                 #print('Reducing AB pair, A=' + obj_fn + ', B=' + obj_B_fn)
                 rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header)
@@ -73,7 +85,7 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, eta=None, override=False):
             raise DrpException.DrpException('frames A and B are not a valid pair')
     else:
         if eta is not None:
-            rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header, eta=eta)
+            rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header, eta=eta, dark=dark)
         else:
             rawDataSet = RawDataSet.RawDataSet(obj_fn, None, obj_header)
 
@@ -89,7 +101,7 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, eta=None, override=False):
     logger = logging.getLogger('main')
 
     # generate reduced data set by reducing raw data set
-    reducedDataSet = reduce_frame.reduce_frame(rawDataSet, out_dir, eta=eta)
+    reducedDataSet = reduce_frame.reduce_frame(rawDataSet, out_dir, eta=eta, dark=dark)
     
     # write reduction summary to log file
     write_summary(reducedDataSet)
@@ -98,12 +110,12 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, eta=None, override=False):
     if config.params['no_products'] is True:
         logger.info('data product generation inhibited by command line switch')
     else:
-        products.gen(reducedDataSet, out_dir)
+        products.gen(reducedDataSet, out_dir, eta=eta)
 
     # if diagnostics mode is enabled, then produce diagnostic data products
     if config.params['dgn'] is True:
         logger.info('diagnostic mode enabled, generating diagnostic data products')
-        dgn.gen(reducedDataSet, out_dir)
+        dgn.gen(reducedDataSet, out_dir, eta=eta)
         
     return    
 
@@ -121,7 +133,7 @@ def write_summary(rds):
     v.append(('slit',                               '{}',       rds.getSlit()))
     v.append(('cross disperser angle (deg)',        '{:.2f}',   rds.getDispPos()))
     v.append(('Echelle angle (deg)',                '{:.2f}',   rds.getEchPos()))
-    v.append(('integration time (sec)',             '{:.0f}',     rds.getITime()))
+    v.append(('integration time (sec)',             '{:.0f}',   rds.getITime()))
 #     v.append(('n coadds',                       '{:d}',     rds.getNCoadds()))
     v.append(('n orders expected',                  '{:d}',     rds.Flat.nOrdersExpected))
     v.append(('n orders reduced',                   '{:d}',     rds.Flat.nOrdersFound))
@@ -129,8 +141,8 @@ def write_summary(rds):
     v.append(('SNR min',                            '{:.1f}',   rds.snrMin))
     v.append(('spatial peak width mean (pixels)',   '{:.1f}',   rds.wMean))
     v.append(('spatial peak width max (pixels)',    '{:.1f}',   rds.wMax))
-    v.append(('n sky lines found',                  '{:d}',     rds.nLinesFound))
-    v.append(('n sky lines used',                   '{:d}',     rds.nLinesUsed))
+    v.append(('n sky/etalon lines found',           '{:d}',     rds.nLinesFound))
+    v.append(('n sky/etalon lines used',            '{:d}',     rds.nLinesUsed))
     v.append(('RMS fit residual (Angstroms)',       '{:.3f}',   rds.frameCalRmsRes))
     
     for val in v:

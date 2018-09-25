@@ -12,6 +12,7 @@ import FlatOrder
 import nirspec_lib
 import image_lib
 from numpy.testing.utils import measure
+import matplotlib.pyplot as plt
 
 class Flat:
 
@@ -35,19 +36,19 @@ class Flat:
         names = ', '.join(str(x) for x in self.baseFns)
         self.logger.info('creating {} from {}'.format(self.fn, names))
 
-        self.flatImg = data
+        self.flatImg        = data
 
-        self.filterName = self.header['filname']
-        self.slit = self.header['slitname']
-        self.echelleAngle = self.header['echlpos']
+        self.filterName     = self.header['filname']
+        self.slit           = self.header['slitname']
+        self.echelleAngle   = self.header['echlpos']
         self.disperserAngle = self.header['disppos']
         
-        self.topEdgeImg = None          # top edge image (shift subtract)
-        self.botEdgeImg = None          # bottom edge image (shift subtract)
+        self.topEdgeImg     = None      # top edge image (shift subtract)
+        self.botEdgeImg     = None      # bottom edge image (shift subtract)
         self.topEdgeProfile = None      # top edge profiles
         self.botEdgeProfile = None      # bottom edge profiles
-        self.topEdgePeaks = None        # filtered top edge profile peaks
-        self.botEdgePeaks = None        # filtered bottom edge profile peaks
+        self.topEdgePeaks   = None      # filtered top edge profile peaks
+        self.botEdgePeaks   = None      # filtered bottom edge profile peaks
         
         self.nOrdersExpected = 0
         self.nOrdersFound = 0
@@ -84,6 +85,14 @@ class Flat:
             # get expected location of order on detector
             flatOrder.topCalc, flatOrder.botCalc, flatOrder.gratingEqWaveScale = self.gratingEq.evaluate(
                     orderNum, self.filterName, self.slit, self.echelleAngle, self.disperserAngle)
+
+            # TESTING TO PLOT ORDER CUTOUTS
+            #print(flatOrder.topCalc, flatOrder.botCalc)
+            #plt.imshow(self.flatImg, origin='lower')
+            #plt.axhline(flatOrder.topCalc, c='r', ls='--')
+            #plt.axhline(flatOrder.botCalc, c='b', ls='--')
+            #plt.show()
+            #sys.exit()
             
             self.logger.info('predicted top edge location = {:.0f} pixels'.format(flatOrder.topCalc))
             self.logger.info('predicted bot edge location = {:.0f} pixels'.format(flatOrder.botCalc))

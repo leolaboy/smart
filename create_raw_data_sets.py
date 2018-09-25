@@ -230,7 +230,8 @@ def dark_criteria_met(obj_header, dark_header):
         True if the dark corresponds to the object frame, False otherwise.
         
     """
-    eq_kwds = ['elaptime']
+    #eq_kwds = ['elaptime']
+    eq_kwds = ['echlpos', 'filname', 'slitname']
     for kwd in eq_kwds:
         if obj_header[kwd] != dark_header[kwd]:
             return False

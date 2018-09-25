@@ -21,7 +21,7 @@ import nsdrp_koa
 #from DrpException import DrpException
 #import FlatCacher
 
-VERSION = '0.9.17.1'
+VERSION = '0.9.17.2'
 
 warnings.filterwarnings('ignore', category=UserWarning, append=True)
 
@@ -54,6 +54,7 @@ def main():
     config.params['npy']                       = args.npy
     config.params['no_cosmic']                 = args.no_cosmic
     config.params['no_products']               = args.no_products
+    config.params['no_clean']                  = args.no_clean
     if args.obj_window is not None:
         config.params['obj_window']            = int(args.obj_window)
     if args.sky_window is not None:
@@ -67,6 +68,7 @@ def main():
         config.params['eta_filename']          = args.eta_filename
         config.params['etalon_filename']       = args.etalon_filename
         config.params['etalon_envar_override'] = True
+    config.params['dark_file']                 = args.dark_filename
     config.params['int_c']                     = args.int_c
     config.params['lla']                       = args.lla
     config.params['pipes']                     = args.pipes
@@ -85,7 +87,7 @@ def main():
 #     try:
     if config.params['cmnd_line_mode'] is True:
         init(config.params['out_dir'])
-        nsdrp_cmnd.process_frame(args.arg1, args.arg2, args.b, config.params['out_dir'], eta=args.eta_filename, override=args.override_ab)
+        nsdrp_cmnd.process_frame(args.arg1, args.arg2, args.b, config.params['out_dir'], eta=args.eta_filename, override=args.override_ab, dark=args.dark_filename)
     else:
         init(args.arg2, args.arg1)
         nsdrp_koa.process_dir(args.arg1, args.arg2)
@@ -228,6 +230,8 @@ def parse_cmnd_line_args():
             action='store_true')
     parser.add_argument('-no_products', help='inhibits data product generation', 
             action='store_true')
+    parser.add_argument('-no_clean', help='inhibits bad pixel cleaning', 
+            action='store_true')
 #     , default=config.DEFAULT_COSMIC)
     parser.add_argument('-obj_window', help='object extraction window width in pixels')
     #default=config.DEFAULT_OBJ_WINDOW)
@@ -238,6 +242,7 @@ def parse_cmnd_line_args():
     parser.add_argument('-oh_filename', help='path and filename of OH emission line catalog file')
     parser.add_argument('-eta_filename', help='path and filename of Etalon lamp fits file')
     parser.add_argument('-etalon_filename', help='path and filename of Etalon line catalog file')
+    parser.add_argument('-dark_filename', help='path and filename of the master dark file')
     parser.add_argument('-int_c', help='user integer column values rather than fractional values \
             determined by centroiding in wavelength fit',
             action='store_true')

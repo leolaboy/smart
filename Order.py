@@ -106,6 +106,8 @@ class Order:
         Attribute:
         
             srNormFlatImg: Normalized flat order image before spectral rectification.
+
+            srNormEtaImg: Normalized etalon order image before spectral rectification.
             
             srFlatObjAImg: Flat-fielded object A order image before spectral rectification.
             
@@ -115,6 +117,7 @@ class Order:
         
         """
         self.srNormFlatImg = []
+        self.srNormEtaImg = []
         
         self.srFfObjImg = {}
         for frame in self.frames:
@@ -200,6 +203,7 @@ class Order:
         
         """
         self.flatSpec = []
+        self.etalonSpec = []
         self.noiseSpec = {}
         for frame in frames:
             self.noiseSpec[frame] = []

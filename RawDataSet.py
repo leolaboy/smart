@@ -54,6 +54,9 @@ class RawDataSet:
 
         if eta is not None:
             self.etaFns = eta
+
+        if dark is not None:
+            self.darkFns = [dark]
  
         
     def __deriveBaseName(self, fn):
@@ -117,7 +120,7 @@ class RawDataSet:
                 self.objHeader['echlpos'], self.objHeader['filname'], self.objHeader['slitname'])
 
     
-    def combineFlats(self): # XXX Can't tell if this is being used, or if these functions are in Flat.py
+    def combineFlats(self): # Can't tell if this is being used, or if these functions are in Flat.py
         """Median combines flats and returns resulting image array
         """
         if len(self.flatFns) == 0:
@@ -130,14 +133,14 @@ class RawDataSet:
         return np.median(flatDataList, axis=0)
 
          
-    def combineDarks(self): # XXX I don't think this is being implemented yet      
+    def combineDarks(self): # I don't think this is being implemented yet      
         """Median combines darks and returns resulting image array
         """
         if len(self.darkFns) == 0:
             return None
         if len(self.darkFns) == 1:
             return(fits.getdata(self.darkFns[0], ignore_missing_end=True))
-        if len(self.darkFns) > 0:
+        if len(self.darkFns) > 1:
             darkData = []
             for fn in self.darkFns:
                 darkData.append(fits.getdata(fn, ignore_missing_end=True))   
@@ -151,7 +154,7 @@ class RawDataSet:
             return None
         if len(self.eatFns) == 1:
             return(fits.getdata(self.etaFns[0], ignore_missing_end=True))
-        if len(self.eatFns) > 0:
+        if len(self.eatFns) > 1:
             eatData = []
             for fn in self.eatFns:
                 eatData.append(fits.getdata(fn, ignore_missing_end=True))   

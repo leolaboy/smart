@@ -5,6 +5,7 @@ import cosmics
 #from __builtin__ import None
 import os
 
+
 def rectify_spatial(data, curve):
     """
     Shift data, column by column, along y-axis according to curve.
@@ -47,6 +48,7 @@ def rectify_spatial(data, curve):
     return((np.array(rectified)).transpose())
 
 
+
 def rectify_spectral(data, curve, eta=None):
     """
     Shift data, row by row, along x-axis according to curve.
@@ -63,7 +65,7 @@ def rectify_spectral(data, curve, eta=None):
     #sys.exit()
     
     # pivot curve around peak 
-    # and change sign so shift is corrective (I don't think this is correct)
+    # and change sign so shift is corrective 
     profile = data.sum(axis=1)
     peak = np.argmax(profile)
     curve_p = -1.0 * (curve - curve[peak])
@@ -77,6 +79,7 @@ def rectify_spectral(data, curve, eta=None):
     return(np.array(rectified))
 
 
+
 def normalize(data, on_order, off_order):
     """
     data is the image cut-out plus padding
@@ -87,11 +90,12 @@ def normalize(data, on_order, off_order):
     off_order is array of same size as data with 
     off-order (padding) pixels set to 1.0 and on order pixels sto to 0.0.
     
-    returns normalized data array and mean of the on-order pixels
+    returns normalized data array and median(mean) of the on-order pixels
     """
     
-    m = np.mean(data)
-    non = np.count_nonzero(on_order)
+    #m    = np.mean(data)
+    m    = np.median(data)
+    non  = np.count_nonzero(on_order)
     noff = np.count_nonzero(off_order)
     
     data_copy = data
@@ -102,20 +106,24 @@ def normalize(data, on_order, off_order):
     # ignore pixels beyond column 1000 by setting value to 1.0
     data_copy[:, 1000:] = 1.0
 
-    # take mean of only the on-order pixels
-    mean = np.ma.masked_array(data_copy, mask=off_order).mean()
+    # take median (mean) of only the on-order pixels
+    #mean = np.ma.masked_array(data_copy, mask=off_order).mean()
+    median = np.ma.median(np.ma.masked_array(data_copy, mask=off_order))
     
     # create normalized data array
-    normalized = (data_copy * on_order) / mean
+    #normalized = (data_copy * on_order) / mean
+    normalized = (data_copy * on_order) / median
 
-    # around the edges of the order can blow up when div by mean, set those to one
+    # around the edges of the order can blow up when div by median (mean), set those to one
     normalized[np.where(normalized > 10.0)] = 1.0
 
-    # avoid zeroes (not to sure about these)
+    # avoid zeroes (not too sure about these)
     normalized[np.where(normalized == 0.0)] = 1.0
     normalized[np.where(normalized < 0.2)] = 1.0
 
-    return normalized, mean
+    #return normalized, mean
+    return normalized, median
+
 
 
 def cosmic_clean(data):
@@ -131,6 +139,7 @@ def cosmic_clean(data):
     
     c.run(max_iter)
     return(c.cleanarray)
+
 
 
 def get_extraction_ranges(image_width, peak_location, obj_w, sky_w, sky_dist):
@@ -183,15 +192,17 @@ def get_extraction_ranges(image_width, peak_location, obj_w, sky_w, sky_dist):
 
 
    
-def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot):
+def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, eta=None):
     
     """
     """
+    #print('OBJ RANGE:', obj_range)
+    #sys.exit()
     
-    obj_sum = np.sum(obj[i, :] for i in obj_range)
-    flat_sum = np.sum(flat[i, :] for i in obj_range)
+    obj_sum     = np.sum(obj[i, :] for i in obj_range)
+    flat_sum    = np.sum(flat[i, :] for i in obj_range)
     
-    flat_sp = flat_sum / len(obj_range)
+    flat_sp     = flat_sum / len(obj_range)
 
     sky_top_sum = np.sum(obj[i, :] for i in sky_range_top)
     sky_bot_sum = np.sum(obj[i, :] for i in sky_range_bot)
@@ -209,21 +220,43 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot):
 
 #     sky_mean -= np.median(sky_mean) 
 
-    obj_sp = obj_sum - (len(obj_range) * sky_mean)
+    obj_sp            = obj_sum - (len(obj_range) * sky_mean)
 
-    sky_sp = sky_mean - sky_mean.mean() # why this?
+    sky_sp            = sky_mean - sky_mean.mean() # why this?
     
-    obj_noise_sum = np.sum(noise[i, :] for i in obj_range)
+    obj_noise_sum     = np.sum(noise[i, :] for i in obj_range)
     sky_noise_top_sum = np.sum(noise[i, :] for i in sky_range_top)
     sky_noise_bot_sum = np.sum(noise[i, :] for i in sky_range_bot)
     
     k = np.square(len(obj_range)) / np.square((len(sky_range_top) + len(sky_range_bot)))
     noise_sp = np.sqrt(obj_noise_sum + (k * (sky_noise_top_sum + sky_noise_bot_sum)))
     
-    return obj_sp, flat_sp, sky_sp, noise_sp, top_bg_mean, bot_bg_mean
+    if eta is not None:
+        #etalon_sum  = np.sum(eta[i, :] for i in obj_range) 
+        etalon_sum  = np.sum(eta[10:-10, :], axis=0)
+        etalon_sub  = etalon_sum - np.median(etalon_sum) # put the floor at ~0
+        etalon_norm = etalon_sub / np.max(etalon_sub) * 0.9 # normalize for comparison to synthesized etalon
+        etalon_sp   = etalon_norm + 0.9 # Add to the continuum for comparison to synthesized etalon
+        
+        #print(etalon_norm)
+        #print(etalon_norm + 0.9)
+        #import matplotlib.pyplot as plt
+        #plt.figure(1019)
+        #plt.plot(etalon_norm, c='r', alpha=0.5)
+        #plt.plot(etalon_sp, c='b', alpha=0.5)
+        #plt.show(block=False)
+        #sys.exit()
+        
+        return obj_sp, flat_sp, etalon_sp, sky_sp, noise_sp, top_bg_mean, bot_bg_mean
+    else:
+        return obj_sp, flat_sp, sky_sp, noise_sp, top_bg_mean, bot_bg_mean
+
+
 
 def gaussian(x, a, b, c):
     return(a * np.exp(-(x - b)**2 / c**2))
+
+
 
 def cut_out(data, top, bot, padding):
     try:    

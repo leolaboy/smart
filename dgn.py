@@ -36,7 +36,7 @@ subdirs = dict([
                 ('wavelength_scale.png','wavelength')
                 ])
 
-def gen(reduced, out_dir):
+def gen(reduced, out_dir, eta=None):
     
 
     logger.info('generating diagnostic data products for {}...'.format(reduced.getBaseName()))
@@ -54,14 +54,14 @@ def gen(reduced, out_dir):
     
     # construct arrays for per-order wavelength table
     order_num = []
-    col = []
-    centroid = []
-    source = []
-    wave_exp = []
-    wave_fit = []
-    res = []
-    peak = []
-    slope = []
+    col       = []
+    centroid  = []
+    source    = []
+    wave_exp  = []
+    wave_fit  = []
+    res       = []
+    peak      = []
+    slope     = []
     
     for order in reduced.orders:
         if order.orderCalSlope > 0.95 and order.orderCalSlope < 1.05:
@@ -134,13 +134,15 @@ def gen(reduced, out_dir):
             img = order.srFfObjImg['A']
         spatrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, img, order.srNormFlatImg)
         
-#         specrect_plot(out_dir, reduced.baseName, order.orderNum, 
-#                 order.srFlatObjAImg, order.flattenedObjAImg)
+        if eta is not None:
+            specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.srNormEtaImg, order.ffEtaImg, eta=eta)
+        else:
+            specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.srFlatObjAImg, order.flattenedObjAImg)
        
         #
         # sky lines plot and table
         #
-        skyLinesPlot(out_dir, order)
+        skyLinesPlot(out_dir, order, eta=eta)
         skyLinesAsciiTable(out_dir, reduced.baseNames['A'], order)
         
         wavelengthScalePlot(out_dir, reduced.baseNames['A'], order)
@@ -148,6 +150,7 @@ def gen(reduced, out_dir):
     logger.info('done generating diagnostic data products')
     
     
+
 def constructFileName(outpath, base_name, order, fn_suffix):
     if order is None:
         return outpath + '/diagnostics/' + subdirs[fn_suffix] + '/' + base_name + '_' + fn_suffix
@@ -155,6 +158,7 @@ def constructFileName(outpath, base_name, order, fn_suffix):
         #return fn[:fn.rfind('_') + 1] + str(order) + fn[fn.rfind('_'):]    
         return outpath + '/diagnostics/' + subdirs[fn_suffix] + '/' + base_name + \
             '_' + str(order) + '_' + fn_suffix
+
 
 
 def edges_plot(outpath, base_name, top_profile, bot_profile, top_peaks, bot_peaks):
@@ -180,6 +184,7 @@ def edges_plot(outpath, base_name, top_profile, bot_profile, top_peaks, bot_peak
     pl.savefig(constructFileName(outpath, base_name, None, 'edges.png'))
     pl.close()    
     
+
     
 def tops_bots_plot(outpath, base_name, tops, bots):
     
@@ -213,6 +218,8 @@ def tops_bots_plot(outpath, base_name, tops, bots):
     pl.savefig(constructFileName(outpath, base_name, None, 'top_bot_edges.png'))
     pl.close()
     
+
+
 def traces_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, flat_img, top_trace, 
             bot_trace):
     
@@ -250,6 +257,8 @@ def traces_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, flat
     pl.savefig(constructFileName(outpath, obj_base_name, order_num, 'traces.png'))
     pl.close()
     
+
+
 def order_location_plot(outpath, obj_base_name, flat_base_name, flat_img, obj_img, orders):
     
     pl.figure('orders', facecolor='white', figsize=(8, 5))
@@ -294,6 +303,8 @@ def order_location_plot(outpath, obj_base_name, flat_base_name, flat_img, obj_im
     pl.savefig(constructFileName(outpath, obj_base_name, None, 'traces.png'))
     pl.close()
     
+
+
 def cutouts_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, flat_img, 
             top_trace, bot_trace, trace):
     
@@ -328,6 +339,8 @@ def cutouts_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, fla
     pl.savefig(constructFileName(outpath, obj_base_name, order_num, 'cutouts.png'))
     pl.close()
     
+
+
 def spatrect_plot(outpath, base_name, order_num, obj, flat):
 
     pl.figure('spatially rectified', facecolor='white', figsize=(8, 5))
@@ -393,7 +406,7 @@ def spatrect_plot(outpath, base_name, order_num, obj, flat):
 #     pl.savefig(constructFileName(outpath, base_name, order_num, 'specrect.png'))
 #     pl.close()
     
-def specrect_plot(outpath, base_name, order_num, before, after):
+def specrect_plot(outpath, base_name, order_num, before, after, eta=None):
     
     pl.figure('spectral rectify', facecolor='white')
     pl.cla()
@@ -417,6 +430,7 @@ def specrect_plot(outpath, base_name, order_num, before, after):
     
     fn = constructFileName(outpath, base_name, order_num, 'specrect.png')
     pl.savefig(fn)
+    #pl.show()
     pl.close()
 
     return
@@ -478,19 +492,20 @@ def perOrderWavelengthCalAsciiTable(outpath, base_name, order, col, centroid, so
     return
 
     
-def skyLinesPlot(outpath, order):
+def skyLinesPlot(outpath, order, eta=None):
     """
     Always uses frame A.
     """
     
-    pl.figure('sky lines', facecolor='white', figsize=(8, 6))
+    pl.figure('sky/etalon lines', facecolor='white', figsize=(8, 6))
     pl.cla()
-    pl.suptitle("sky lines" + ', ' + order.baseNames['A'] + ", order " + 
+    pl.suptitle("sky/etalon lines" + ', ' + order.baseNames['A'] + ", order " + 
             str(order.flatOrder.orderNum), fontsize=14)
 #     pl.rcParams['ytick.labelsize'] = 8
 
     syn_plot = pl.subplot(2, 1, 1)
-    syn_plot.set_title('synthesized sky')
+    if eta is not None: syn_plot.set_title('synthesized etalon')
+    else: syn_plot.set_title('synthesized sky')
     syn_plot.set_xlim([0, 1024])
     ymin = np.amin(order.synthesizedSkySpec) - ((np.amax(order.synthesizedSkySpec) - np.amin(order.synthesizedSkySpec)) * 0.1)
     ymax = np.amax(order.synthesizedSkySpec) + ((np.amax(order.synthesizedSkySpec) - np.amin(order.synthesizedSkySpec)) * 0.1)
@@ -500,16 +515,24 @@ def skyLinesPlot(outpath, order):
                  (0.3, 0.8), xycoords="figure fraction")
     
     sky_plot = pl.subplot(2, 1, 2)
-    sky_plot.set_title('sky')
-    sky_plot.set_xlim([0, 1024])
-    ymin = np.amin(order.skySpec['A']) - ((np.amax(order.skySpec['A']) - np.amin(order.skySpec['A'])) * 0.1)
-    ymax = np.amax(order.skySpec['A']) + ((np.amax(order.skySpec['A']) - np.amin(order.skySpec['A'])) * 0.1)
-    sky_plot.set_ylim([ymin, ymax])
-    sky_plot.plot(order.skySpec['A'], 'b-', linewidth=1)
+    if eta is not None:
+        sky_plot.set_title('etalon')
+        sky_plot.set_xlim([0, 1024])
+        ymin = np.amin(order.etalonSpec) - ((np.amax(order.etalonSpec) - np.amin(order.etalonSpec)) * 0.1)
+        ymax = np.amax(order.etalonSpec) + ((np.amax(order.etalonSpec) - np.amin(order.etalonSpec)) * 0.1)
+        sky_plot.set_ylim([ymin, ymax])
+        sky_plot.plot(order.etalonSpec, 'b-', linewidth=1)
+    else:
+        sky_plot.set_title('sky')
+        sky_plot.set_xlim([0, 1024])
+        ymin = np.amin(order.skySpec['A']) - ((np.amax(order.skySpec['A']) - np.amin(order.skySpec['A'])) * 0.1)
+        ymax = np.amax(order.skySpec['A']) + ((np.amax(order.skySpec['A']) - np.amin(order.skySpec['A'])) * 0.1)
+        sky_plot.set_ylim([ymin, ymax])
+        sky_plot.plot(order.skySpec['A'], 'b-', linewidth=1)
     
     ymin, ymax = sky_plot.get_ylim()
     dy = (ymax - ymin) / 4
-    y = ymin + dy/8
+    y  = ymin + dy/8
     for line in order.lines:
         if line.frameFitOutlier == False:
             c = 'k--'
@@ -528,6 +551,8 @@ def skyLinesPlot(outpath, order):
     pl.savefig(fn)
     pl.close()
     return
+
+
 
 def skyLinesAsciiTable(outpath, base_name, order):
     

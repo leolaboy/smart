@@ -21,6 +21,7 @@ class ReducedDataSet:
         flatKOAIds:
         darkSubtracted:
         cosmicCleaned:
+        pixelCleaned:
         objA:
         objB:
         objAB:
@@ -71,6 +72,7 @@ class ReducedDataSet:
         self.hasDark        = False
         self.darkSubtracted = False
         self.cosmicCleaned  = False
+        self.pixelCleaned   = False
         self.hasEta         = False
         
 
@@ -90,6 +92,9 @@ class ReducedDataSet:
         
         self.nLinesFound = 0
         self.nLinesUsed  = 0
+
+        self.nELinesFound = 0
+        self.nELinesUsed  = 0
         
         self.frameCalAvailable = False
         self.frameCalRmsRes    = None  # rms per-frame fit residual
@@ -162,6 +167,6 @@ class ReducedDataSet:
                 frames.append('B')
             for frame in frames:
                 self.objImg[frame]  = np.subtract(self.objImg[frame], self.dark)
-            self.flatImg = np.subtract(self.flatImg, self.dark)
+            self.flatImg = np.subtract(self.flatImg, self.dark) 
             self.darkSubtracted = True
             

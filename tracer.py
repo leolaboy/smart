@@ -19,9 +19,9 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, eta=None):
 
     if start == 49: 
         PLOT = False
-        import matplotlib.pyplot as plt
-        plt.imshow(data, origin='lower')
-        plt.show(block=False)
+        #import matplotlib.pyplot as plt
+        #plt.imshow(data, origin='lower')
+        #plt.show(block=False)
     else: 
         PLOT = False
 
@@ -30,6 +30,7 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, eta=None):
     else: 
         stepcount = 1
 
+    #print('trace', trace[0])
     for i in range(1, data.shape[1]):
         #print('I',i)
         
@@ -81,10 +82,19 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, eta=None):
             Xs = np.arange(len(np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=1)))
             Ys = np.sum(data[int(ymin):int(ymax) + 1, i:i+stepcount], axis=1) 
             guess1 = np.where(Ys == np.max(Ys))[0][0]
+            #guess1 = np.median(Xs)
             popt, pcov = op.curve_fit(cat.NormDist, Xs, 
                                                     Ys, 
                                                     p0=[guess1, 2, np.median(Ys), np.max(Ys)], maxfev=1000000) # Where should a pixel start? (0, 1, 0.5?)
             trace[i] = popt[0] + ymin
+            """
+            print(popt[0], popt[0]+ymin)
+            plt.figure(198)
+            plt.plot(Xs, Ys)
+            plt.plot(Xs, cat.NormDist(Xs, *popt), 'r--')
+            plt.show()
+            #sys.exit() 
+            """
         else: 
             trace[i] = scipy.ndimage.measurements.center_of_mass(
                               data[int(ymin):int(ymax) + 1, i] - bgMean)[0] + ymin

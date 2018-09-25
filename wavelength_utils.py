@@ -16,21 +16,22 @@ import pylab as pl
 #import statsmodels.api as smapi
 from statsmodels.formula.api import ols
 import config
+import matplotlib.pyplot as plt
 
 import logging
-from scipy.signal._peak_finding import argrelextrema
+from scipy.signal._peak_finding import argrelextrema, find_peaks_cwt
 
 logger = logging.getLogger('obj')
 
 
-MAX_SHIFT = 50
-DISP_LOWER_LIMIT = 0.95
-DISP_UPPER_LIMIT = 1.05
+MAX_SHIFT         = 50
+DISP_LOWER_LIMIT  = 0.95
+DISP_UPPER_LIMIT  = 1.05
 #OH_FILE_NAME = './ir_ohlines.dat'
 GAUSSIAN_VARIANCE = 0.2
 
 
-def synthesize_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc):
+def synthesize_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc, eta=None):
     
     x = np.array(oh_wavelengths)
     y = np.array(oh_intensities)
@@ -38,18 +39,22 @@ def synthesize_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc):
     if y.any():
         synthesized_sky = y[0]
     else:
-        raise ValueError('no reference OH line data')
+        raise ValueError('no reference OH/Etalon line data')
 
     for i in np.arange(0, x.size):
         if y[i] > 0.01:
-            g = y[i] * np.exp(-(wavelength_scale_calc - x[i]) ** 2.0 / 
-                    (2.0 * GAUSSIAN_VARIANCE ** 2.0))
+            if eta is not None:
+                g = y[i] * np.exp(-(wavelength_scale_calc - x[i]) ** 2.0 / (2.0 * (2*GAUSSIAN_VARIANCE) ** 2.0))
+            else:
+                g = y[i] * np.exp(-(wavelength_scale_calc - x[i]) ** 2.0 / (2.0 * GAUSSIAN_VARIANCE ** 2.0))
             
             synthesized_sky = synthesized_sky + g
 
     return synthesized_sky
         
-def line_id(order, oh_wavelengths, oh_intensities):
+
+
+def line_id(order, oh_wavelengths, oh_intensities, eta=None):
     """
     Given real sky spectrum, synthesized sky spectrum, estimated wavelength scale based on 
     evaluation of grating equation, and accepted OH emission line wavelengths and relative
@@ -65,25 +70,58 @@ def line_id(order, oh_wavelengths, oh_intensities):
     
     """
     # find wavelength shift
-    order.waveShift = find_wavelength_shift(order.skySpec['A'], order.synthesizedSkySpec,
-            order.flatOrder.gratingEqWaveScale)
+
+    #plt.figure(111)
+    #plt.scatter(oh_wavelengths, oh_intensities, c='r', alpha=0.5)
+
+    if eta is not None:
+        #print(order.flatOrder.gratingEqWaveScale)
+        #sys.exit()
+        order.waveShift = find_wavelength_shift(order.etalonSpec, order.synthesizedSkySpec,
+                order.flatOrder.gratingEqWaveScale, eta=eta)
+
+    else:
+        order.waveShift = find_wavelength_shift(order.skySpec['A'], order.synthesizedSkySpec,
+                order.flatOrder.gratingEqWaveScale)
  
     if abs(order.waveShift) > MAX_SHIFT:
-        logger.warning('measured wavelength shift of {:.1f} exceeds threshold of {:.0f}'.format(
+        logger.warning('measured wavelength shift of {:.1f} pixels exceeds threshold of {:.0f}'.format(
                 order.waveShift, MAX_SHIFT))
         return None
         
-    logger.info('wavelength scale shift = ' + str(round(order.waveShift, 3)) + ' pixels')   
+    #logger.info('wavelength scale shift = ' + str(round(order.waveShift, 3)) + ' pixels')   
+    logger.info('wavelength scale shift = ' + str(round(order.waveShift, 3)) + ' angstroms')   
     wavelength_scale_shifted = order.flatOrder.gratingEqWaveScale + order.waveShift   
 
+    
+    #plt.figure(1011)
+    #print(wavelength_scale_shifted)
+    #print(oh_wavelengths)
+    #print(oh_intensities)
+    #plt.plot(wavelength_scale_shifted, order.etalonSpec, c='b', alpha=0.5)
+    #plt.scatter(oh_wavelengths, oh_intensities, c='r', alpha=0.5)
+    #plt.show(block=False)
+    #sys.exit()
+    
+
     # match sky lines
-    id_tuple = identify(
-            order.skySpec['A'], wavelength_scale_shifted, oh_wavelengths, oh_intensities)
+    if eta is not None:
+        id_tuple = identify(
+                order.etalonSpec, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=eta)
+    else:
+        id_tuple = identify(
+                order.skySpec['A'], wavelength_scale_shifted, oh_wavelengths, oh_intensities)
+
     if id_tuple is not None:
         matchesdx, matchesohx, matchesidx = id_tuple
     else:
         matchesdx, matchesohx, matchesidx = np.array([]), np.array([]), np.array([])
 
+    #plt.figure(1011)
+    #plt.plot(wavelength_scale_shifted, order.etalonSpec, c='b', alpha=0.5)
+    #plt.scatter(oh_wavelengths, oh_intensities, c='r', alpha=0.5)
+    #plt.show()
+    #sys.exit()
     
 #     if order.isPair:
 #         id_tuple = identify(
@@ -98,10 +136,23 @@ def line_id(order, oh_wavelengths, oh_intensities):
           
     p = np.polyfit(matchesohx, matchesdx, deg=1)
     # polyfit() returns highest power polynomial coefficient first, so p[0] is slope.
+
+    #plt.figure(1078)
+    #plt.scatter(matchesohx, matchesdx)
+    #plt.plot(np.linspace(np.min(matchesohx), np.max(matchesohx)), z00(np.linspace(np.min(matchesohx), np.max(matchesohx))), 'r--')
+    #plt.show()
     disp = p[0]
     
     if DISP_UPPER_LIMIT > abs(disp) > DISP_LOWER_LIMIT:
         logger.info('slope of accepted vs measured wavelengths = ' + str(round(disp, 3)))
+
+        # XXX Add in the RMS of the fit to the logger
+        z00 = np.poly1d(p)
+        residual = np.abs(  z00(matchesohx) - matchesdx)            
+        var      = ((residual ** 2).sum()) / (len(matchesdx) - 1)
+        sigma    = np.sqrt(var)
+        logger.info('RMS fit residual (Angstroms) = ' + str(round(sigma, 3)))
+
         # return column, wavelength pairs as a list of tuples
         lines = []
         for i in range(len(matchesdx)):
@@ -110,6 +161,11 @@ def line_id(order, oh_wavelengths, oh_intensities):
     else:
         logger.warning('per-order wavelength fit slope out of limits, not using sky lines from this order')
         return None
+
+    #plt.figure(1078)
+    #plt.scatter(matchesohx, matchesdx)
+    #plt.plot(np.linspace(np.min(matchesohx), np.max(matchesohx)), z00(np.linspace(np.min(matchesohx), np.max(matchesohx))), 'r--')
+    #plt.show()
 
 
 # def read_oh_file():
@@ -133,6 +189,7 @@ def line_id(order, oh_wavelengths, oh_intensities):
 #             oh_intensities.append(float(tokens[1]))
 # 
 #     return oh_wavelengths, oh_intensities
+
 
 def get_oh_lines():
     """
@@ -224,7 +281,7 @@ def get_etalon_lines():
 
  
 
-def gen_synthesized_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc):
+def gen_synthesized_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc, eta=None):
     """
     """
     x = np.array(oh_wavelengths)
@@ -237,24 +294,31 @@ def gen_synthesized_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc):
 
     for i in np.arange(0, x.size):
         if y[i] > 0.01:
-            g = y[i] * np.exp(-(wavelength_scale_calc - x[i]) ** 2.0 / (2.0 * GAUSSIAN_VARIANCE ** 2.0))
+            if eta is not None:
+                g = y[i] * np.exp(-(wavelength_scale_calc - x[i]) ** 2.0 / (2.0 * (2*GAUSSIAN_VARIANCE) ** 2.0))
+            else:
+                g = y[i] * np.exp(-(wavelength_scale_calc - x[i]) ** 2.0 / (2.0 * GAUSSIAN_VARIANCE ** 2.0))
             all_g = all_g + g
 
     return all_g
 
 
-def find_wavelength_shift(sky, gauss_sky, grating_eq_wave_scale):
+
+def find_wavelength_shift(sky, gauss_sky, grating_eq_wave_scale, eta=None):
     
     if len(sky) > 0:
-        sky_n = sky - sky.mean()
+        if eta is not None:
+            sky_n = sky
+        else:
+            sky_n = sky - sky.mean()
     else:
-        logger.error('sky spectrum length is zero')
+        logger.error('sky/etalon spectrum length is zero')
         return None
  
     ohg = np.array([grating_eq_wave_scale, gauss_sky])  # ohg is a synthetic spectrum of gaussians
  
     if not ohg.any():
-        logger.error('no synthetic sky lines in wavelength range')
+        logger.error('no synthetic sky/etalon lines in wavelength range')
         return None
  
     xcorrshift = max_corr(ohg[1], sky_n)
@@ -264,41 +328,95 @@ def find_wavelength_shift(sky, gauss_sky, grating_eq_wave_scale):
  
     delta_x = (ohg[0][-1] - ohg[0][0]) / float(ohg[0].size)
 
+    if eta is not None:
+
+        sky_n -= np.amin(sky_n)
+        coeffs = np.polyfit(np.arange(len(sky_n)), sky_n, 9)
+        s_fit  = np.polyval(coeffs, np.arange(len(sky_n)))
+        sky_n  = sky_n - s_fit + 0.9
+        
+        #plt.figure(111)
+        #plt.plot(ohg[0], ohg[1], c='m', alpha=0.5)
+        #plt.plot(ohg[0], sky_n, c='b', alpha=0.5)
+        #plt.show(block=False)
+        #sys.exit()
+        
+        import scipy.interpolate as sci
+        length = len(ohg[1])
+        # Calculate the cross correlation
+        drvs = np.arange(-40, 40, 0.1)
+        cc   = np.zeros(len(drvs))
+        tw   = np.arange(len(ohg[1]))
+        w    = np.arange(len(sky_n))
+        tf   = ohg[1]
+        f    = sky_n
+        for i, rv in enumerate(drvs):
+            fi = sci.interp1d(tw+rv, tf, fill_value=0.9, bounds_error=False)
+            # Shifted template evaluated at location of spectrum
+            cc[i] = np.sum(f * fi(w))
+        maxind   = np.argmax(cc)
+        pixShift = drvs[maxind]
+        
+        #plt.figure(191)
+        #plt.plot(ohg[1], c='b', label='calib')
+        #plt.plot(sky_n, c='r', alpha=0.5, label='before')
+        #plt.plot(np.arange(len(sky_n))+pixShift, sky_n, c='m', alpha=0.5, label='pos')
+        #plt.plot(np.arange(len(sky_n))-pixShift, sky_n, c='c', alpha=0.5, label='neg')
+        #plt.legend()
+        #plt.show(block=False)
+        #sys.exit()
+        
+        return -pixShift * delta_x
+
     return xcorrshift * delta_x
 
 SKY_LINE_MIN = 10
 SKY_OVERLAP_THRESHOLD = 0.6
 SKY_THRESHOLD = 3.0
 
-    
-def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities):
+   
+
+def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=None):
     """
     """
-    debug = False
+    debug    = True
     theory_x = np.array(wavelength_scale_shifted)
          
     # if theory_x.min() < 20500:
-    dy = sky
-    
-#     import pylab as pl
-#     pl.figure(facecolor="white")
-#     pl.cla()
-#     pl.xlabel('wavelength (Angstroms')
-#     pl.ylabel('relative intensity')
-#     pl.plot(oh_wavelengths, oh_intensities, 'kx', mfc="none", ms=4.0)
-#     pl.show()
-    
+    dy       = sky
+    """
+    import pylab as pl
+    pl.figure(facecolor="white")
+    pl.cla()
+    pl.xlabel('wavelength (Angstroms')
+    pl.ylabel('relative intensity')
+    pl.plot(oh_wavelengths, oh_intensities, 'kx', mfc="none", ms=4.0)
+    pl.show()
+    """
     # ## Open, narrow down, and clean up line list ###
     # only look at the part of sky line list that is around the theory locations
-    locohx = np.intersect1d(np.where(oh_wavelengths < theory_x[-1] + 20)[0],
-                            np.where(oh_wavelengths > theory_x[0] - 20)[0])
+    if eta is not None:
+        #print(theory_x[-1] + 100, theory_x[0] - 100)
+        #print(np.where( (oh_wavelengths < theory_x[-1] + 100) & (oh_wavelengths > theory_x[0] - 100)))
+        #print(np.where( (oh_wavelengths < theory_x[-1] + 100) & (oh_wavelengths > theory_x[0] - 100))[0])
+        #print(np.array(oh_wavelengths)[np.where( (oh_wavelengths < theory_x[-1] + 100) & (oh_wavelengths > theory_x[0] - 100) )[0]])
+        ohxsized = np.array(oh_wavelengths)[np.where( (oh_wavelengths < theory_x[-1] + 100) & (oh_wavelengths > theory_x[0] - 100) )[0]]
+        ohysized = np.array(oh_intensities)[np.where( (oh_wavelengths < theory_x[-1] + 100) & (oh_wavelengths > theory_x[0] - 100) )[0]]
+
+    else:
+        locohx = np.intersect1d(np.where(oh_wavelengths < theory_x[-1] + 20)[0],
+                                np.where(oh_wavelengths > theory_x[0] - 20)[0])
  
-    ohxsized = np.array(oh_wavelengths[locohx[0]:locohx[-1]])
-    ohysized = np.array(oh_intensities[locohx[0]:locohx[-1]])
+        ohxsized = np.array(oh_wavelengths[locohx[0]:locohx[-1]])
+        ohysized = np.array(oh_intensities[locohx[0]:locohx[-1]])
  
     # ignore small lines in sky line list
-    bigohy = ohysized[np.where(ohysized > SKY_LINE_MIN)]
-    bigohx = ohxsized[np.where(ohysized > SKY_LINE_MIN)]
+    if eta is not None:
+        bigohy = ohysized[np.where(ohysized > 0.5)]
+        bigohx = ohxsized[np.where(ohysized > 0.5)]
+    else:
+        bigohy = ohysized[np.where(ohysized > SKY_LINE_MIN)]
+        bigohx = ohxsized[np.where(ohysized > SKY_LINE_MIN)]
         
     # bigohx, y are lines from the data file, in the expected wavelength range
     # with intensity greater than  SKY_LINE_MIN
@@ -314,7 +432,7 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities):
         bigohx = np.delete(bigohx, deletelist, None)
     else:
         # there were no sky lines in the table that match theoretical wavelength range
-        logger.info('could not find known sky lines in expected wavelength range')
+        logger.info('could not find known sky/etalon lines in expected wavelength range')
         return []
  
         
@@ -338,33 +456,41 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities):
     if config.params['lla'] == 1:
         bigidx = find_peaks_1(dy)
     else:
-        bigidx = find_peaks_2(dy)
+        bigidx = find_peaks_2(dy, eta=eta)
     bigdx = theory_x[bigidx]
     logger.debug('n sky line peaks = {}'.format(len(bigidx)))
     
     deletelist = []
+
+    ### XXX TESTING AREA
+    #print(bigidx)
+    #plt.plot(dy)
+    #plt.scatter(bigidx)
+    ### XXX TESTING AREA
  
     # remove 'overlapping' real sky line values
     for i in range(1, len(bigdx)):
         if abs(bigdx[i] - bigdx[i - 1]) < SKY_OVERLAP_THRESHOLD:
             deletelist.append(i)
  
-    bigdx = np.delete(bigdx, deletelist, None)
+    bigdx  = np.delete(bigdx, deletelist, None)
     bigidx = np.delete(bigidx, deletelist, None)
  
     # The two arrays to match are bigdx and bigohx
  
     matchesohx = []
     matchesohy = []
-    matchesdx = []
+    matchesdx  = []
     matchesidx = []
+
+    #plt.plot(sky)
  
     if bigohx.any() and bigdx.any():
  
         # ## First look for doublets ###
  
         # search for shifted doublet
-        bigdx2 = bigdx
+        bigdx2  = bigdx
         bigohx2 = bigohx
         bigohy2 = bigohy
         bigidx2 = bigidx
@@ -372,7 +498,11 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities):
         happened = 0
  
         for i in range(0, len(bigdx) - 1):
-            if bigdx[i + 1] - bigdx[i] < 2:
+            if eta is not None: 
+                waveLimit = 10
+            else:
+                waveLimit = 2
+            if bigdx[i + 1] - bigdx[i] < waveLimit:
                 if debug:
                     print(bigdx[i], ' and ', bigdx[i + 1], 'possible doublet')
  
@@ -442,8 +572,8 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities):
                                     print('before dx2=', bigdx2)
                                     print('before oh2=', bigohx2)
  
-                                bigdx2 = np.delete(bigdx2, i - 2 * happened)
-                                bigdx2 = np.delete(bigdx2, i - 2 * happened)  # this removes the "i+1"
+                                bigdx2  = np.delete(bigdx2, i - 2 * happened)
+                                bigdx2  = np.delete(bigdx2, i - 2 * happened)  # this removes the "i+1"
                                 bigohx2 = np.delete(bigohx2, locx[0] - 2 * happened + j)
                                 bigohx2 = np.delete(bigohx2, locx[0] - 2 * happened + j)  # this removes the "j+1"
                                 bigohy2 = np.delete(bigohy2, locx[0] - 2 * happened + j)
@@ -452,8 +582,10 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities):
                                 bigidx2 = np.delete(bigidx2, i - 2 * happened)
  
                                 happened += 1
+
+
  
-        bigdx = bigdx2
+        bigdx  = bigdx2
         bigidx = bigidx2
         bigohx = bigohx2
         bigohy = bigohy2
@@ -467,7 +599,12 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities):
         for j in range(0, len(bigohx)):
             minimum = min((abs(bigohx[j] - i), i) for i in bigdx)
  
-            if (minimum[0]) < 4.0:
+            if eta is not None:
+                Minimum = 10.0
+            else: 
+                Minimum = 4.0
+
+            if (minimum[0]) < Minimum:
                 matchesohx.append(bigohx[j])
                 matchesohy.append(bigohy[j])
                 matchesdx.append(minimum[1])
@@ -554,6 +691,8 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities):
 # 
 #     return orig_pix_x, order_number_array, matched_sky_linex
 
+
+
 def max_corr(a, b):
     """ 
     Find the maximum of the cross-correlation - includes upsampling
@@ -564,7 +703,7 @@ def max_corr(a, b):
     
     length = len(a)
     if not length % 2 == 0:
-        logger.error('cannot cross correlated an odd length array')
+        logger.error('cannot cross correlate an odd length array')
         return None
 
     if not a.shape == b.shape:
@@ -596,6 +735,7 @@ def max_corr(a, b):
     return max_arg
 
 
+
 def __residual(params, f, x, y):
     """ 
     Define fit function; 
@@ -615,6 +755,7 @@ LOWER_LEN_POINTS = 10.0
 #SIGMA_MAX = 0.3
 SIGMA_MAX = 1.0
 MIN_N_LINES = 6
+
 
 
 def twodfit(dataX, dataY, dataZ):
@@ -683,17 +824,17 @@ def twodfit(dataX, dataY, dataZ):
                          points[k], __residual(p1, dataZ, dataX, dataY), lines[k],
                          label=str(k) + ' fit')
 
-    dataZ_new=np.copy(dataZ)
-    dataY_new=np.copy(dataY)
-    dataX_new=np.copy(dataX)
+    dataZ_new = np.copy(dataZ)
+    dataY_new = np.copy(dataY)
+    dataX_new = np.copy(dataX)
 
-    residual = __residual(p1, dataZ, dataX, dataY)
-    x_res = np.arange(len(residual))
+    residual   = __residual(p1, dataZ, dataX, dataY)
+    x_res      = np.arange(len(residual))
     regression = ols("data ~ x_res", data=dict(data=residual, x=x_res)).fit()
-    test = regression.outlier_test()
-    outliers = ((x_res[i], residual[i]) for i,t in enumerate(test.iloc[:, 2]) if t < 0.9)
+    test       = regression.outlier_test()
+    outliers   = ((x_res[i], residual[i]) for i,t in enumerate(test.iloc[:, 2]) if t < 0.9)
     #print('outliers=',list(outliers))
-    x=list(outliers)
+    x          = list(outliers)
     #logger.info('residual outliers='+str(x))
     xhap=0
 
@@ -744,19 +885,19 @@ def twodfit(dataX, dataY, dataZ):
         newoh = np.ravel(p1[0] + p1[1] * dataX_new + p1[2] * dataX_new ** 2 + p1[3] * dataY_new + p1[4] * dataX_new * dataY_new + p1[5] * (
             dataX_new ** 2) * dataY_new)
         
-#         pl.figure('fit')
-#         pl.cla()
-#         pl.plot(newoh, dataZ_new)
-#         pl.show()
+        # pl.figure('fit')
+        # pl.cla()
+        # pl.plot(newoh, dataZ_new)
+        # pl.show()
 
         if (len(dataZ_new) > len(p0)) and pcov is not None:
 
             if testing:
                 
                 ax1.plot(newoh, dataZ_new, points[k], newoh, dataZ_new, lines[k], label='fit')
-#                 ax2.plot(__residual(p1, dataZ_new_forplot, dataX_new_forplot, dataY_new_forplot),
-#                          points[k], __residual(p1, dataZ_new_forplot, dataX_new_forplot, dataY_new_forplot), lines[k],
-#                          label=str(k) + ' fit')
+                ax2.plot(__residual(p1, dataZ_new_forplot, dataX_new_forplot, dataY_new_forplot),
+                         points[k], __residual(p1, dataZ_new_forplot, dataX_new_forplot, dataY_new_forplot), lines[k],
+                         label=str(k) + ' fit')
 
             residual = np.abs(__residual(p1, dataZ_new, dataX_new, dataY_new))
                         
@@ -796,8 +937,6 @@ def twodfit(dataX, dataY, dataZ):
             break
 
         k += 1
-
-    #ax2.plot(__residual(p1, dataZ_new_forplot, dataX_new_forplot, dataY_new_forplot), 'ko-')
     
 
     if sigma >= 100.0:
@@ -813,10 +952,12 @@ def twodfit(dataX, dataY, dataZ):
         dataXX ** 2) * dataYY
 
     if testing:
+        ax2.plot(__residual(p1, dataZ_new_forplot, dataX_new_forplot, dataY_new_forplot), 'ko-')
         ax2.legend()
-        #pl.show()
+        pl.show()
     #return p1, newoh, dataZZ
     return p1, newoh, dataZ_new, sigma
+
 
 
 def applySolution(order_object, p1):
@@ -835,6 +976,8 @@ def applySolution(order_object, p1):
     else:
         return []
    
+
+
 def find_peaks_1(s):
     """
     """
@@ -843,29 +986,60 @@ def find_peaks_1(s):
     peaks_y = s[peaks_i]
     return(peaks_i[np.where(peaks_y > 3.0 * peaks_y.mean())])
     
-def find_peaks_2(s):
+
+
+def find_peaks_2(s, eta=None):
     """ 
     """
     logger.info('using calibration line location algorithm 2')
-    s = s[:-20]
-    s -= np.amin(s)
-    coeffs = np.polyfit(np.arange(len(s)), s, 9)
-    s_fit = np.polyval(coeffs, np.arange(len(s)))
-    sp = s - s_fit
-    sp -= np.amin(sp)
-    peaks_i = argrelextrema(sp, np.greater)
-    peaks_y = sp[peaks_i]
+    s         = s[:-20] # Crop out the back portion
+    s        -= np.amin(s)
+    coeffs    = np.polyfit(np.arange(len(s)), s, 10)
+    s_fit     = np.polyval(coeffs, np.arange(len(s)))
+    sp        = s - s_fit
+    if eta is not None:
+        sp[0:20] = 0. # Set the first few pixels to zero since we don't want false lines
+    sp       -= np.amin(sp)
+    sp       -= np.median(sp)
+    #print(np.median(sp), 1.1*np.median(sp))
+    if eta is not None:
+        peaks_i   = argrelextrema(sp, np.greater, order=2)
+        #print(peaks_i)
+        peaks_i   = find_peaks_cwt(sp, [4,5,6,7,8])#, min_length=20)#, min_snr=3)
+        #print(peaks_i)
+    else:
+        peaks_i   = argrelextrema(sp, np.greater)
+    peaks_y   = sp[peaks_i]
+    #for p,z in zip(peaks_i[0], peaks_y):
+    #    print(p, z, z/peaks_y.mean())
 #     big_peaks = peaks_i[0][np.where(peaks_y > 1.7 * peaks_y.mean())]
-    big_peaks = peaks_i[0][np.where(peaks_y > 1.4 * peaks_y.mean())]
-
-#     import pylab as pl
-#     pl.figure(figsize=(20, 5))
-#     pl.cla()
-#     pl.plot(s + 20, 'r-')
-#     pl.plot(sp, 'k-')
-#     pl.plot(s_fit + 20, 'r-')
-#     pl.plot(big_peaks, sp[big_peaks], 'ro')
-#     pl.show()
+    if eta is not None:
+        #big_peaks = peaks_i[np.where(peaks_y > 1.1 * sp.mean())]
+        #big_peaks = peaks_i[np.where(peaks_y > 1.1 * np.median(sp))]
+        big_peaks = peaks_i[np.where(peaks_y >= 0.15)] # XXX We could change this to use percentiles to estimate the cutoff
+        #print(big_peaks)
+    else:
+        big_peaks = peaks_i[0][np.where(peaks_y > 1.4 * peaks_y.mean())]
+    """
+    import pylab as pl
+    pl.figure(figsize=(20, 5))
+    pl.cla()
+    if eta is not None: offsetPlot = 0
+    else: offsetPlot = 20
+    pl.plot(s + offsetPlot, 'r-')
+    pl.plot(sp, 'k-')
+    pl.plot(s_fit + offsetPlot, 'r-')
+    for peak in peaks_i:
+        if peak == peaks_i[0]: pl.axvline(peak, color='r', ls=':', lw=1.5, label='peaks')
+        else: pl.axvline(peak, color='r', ls=':', lw=1.5)
+    #pl.scatter(big_peaks, sp[big_peaks], color='C0')
+    for peak in big_peaks:
+        if peak == big_peaks[0]: pl.axvline(peak, color='b', ls='--', lw=0.9, label='big peaks')
+        else: pl.axvline(peak, color='b', ls='--', lw=0.9)
+    pl.legend()
+    pl.show()
+    #sys.exit()
+    """
     
     return(big_peaks)
     

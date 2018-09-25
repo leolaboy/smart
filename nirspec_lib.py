@@ -15,7 +15,7 @@ def calc_noise_img(obj, flat, integration_time):
     flat is expected to be normalized and both obj and flat are expected to be rectified
     """
     
-    G = 5.8     
+    G  = 5.8     
     RN = 23.0
     DC = 0.8
     
@@ -106,6 +106,7 @@ def trace_sky_line(data, start, eta=None):
     return trace
 
 
+
 def smooth_spatial_trace(y_raw):
     """
     """
@@ -139,7 +140,8 @@ EXTRA_PADDING       = 5
 MIN_LINE_SEPARATION = 5
 
 
-def find_spectral_trace(data, numrows=5, eta=None):
+
+def find_spectral_trace(data, numrows=5, eta=None, TEST=False):
     """
     Locates sky lines in the bottom 5 rows (is this really optimal?) of the order image data. 
     Finds strongest peaks, sorts them, traces them, returns the average of the traces.
@@ -184,7 +186,7 @@ def find_spectral_trace(data, numrows=5, eta=None):
     # indices in s or peaks
     maxes = np.array(maxima_c[0][locmaxes[0]])
     
-    logger.info('n sky line peaks with intensity > {:.0f} = {}'.format(
+    logger.info('n sky/etalon line peaks with intensity > {:.0f} = {}'.format(
             sky_thres, len(maxes)))
 
     deletelist = []
@@ -206,6 +208,9 @@ def find_spectral_trace(data, numrows=5, eta=None):
     fitnumber = 0
 
     #print('MAXES', maxes)
+    #centroids = np.array([])
+    #Pixels    = np.array([])
+    centroids = []
     for maxskyloc in maxes:
         #print('MAX LOC', maxskyloc)
         if 10 < maxskyloc < 1010:
@@ -217,12 +222,19 @@ def find_spectral_trace(data, numrows=5, eta=None):
 
             fitnumber += 1
             centroid_sky_sum = centroid_sky_sum + centroid_sky - centroid_sky[0]
+            if eta is not None:
+                #centroids = np.concatenate((centroids, centroid_sky - centroid_sky[0]))
+                #Pixels    = np.concatenate((Pixels, np.arange(len(centroid_sky))))
+                centroids.append(centroid_sky - centroid_sky[0])
+            #print('SUM0', centroid_sky - centroid_sky[0])
+            #print('SUM1', centroids)
 
-            #if fitnumber > 2: # Why are we limiting this?
-            #    break
+            if eta is None:
+                if fitnumber > 2: # Why are we limiting this?
+                    break
 
-            p0    = np.polyfit(np.arange(len(centroid_sky)), centroid_sky, deg=1) 
-            z0    = np.poly1d(p0)
+            #p0    = np.polyfit(np.arange(len(centroid_sky)), centroid_sky, deg=1) 
+            #z0    = np.poly1d(p0)
             #plt.scatter(np.arange(len(centroid_sky)), centroid_sky, color='r', s=1, alpha=0.5)
             #plt.plot(np.arange(len(centroid_sky)), z0(np.arange(len(centroid_sky))), 'r--', lw=0.5)
 
@@ -234,17 +246,138 @@ def find_spectral_trace(data, numrows=5, eta=None):
     if centroid_sky_sum.any():
         if eta is not None:
             logger.info(str(fitnumber) + ' etalon lines used for spectral rectification')
+            #return [Pixels, centroids]
+            if TEST == True: return centroids
+            else: return centroid_sky_sum / fitnumber
         else:
             logger.info(str(fitnumber) + ' sky lines used for spectral rectification')
-        return centroid_sky_sum / fitnumber
+            return centroid_sky_sum / fitnumber
     
     logger.warning('failed to find sky/etalon line trace')
     raise StandardError('failed to find sky/etalon line trace')
     
     
-def smooth_spectral_trace(data, l):
+def smooth_spectral_trace(data, l, eta=None, TEST=False):
+    
+    if TEST == True:
+        if eta is not None:
+            #print('DATA:', data)
+            #Pixels, centroids = data[0], data[1]
+            for centroids in data:
+                Pixels = np.arange(len(centroids))
+                p0 = np.polyfit(Pixels, centroids, deg=1)  # end always drops off
+                """
+                plt.figure(161)
+                z0 = np.poly1d(p0)
+                plt.scatter(Pixels, centroids)
+                Xs = np.arange(np.min(Pixels), np.max(Pixels))
+                plt.plot(Xs, z0(Xs), 'r--')
+                plt.figure(162)
+                plt.plot(Pixels, centroids - z0(Pixels))
+                plt.axhline(0, c='r', ls='--')
+                """
+                from astropy.stats import sigma_clip
+                SigCut = True
+                newData = centroids
+                newPix2  = Pixels
+                print('1', len(newData), len(newPix2))
+                while SigCut:
+
+                    p0 = np.polyfit(newPix2, newData, deg=1)  # end always drops off
+                    z0 = np.poly1d(p0)
+
+                    filtered_data = sigma_clip(newData - z0(newPix2), sigma=3, iters=None)
+
+                    newCent = newData[~filtered_data.mask]
+                    newPix  = newPix2[~filtered_data.mask]
+
+                    #plt.figure(163)
+                    #plt.scatter(newPix, newCent)
+                    #plt.plot(Xs, z0(Xs), 'r--')
+                    #plt.figure(164)
+                    #plt.plot(newPix, newCent - z0(newPix))
+                    #plt.axhline(0, c='r', ls='--')
+                    #plt.show()
+                    if len(newData) == len(newCent): 
+                        SigCut = False
+                    newData = newCent
+                    newPix2 = newPix
+                    print(len(newData), len(newPix2))
+                print('3) spectral tilt is {:.3f} pixels/pixel'.format(p0[0]))
+        
+            
+            """
+            p0 = np.polyfit(Pixels, centroids, deg=1)  # end always drops off
+            plt.figure(161)
+            z0 = np.poly1d(p0)
+            plt.scatter(Pixels, centroids)
+            Xs = np.arange(np.min(Pixels), np.max(Pixels))
+            plt.plot(Xs, z0(Xs), 'r--')
+            plt.show()
+            sys.exit()
+            """
+            logger.info('TEST spectral tilt is {:.3f} pixels/pixel'.format(p0[0]))
+            fit = np.polyval(p0, np.arange(l))
+            #print('fit', fit)
+            #return fit
+
+        else:
+
+            p0 = np.polyfit(np.arange(len(data) - 10), data[:-10], deg=1)  # end always drops off
+            plt.figure(161)
+            z0 = np.poly1d(p0)
+            plt.scatter(np.arange(len(data) - 10), data[:-10])
+            plt.plot(np.arange(len(data) - 10), z0(np.arange(len(data) - 10)), 'r--')
+            plt.show()
+            sys.exit()
+            #p0 = np.polyfit(np.arange(len(data)), data, deg=1)  # end always drops off, but this doesn't care
+            logger.info('spectral tilt is {:.3f} pixels/pixel'.format(p0[0]))
+            fit = np.polyval(p0, np.arange(l))
+    
+    '''
     p0 = np.polyfit(np.arange(len(data) - 10), data[:-10], deg=1)  # end always drops off
+    #plt.figure(161)
+    #z0 = np.poly1d(p0)
+    #plt.scatter(np.arange(len(data) - 10), data[:-10])
+    #plt.plot(np.arange(len(data) - 10), z0(np.arange(len(data) - 10)), 'r--')
+    #plt.show()
+    #sys.exit()
     #p0 = np.polyfit(np.arange(len(data)), data, deg=1)  # end always drops off, but this doesn't care
+    '''              
+
+    from astropy.stats import sigma_clip
+    SigCut   = True
+    newData  = data[:-10]
+    newPix2  = np.arange(len(data)-10)
+    Xs       = np.arange(np.min(newPix2), np.max(newPix2))
+    while SigCut:
+
+        p0 = np.polyfit(newPix2, newData, deg=1)  # end always drops off
+        z0 = np.poly1d(p0)
+
+        filtered_data = sigma_clip(newData - z0(newPix2), sigma=3, iters=None)
+
+        newCent = newData[~filtered_data.mask]
+        newPix  = newPix2[~filtered_data.mask]
+        """
+        plt.figure(163)
+        plt.scatter(newPix2, newData, alpha=0.5, c='r', s=5)
+        plt.scatter(newPix, newCent, alpha=0.5, c='b', s=5)
+        plt.plot(Xs, z0(Xs), 'r--')
+        plt.figure(164)
+        plt.plot(newPix, newCent - z0(newPix))
+        plt.axhline(0, c='r', ls='--')
+        plt.show()
+        """
+        if len(newData) == len(newCent): 
+            SigCut = False
+
+        newData = newCent
+        newPix2 = newPix
+        #print(len(newData), len(newPix2))
+    
+    #print('3.1) spectral tilt is {:.3f} pixels/pixel'.format(p0[0]))
+    
     logger.info('spectral tilt is {:.3f} pixels/pixel'.format(p0[0]))
     fit = np.polyval(p0, np.arange(l))
     return fit

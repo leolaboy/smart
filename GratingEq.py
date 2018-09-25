@@ -89,14 +89,15 @@ class GratingEq:
                 
             # apply empirical corrections
             
-            long_slit_y_corr = 20
+            long_slit_y_corr    = 20
             low_res_slit_y_corr = 30
-        #     date_y_corr = 50
-            date_y_corr = 0
-            filter_7_y_corr = 45
+        #    date_y_corr         = 50
+            date_y_corr         = 0
+            filter_7_y_corr     = 45
             filter_4_5_6_y_corr = 30
-            filter_3_y_corr = 50
-            filter_1_y_corr = 50
+            filter_3_y_corr     = 50
+            filter_1_y_corr     = 50
+            filter_K_y_corr     = 70
         
             if '24' in slit:
                 
@@ -166,6 +167,11 @@ class GratingEq:
                             ' pixel N-1 filter y corr for filter ' + filtername )
                 left_top_row += filter_1_y_corr
                 left_bot_row += filter_1_y_corr
+
+            elif 'K-' in filtername:
+                self.logger.debug('applying + ' + str(filter_K_y_corr) + ' pixel y corr for filter ' + filtername)
+                left_top_row += filter_K_y_corr
+                left_bot_row += filter_K_y_corr
                 
                 self.logger.info('order width = {:.0f} pixels'.format(left_top_row - left_bot_row))
             

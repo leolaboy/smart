@@ -11,6 +11,9 @@ import wavelength_utils
 import Line
 import DrpException
 
+from astropy.visualization import ZScaleInterval, ImageNormalize
+import fixpix
+
 import CAT_Functions as cat
 import matplotlib.pyplot as plt 
 
@@ -19,14 +22,47 @@ logger = logging.getLogger('obj')
 def reduce_order(order, eta=None):
         
     #print('ETA BEGINNING', eta)
+    #print(order.flatOrder.orderNum)
+    #if order.flatOrder.orderNum != 33: continue
+    #sys.exit()
     # flatten object images for this order
     if eta is not None:
         __flatten(order, eta=eta)
     else:    
         __flatten(order)
+    """
+    from astropy.visualization import ZScaleInterval, ImageNormalize
+    plt.figure(1)
+    norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
+    plt.imshow(order.ffEtaImg, origin='lower')
+    plt.show()
+    sys.exit()
+    """
 
-    #plt.figure(1)
-    #plt.imshow(order.ffEtaImg, origin='lower')
+    ### XXX TESTING AREA
+    if config.params['no_clean']:
+        logger.info("bad pixel rejection on object frame/order inhibited by command line flag")
+
+    else:
+        for frame in order.frames:
+            logger.info('bad pixel cleaning object frame %s'%frame)
+            order.ffObjImg[frame] = fixpix.fixpix_rs(order.ffObjImg[frame])
+            logger.debug('bad pixel cleaning object frame %s complete'%frame)
+        
+        if eta is not None:
+            logger.info('bad pixel cleaning etalon frame')
+            order.ffEtaImg = fixpix.fixpix_rs(order.ffEtaImg)
+            logger.debug('bad pixel cleaning etalon frame complete')
+    
+    #plt.figure(4)
+    #norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
+    #plt.imshow(order.ffEtaImg, origin='lower', norm=norm)
+    #plt.imshow(order.ffObjImg['A'], origin='lower')
+    #np.save('unrect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
+    #plt.savefig('%s_unrect.png'%order.flatOrder.orderNum, dpi=600, bbox_inches='tight')
+    #plt.show(block=True)
+    
+    ### XXX TESTING AREA
  
     # rectify obj and flattened obj in spatial dimension
     if eta is not None:
@@ -44,12 +80,18 @@ def reduce_order(order, eta=None):
         __trim(order)
 
     #plt.figure(3)
-    #plt.imshow(order.ffEtaImg, origin='lower')
+    #norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
+    #plt.imshow(order.ffEtaImg, origin='lower', norm=norm)
+    #np.save('unrect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
+    #plt.savefig('%s_unrect.png'%order.flatOrder.orderNum, dpi=600, bbox_inches='tight')
+    #plt.show(block=False)
     
-    # save rectified images before spectral rectify for diagnostics 
+    # save spatially rectified images before spectral rectify for diagnostics 
     order.srNormFlatImg = order.flatOrder.rectFlatImg
     for frame in order.frames:
         order.srFfObjImg[frame] = order.ffObjImg[frame]
+    if eta is not None:
+        order.srNormEtaImg = order.ffEtaImg
            
     # find spatial profile and peak
     __find_spatial_profile_and_peak(order)
@@ -63,7 +105,7 @@ def reduce_order(order, eta=None):
         try:
             order.spectralTrace = nirspec_lib.smooth_spectral_trace(
                                         nirspec_lib.find_spectral_trace(
-                                        order.ffEtaImg, numrows=20, eta=eta), order.ffEtaImg.shape[0])
+                                        order.ffEtaImg, numrows=20, eta=eta), order.ffEtaImg.shape[0], eta=eta)
         except Exception as e:
             logger.warning('not rectifying order {} in spectral dimension'.format(
                     order.flatOrder.orderNum))
@@ -94,14 +136,37 @@ def reduce_order(order, eta=None):
 
     #plt.figure(666) #XXX
     #plt.imshow(order.ffEtaImg, origin='lower')
+    #np.save('rect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
+    #plt.savefig('%s_rect.png'%order.flatOrder.orderNum, dpi=600, bbox_inches='tight')
     #plt.show()
+    '''
+    ### XXX TEST
+    if eta is not None:
+
+        try:
+            order.spectralTrace = nirspec_lib.smooth_spectral_trace(
+                                        nirspec_lib.find_spectral_trace(
+                                        order.ffEtaImg, numrows=20, eta=eta, TEST=True), order.ffEtaImg.shape[0], eta=eta, TEST=True)
+        except Exception as e:
+            logger.warning('not rectifying order {} in spectral dimension'.format(
+                    order.flatOrder.orderNum))
+        
+        else:
+            order.flatOrder.rectFlatImg = image_lib.rectify_spectral(
+                                                 order.flatOrder.rectFlatImg, order.spectralTrace)
+            __rectify_spectral(order, eta=eta)
+            order.spectralRectified = True
+            #print('Etalon Rectified')
+    #sys.exit()
+    ### XXX TEST
+    '''
 
     # compute noise image
     order.noiseImg = nirspec_lib.calc_noise_img(
             order.objImg['A'], order.flatOrder.rectFlatImg, order.integrationTime)
     
     # extract spectra
-    __extract_spectra(order)
+    __extract_spectra(order, eta=eta)
             
     # calculate approximate SNR
     __calc_approximate_snr(order)
@@ -117,14 +182,15 @@ def reduce_order(order, eta=None):
         logger.critical('cannot read OH/Etalon line file: ' + str(e))
         raise
         
+
     try:
         # synthesize sky/etalon spectrum and store in order object
         if eta is not None:
             order.synthesizedSkySpec = wavelength_utils.synthesize_sky(
-                    etalon_wavelengths, etalon_intensities, order.flatOrder.gratingEqWaveScale)
+                    etalon_wavelengths, etalon_intensities, order.flatOrder.gratingEqWaveScale, eta=eta)
          
             # identify lines and return list of (column number, accepted wavelength) tuples
-            line_pairs = wavelength_utils.line_id(order, etalon_wavelengths, etalon_intensities)
+            line_pairs = wavelength_utils.line_id(order, etalon_wavelengths, etalon_intensities, eta=eta)
 
         else:
             order.synthesizedSkySpec = wavelength_utils.synthesize_sky(
@@ -171,10 +237,13 @@ def reduce_order(order, eta=None):
                         (order.flatOrder.gratingEqWaveScale[1023] - 
                          order.flatOrder.gratingEqWaveScale[0]))/1024.0
     else:
-        logger.warning('no matched sky lines in order ' + str(order.flatOrder.orderNum))
+        logger.warning('no matched sky/etalon lines in order ' + str(order.flatOrder.orderNum))
         order.orderCal = False 
+
+    #plt.show()
                         
     return
+
 
 
 def __flatten(order, eta=None):
@@ -199,6 +268,7 @@ def __flatten(order, eta=None):
     order.flattened = True
     logger.info('order has been flat fielded')
     return
+
 
 
 def __rectify_spatial(order, eta=None):
@@ -227,40 +297,12 @@ def __rectify_spatial(order, eta=None):
         #order.etaImg   = image_lib.rectify_spatial(order.etaImg, polyVals)
         #order.ffEtaImg = image_lib.rectify_spatial(order.ffEtaImg, polyVals)
 
-    """ XXX      
-    plt.figure(1)
-    plt.imshow(order.objImg[frame], origin='lower')
-
-    #plt.show()
-
-    flux1 =    np.array([np.sum(order.objImg[frame][75:80, i]) for i in range(order.objImg[frame].shape[1])])
-    #flux1 =    np.array([np.sum(data[60:70, i]) for i in range(data.shape[1])])
-    flux2 = -1*np.array([np.sum(order.objImg[frame][105:110, i]) for i in range(order.objImg[frame].shape[1])])
-
-    norm10 = np.median(flux1)
-    norm20 = np.median(flux2)
-
-    flux11 =    np.array([np.sum(order.ffObjImg[frame][75:80, i]) for i in range(order.ffObjImg[frame].shape[1])])
-    #flux1 =    np.array([np.sum(data[60:70, i]) for i in range(data.shape[1])])
-    flux22 = -1*np.array([np.sum(order.ffObjImg[frame][105:110, i]) for i in range(order.ffObjImg[frame].shape[1])])
-
-    norm101 = np.median(flux11)
-    norm202 = np.median(flux22)
-
-    plt.figure(2, figsize=(15,5))
-    plt.plot(flux1/norm10, alpha=0.5, label='A', lw=1)
-    plt.plot(flux2/norm20, alpha=0.5, label='B', lw=1)
-
-    plt.plot(flux11/norm101+1, alpha=0.5, label='A', lw=1)
-    plt.plot(flux22/norm202+1, alpha=0.5, label='B', lw=1)
-    plt.show()
-    sys.exit()
-    """
     order.spatialRectified = True
     logger.info('order has been rectified in the spatial dimension')
         
     return   
  
+
     
 def __trim(order, eta=None):
     """
@@ -281,6 +323,7 @@ def __trim(order, eta=None):
     return
 
 
+
 def __rectify_spectral(order, eta=None):
     """
     """   
@@ -295,8 +338,9 @@ def __rectify_spectral(order, eta=None):
     
     return     
 
+
               
-def __extract_spectra(order):
+def __extract_spectra(order, eta=None):
     
     if order.isPair:        
         # get object extraction range for AB
@@ -334,21 +378,133 @@ def __extract_spectra(order):
             logger.info('frame {} bottom background window separation = {}'.format(
                     frame, str(order.objWindow[frame][0] - order.botSkyWindow[frame][-1])))       
                 
-        # extract object, sky and noise spectra for A and B and flat spectrum
-        order.objSpec[frame], order.flatSpec, order.skySpec[frame], order.noiseSpec[frame], \
-                order.topBgMean[frame], order.botBgMean[frame] = image_lib.extract_spectra(
-                        order.ffObjImg[frame], order.flatOrder.rectFlatImg, order.noiseImg, 
-                        order.objWindow[frame], order.topSkyWindow[frame], 
-                        order.botSkyWindow[frame])        
+        if eta is not None:
+            # extract object, sky, etalon, and noise spectra for A and B and flat spectrum
+            order.objSpec[frame], order.flatSpec, order.etalonSpec, order.skySpec[frame], order.noiseSpec[frame], \
+                    order.topBgMean[frame], order.botBgMean[frame] = image_lib.extract_spectra(
+                            order.ffObjImg[frame], order.flatOrder.rectFlatImg, order.noiseImg, 
+                            order.objWindow[frame], order.topSkyWindow[frame], 
+                            order.botSkyWindow[frame], eta=order.ffEtaImg) 
+
+        else:
+            # extract object, sky, and noise spectra for A and B and flat spectrum
+            order.objSpec[frame], order.flatSpec, order.skySpec[frame], order.noiseSpec[frame], \
+                    order.topBgMean[frame], order.botBgMean[frame] = image_lib.extract_spectra(
+                            order.ffObjImg[frame], order.flatOrder.rectFlatImg, order.noiseImg, 
+                            order.objWindow[frame], order.topSkyWindow[frame], 
+                            order.botSkyWindow[frame])  
+
+    ### XXX TESTING AREA
+    # Try the defringe filter
+    import matplotlib.pyplot as plt
+    from scipy import fftpack
+    from scipy import signal
+
+    for frame in ['A', 'B', 'AB']:
+        if order.flatOrder.orderNum == 33:
+
+            #fit1 = np.polyfit(np.arange(len(order.objSpec['A'])), order.objSpec['A'], 10)
+            #z1   = np.poly1d(fit1)
+
+            #orderspec2 = order.objSpec[frame]# - z1(np.arange(len(order.objSpec['A'])))
+
+            #plt.plot(order.objSpec[frame], 'C0')
+            #plt.plot(z1(np.arange(len(order.objSpec['A']))), 'C1')
+
+
+            """
+            f, Pxx_den = signal.periodogram(orderspec2, fs=len(order.objSpec[frame]))
+            plt.figure(2)
+            plt.semilogy(f, Pxx_den)
+            #plt.ylim([1e-7, 1e2])
+            plt.xlabel('frequency [Hz]')
+            plt.ylabel('PSD [V**2/Hz]')
+            """
+            ## IDL CODE
+            xdim   = len(order.objSpec[frame])
+            nfil   = xdim/2 + 1
+            cal1   = order.objSpec[frame]
+            """
+            f_high = 130
+            f_low  = 150
+            freq   = np.arange(nfil/2+1) / (nfil / float(xdim))
+            fil    = np.zeros(len(freq))
+            fil[np.where((freq > f_low) | (freq < f_high))] = 1
+            fil    = np.append(fil, np.flip(fil[1:]))
+            fil    = fftpack.ifft(fil)
+            fil    = fil/nfil
+            fil    = np.roll(fil, nfil/2)
+            fil    = fil*np.hanning(nfil)
+            """
+
+            ##
+            """
+            cal1orig    = order.objSpec[frame]
+            freq        = np.arange(nfil)
+            cal1origmed = np.median(cal1orig)
+            cal1smooth  = scipy.ndimage.median_filter(cal1, size=30)
+            cal1fft     = fftpack.rfft(cal1orig-cal1smooth)
+            yp          = abs(cal1fft[0:nfil])**2
+            ypmax       = np.max(yp)
+            yp          = yp / ypmax
+            plt.figure(1011)
+            plt.plot(freq, yp)
+            """
+            ##
+            """
+            cal1smooth = scipy.ndimage.median_filter(cal1, size=30)
+            cal2smooth = scipy.ndimage.median_filter(cal2, size=30)
+
+            cal1       = np.convolve(cal1-cal1smooth, fil, mode='same') + cal1smooth
+            cal2       = np.convolve(cal2-cal2smooth, fil, mode='same') + cal2smooth
+            #cal2smooth = median(cal2,30)
+            #cal2       = convol(cal2-cal2smooth,fil,/edge_wrap)+cal2smooth
+            plt.figure(101)
+            plt.plot(cal1)
+            plt.figure(102)
+            plt.plot(cal2)
+            plt.figure(103)
+            plt.plot(cal1-cal2)
+            #plt.show()
+            #sys.exit()
+            """
+            ## IDL CODE
+            """
+            W        = fftpack.fftfreq(order.objSpec[frame].size, d=1./1024)
+            toplot   = np.fft.fftshift(W)
+            f_signal = fftpack.rfft(order.objSpec[frame])
+            W1       = np.arange(len(W))
+            
+            plt.figure(3)
+            plt.plot(W1, f_signal)
+            
+            plt.figure(4)
+            plt.plot(toplot, f_signal)
+            """
+            f_high   = 300
+            f_low    = 260
+            W        = fftpack.fftfreq(order.objSpec[frame].size, d=1./1024)
+            fftval   = fftpack.rfft(order.objSpec[frame])
+            fftval[np.where((W > f_low) & (W < f_high))] = 0
+            newsig   = fftpack.irfft(fftval)  
+            """
+            plt.figure(5)
+            plt.plot(newsig)
+            plt.show()
+            sys.exit()
+            """
+            order.objSpec[frame] = newsig
+    
+       
+    ### XXX TESTING AREA
         
     if order.isPair:
         order.noiseSpec['AB'] = order.noiseSpec['A'] + order.noiseSpec['B']
+        order.skySpec['AB']   = order.skySpec['A'] + order.skySpec['B'] # XXX This is a dirty fix
         
-
-    
-
             
     return
+
 
 
 def __calc_approximate_snr(order):
@@ -387,6 +543,7 @@ def __calc_approximate_snr(order):
     return
     
 
+
 def __characterize_spatial_profile(order):
     
     for frame in order.frames:
@@ -410,6 +567,7 @@ def __characterize_spatial_profile(order):
                     frame, abs(order.gaussianParams[frame][2])))
         
     return
+
 
 
 def __find_spatial_profile_and_peak(order):
@@ -441,6 +599,7 @@ def __find_spatial_profile_and_peak(order):
                 frame, float(order.centroid[frame])))     
     
     return
+
 
 
 def __calculate_SNR(order):
