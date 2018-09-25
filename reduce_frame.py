@@ -14,12 +14,13 @@ from logging import INFO
 import Order
 import image_lib
 import imp
+import fixpix
 
 logger = logging.getLogger('obj')
 # main_logger = logging.getLogger('main')
 # main_logger = logging.getLogger('main')
 
-def reduce_frame(raw, out_dir, flatCacher=None):
+def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
     """
     
     Arguments:
@@ -47,6 +48,13 @@ def reduce_frame(raw, out_dir, flatCacher=None):
     
     if raw.isPair:
         reduced.objImg['B'] = fits.getdata(raw.objBFn, ignore_missing_end = True)
+
+    if eta is not None:
+        reduced.etaImg = fits.getdata(raw.etaFns, ignore_missing_end=True)
+
+    if dark is not None:
+        reduced.hasDark = True
+    #    reduced.darkImg = fits.getdata(raw.darkFns, ignore_missing_end=True)
     
     # put object summary info into per-object log
     log_start_summary(reduced)
@@ -67,19 +75,46 @@ def reduce_frame(raw, out_dir, flatCacher=None):
             logger.info('cosmic ray cleaning object frame B')
             reduced.objImg['B'] = image_lib.cosmic_clean(reduced.objImg['B'])
             logger.debug('cosmic ray cleaning object frame B complete')
+        if eta is not None:
+            logger.info('cosmic ray cleaning etalon frame')
+            reduced.etaImg = image_lib.cosmic_clean(reduced.etaImg)
+            logger.debug('cosmic ray cleaning etalon frame complete')
+
         reduced.cosmicCleaned = True 
+
+    ### XXX TESTING AREA
+    '''
+    if config.params['no_clean']:
+        logger.info("bad pixel rejection on object frame inhibited by command line flag")
+
+    else:
+        logger.info('bad pixel cleaning object frame A')
+        reduced.objImg['A'] = fixpix.fixpix_rs(reduced.objImg['A'])
+        logger.debug('bad pixel cleaning object frame A complete')
+        if reduced.isPair:
+            logger.info('bad pixel cleaning object frame B')
+            reduced.objImg['B'] = fixpix.fixpix_rs(reduced.objImg['B'])
+            logger.debug('bad pixel cleaning object frame B complete')
+        if eta is not None:
+            logger.info('bad pixel cleaning etalon frame')
+            reduced.etaImg = fixpix.fixpix_rs(reduced.etaImg)
+            logger.debug('bad pixel cleaning etalon frame complete')
+
+        reduced.pixelCleaned = True 
+    '''
+    ### XXX TESTING AREA
            
     # if darks are available, combine them if there are more than one
     # and subtract from object frame(s) and flat
     process_darks(raw, reduced)
-
+    
     # if AB pair then subtract B from A
     if reduced.isPair:
         reduced.objImg['AB'] = np.subtract(reduced.objImg['A'], reduced.objImg['B'])
 
     # reduce orders
     try:
-        reduce_orders(reduced)
+        reduce_orders(reduced, eta=eta)
     except IOError as e:
         # might want to do something else here
         raise
@@ -95,6 +130,48 @@ def reduce_frame(raw, out_dir, flatCacher=None):
             order.calMethod = 'grating equation'
     
     return(reduced)
+
+
+def getEtas(raw, etaCacher):
+    """Given a raw data set and a etalon cacher, creates and returns a etalon object XXX Do we need this?
+    
+    If there is no etalon cacher then we are in command line mode where there is a single
+    etalon and the etalons are not reused.  In this case 1. the etalon image data is read from the 
+    etlon file specified in the raw data set, 2. unless cosmic ray rejection is inhibited
+    cosmic ray artifacts are removed from the etalon, and 3. a Etalon object is created from 
+    the etalon image data.
+    
+    If there is a etalon cacher then a possibly cached Etalon object is retrieved from it.
+    
+    Note that in either case, the Etalon object represents a fully reduced etalon, with orders on
+    the etalon identified, traced, cut out and rectified.
+    
+    Args:
+        raw: A RawDataSet object containing, among other things, one or more etalon file names
+        etaCacher: A EtalonCacher object or None 
+        
+    Returns:
+        A Flat object
+    
+    """
+    
+    if etaCacher is None:
+        # in command line mode with only one flat
+        if config.params['no_cosmic']:
+            logger.info('cosmic ray rejection on flat inhibited by command line flag')
+            eta_data = fits.PrimaryHDU.readfrom(raw.etaFns[0], ignore_missing_end=True).data
+        else:
+            logger.info('starting cosmic ray cleaning flat')
+            eta_data = image_lib.cosmic_clean(fits.PrimaryHDU.readfrom(
+                    raw.etaFns[0], ignore_missing_end=True).data)
+            logger.info('cosmic ray cleaning on flat complete')
+        
+        return(Eta.Eta(
+                raw.etaFns[0], [raw.etaFns[0]],
+                fits.PrimaryHDU.readfrom(raw.etaFns[0], ignore_missing_end=True).header, 
+                eta_data))
+    else:
+        return(etaCacher.getEta(raw.etaFns))
  
  
 def getFlat(raw, flatCacher):
@@ -139,7 +216,7 @@ def getFlat(raw, flatCacher):
         return(flatCacher.getFlat(raw.flatFns))
      
  
-def reduce_orders(reduced):
+def reduce_orders(reduced, eta=None):
     """Reduces each order in the frame.  
     
     Starting order is determined from a lookup table indexed by filter name.
@@ -166,21 +243,31 @@ def reduce_orders(reduced):
             continue        
         
         logger.info('***** order ' + str(flatOrder.orderNum) + ' *****')
+
+        #if flatOrder.orderNum != 33: continue #XXX
             
-        order = Order.Order(reduced.frames, reduced.baseNames, flatOrder)
+        if eta is not None:
+            order = Order.Order(reduced.frames, reduced.baseNames, flatOrder, etaImg=reduced.etaImg)
+
+        else:
+            order = Order.Order(reduced.frames, reduced.baseNames, flatOrder)
         
         order.isPair = reduced.isPair
         
         for frame in order.frames:
             order.objCutout[frame] = np.array(image_lib.cut_out(reduced.objImg[frame], 
                     flatOrder.highestPoint, flatOrder.lowestPoint, flatOrder.cutoutPadding))  
+
+        if eta is not None:
+            order.etaCutout = np.array(image_lib.cut_out(reduced.etaImg, 
+                    flatOrder.highestPoint, flatOrder.lowestPoint, flatOrder.cutoutPadding))  
         
         order.integrationTime = reduced.getIntegrationTime() # used in noise calc
-            
+        
         try:
             
             # reduce order, i.e. rectify, extract spectra, identify sky lines
-            reduce_order.reduce_order(order)
+            reduce_order.reduce_order(order, eta=eta)
     
             # add reduced order to list of reduced orders in Reduced object
             reduced.orders.append(order)                      
@@ -251,10 +338,10 @@ def find_global_wavelength_soln(reduced):
         
     # create arrays of col, 1/order, accepted wavelength
     # TODO: modify twodfit() to take list of lines rather than these constructed arrays
-    col = []
-    centroid = []
+    col       = []
+    centroid  = []
     order_inv = []
-    accepted = []
+    accepted  = []
     
     for order in reduced.orders:
         for line in order.lines:
@@ -266,6 +353,9 @@ def find_global_wavelength_soln(reduced):
     reduced.nLinesFound = len(col)
     for l in loggers:
         logging.getLogger(l).log(INFO, 'n sky lines identified = {:d}'.format(reduced.nLinesFound))
+    reduced.nELinesFound = len(col)
+    for l in loggers:
+        logging.getLogger(l).log(INFO, 'n etalon lines identified = {:d}'.format(reduced.nELinesFound))
     
     if config.params['int_c'] is True:
         logger.warning('using integer column numbers in wavelength fit')
@@ -340,6 +430,8 @@ def apply_wavelength_soln(reduced):
         if np.all(dx <= 0) or np.all(dx >= 0):
             # wavelength scale is monotonic
             order.waveScale = order.frameCalWaveScale
+            print('TEST1', order.waveScale)
+            np.save('wave_%s.npy'%order.flatOrder.orderNum, order.waveScale) 
             order.calMethod = 'frame sky line cal'
         else:
             logger.warning('wavelength scale not monotonic for order {}'.format(
@@ -404,6 +496,8 @@ def init(baseName, out_dir):
             logger.critical('output directory cannot be created')
         return    
 
+
+
 def log_start_summary(reduced):
     """
     """
@@ -432,13 +526,14 @@ def log_start_summary(reduced):
     logger.info('cross disperser angle = ' + str(reduced.getDispPos()) + ' deg')
     return
 
+
+
 def process_darks(raw, reduced):
     """
     
     """
     
     #TODO if there are < 3 darks should cosmic clean
-
     if len(raw.darkFns) > 0:
         reduced.hasDark = True
         logger.info(str(len(raw.darkFns)) + ' darks: ' + 
@@ -452,8 +547,7 @@ def process_darks(raw, reduced):
     # if dark(s) exist, subtract from obj and flat
     if reduced.hasDark:
         reduced.subtractDark()
-        #logger.info('dark subtracted from obj and flat')
-        logger.info('dark subtracted from flat')
-
+        logger.info('dark subtracted from obj and flat')
+        
     return
     

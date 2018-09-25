@@ -21,6 +21,7 @@ class ReducedDataSet:
         flatKOAIds:
         darkSubtracted:
         cosmicCleaned:
+        pixelCleaned:
         objA:
         objB:
         objAB:
@@ -68,33 +69,40 @@ class ReducedDataSet:
         for flat_name in raw.flatFns:
             self.flatKOAIds.append(flat_name[flat_name.rfind('/') + 1:flat_name.rfind('.')])
         
-        self.hasDark = False
+        self.hasDark        = False
         self.darkSubtracted = False
-        self.cosmicCleaned = False
+        self.cosmicCleaned  = False
+        self.pixelCleaned   = False
+        self.hasEta         = False
         
 
         self.flatImg = np.zeros(self.getShape())
         self.darkImg = np.zeros(self.getShape())
+        self.etaImg  = np.zeros(self.getShape())
         
-        self.nOrders = 0
+        self.nOrders        = 0
         self.nOrdersReduced = 0
         
         self.snrMean = None
-        self.snrMin = None
-        self.wMean = None
-        self.wMax = None
+        self.snrMin  = None
+        self.wMean   = None
+        self.wMax    = None
         
-        self.orders = []
+        self.orders  = []
         
         self.nLinesFound = 0
-        self.nLinesUsed = 0
+        self.nLinesUsed  = 0
+
+        self.nELinesFound = 0
+        self.nELinesUsed  = 0
         
         self.frameCalAvailable = False
-        self.frameCalRmsRes = None  # rms per-frame fit residual
-        self.frameCalCoeffs = None  # per-frame wavelength equation coefficients
-        self.calFrame = None        # frame (name or KOAID) used for wavelength cal if not this one
+        self.frameCalRmsRes    = None  # rms per-frame fit residual
+        self.frameCalCoeffs    = None  # per-frame wavelength equation coefficients
+        self.calFrame          = None  # frame (name or KOAID) used for wavelength cal if not this one
         
         self.Flat = None
+        self.Eta  = None
         
     def getBaseName(self):
         if self.isPair:
@@ -106,7 +114,8 @@ class ReducedDataSet:
         return self.fileName
     
     def getTargetName(self):
-        return self.header['TARGNAME']
+        #return self.header['TARGNAME']
+        return self.header['OBJECT']
     
     def getShape(self):
         return self.header['NAXIS1'], self.header['NAXIS2']
@@ -153,13 +162,11 @@ class ReducedDataSet:
     
     def subtractDark(self):   
         if self.hasDark:
-            #frames = ['A']
-            #if self.isPair:
-            #    frames.append('B')
-            #for frame in frames:
-            #    self.objImg[frame]  = np.subtract(self.objImg[frame], self.dark)
-            self.flatImg = np.subtract(self.flatImg, self.dark)
-            self.Flat.flatImg = self.flatImg #added by Dino Hsu
+            frames = ['A']
+            if self.isPair:
+                frames.append('B')
+            for frame in frames:
+                self.objImg[frame]  = np.subtract(self.objImg[frame], self.dark)
+            self.flatImg = np.subtract(self.flatImg, self.dark) 
             self.darkSubtracted = True
-
             

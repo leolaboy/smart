@@ -21,6 +21,9 @@ class GratingEq:
         left_indent = 50
     
         coeffs = dict()
+        coeffs['K-AO']      = { 'c1': 0.24792775, 'c2': -35906.947, 'y0': 15955.4515,
+                                'r1': 0.23482994, 'r2': -33591.707, 'z0': 14891.3158}; 
+                                
         coeffs['NIRSPEC-7'] = { 'c1': 0.24792775, 'c2': -35906.947, 'y0': 15955.4515,
                                 'r1': 0.23482994, 'r2': -33591.707, 'z0': 14891.3158};    
                                       
@@ -67,8 +70,11 @@ class GratingEq:
                 orderWidth = 24.0 / 0.193
                 self.logger.info('long slit order width = {:.0f} pixels'.format(orderWidth))
             else:
-                orderWidth = 12.0 / 0.193
-                self.logger.info('short slit order width = {:.0f} pixels'.format(orderWidth))
+                if filtername.upper() == 'K-AO':
+                    orderWidth = 12.0 / 0.1
+                else:
+                    orderWidth = 12.0 / 0.193
+                    self.logger.info('short slit order width = {:.0f} pixels'.format(orderWidth))
 
             left_top_row = left_mid_row + (orderWidth / 2.0)
             left_bot_row = left_mid_row - (orderWidth / 2.0)
@@ -83,14 +89,15 @@ class GratingEq:
                 
             # apply empirical corrections
             
-            long_slit_y_corr = 20
+            long_slit_y_corr    = 20
             low_res_slit_y_corr = 30
-        #     date_y_corr = 50
-            date_y_corr = 0
-            filter_7_y_corr = 45
+        #    date_y_corr         = 50
+            date_y_corr         = 0
+            filter_7_y_corr     = 45
             filter_4_5_6_y_corr = 30
-            filter_3_y_corr = 50
-            filter_1_y_corr = 50
+            filter_3_y_corr     = 50
+            filter_1_y_corr     = 50
+            filter_K_y_corr     = 70
         
             if '24' in slit:
                 
@@ -160,6 +167,11 @@ class GratingEq:
                             ' pixel N-1 filter y corr for filter ' + filtername )
                 left_top_row += filter_1_y_corr
                 left_bot_row += filter_1_y_corr
+
+            elif 'K-' in filtername:
+                self.logger.debug('applying + ' + str(filter_K_y_corr) + ' pixel y corr for filter ' + filtername)
+                left_top_row += filter_K_y_corr
+                left_bot_row += filter_K_y_corr
                 
                 self.logger.info('order width = {:.0f} pixels'.format(left_top_row - left_bot_row))
             

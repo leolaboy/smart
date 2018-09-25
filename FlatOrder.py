@@ -15,47 +15,48 @@ class FlatOrder:
     
     def __init__(self, baseName, orderNum, logger):
         
-        self.flatBaseName = baseName
-        self.orderNum = orderNum
-        self.logger = logger
+        self.flatBaseName       = baseName
+        self.orderNum           = orderNum
+        self.logger             = logger
         
-        self.valid = False
+        self.valid              = False
         
-        self.topCalc = None              # LHS top row of order, according to grating eq
-        self.botCalc = None              # LHS bottom row of order, according to grating eq
+        self.topCalc            = None  # LHS top row of order, according to grating eq
+        self.botCalc            = None  # LHS bottom row of order, according to grating eq
         self.gratingEqWaveScale = None  # wavelength scale, according to grating eq
         
-        self.topMeas = None              # measured LHS top row of order
-        self.botMeas = None              # measured LHS bottom row of order
+        self.topMeas            = None  # measured LHS top row of order
+        self.botMeas            = None  # measured LHS bottom row of order
         
         self.topEdgeTrace = None         # top edge trace
         self.botEdgeTrace = None         # bot edge trace
         self.avgEdgeTrace = None
 
         self.longSlitEdgeMargin = 0
-        self.cutoutPadding = 0
+        self.cutoutPadding      = 0
         
         self.highestPoint = None
-        self.lowestPoint = None
-        self.topTrim = None
-        self.botTrim = None
+        self.lowestPoint  = None
+        self.topTrim      = None
+        self.botTrim      = None
                 
-        self.onOrderMask = None
+        self.onOrderMask  = None
         self.offOrderMask = None
         
-        self.mean = None
+        self.mean   = None
+        self.median = None
         
-        self.cutout = None
+        self.cutout      = None
 #         self.flatImg = None
         self.normFlatImg = None
         self.rectFlatImg = None
         
-        self.normalized = False
-        self.spatialRectified = False
+        self.normalized        = False
+        self.spatialRectified  = False
         self.spectralRectified = False
 
-        self.smoothedSpatialTrace = None
-        self.spatialTraceMask = None
+        self.smoothedSpatialTrace    = None
+        self.spatialTraceMask        = None
         self.spatialTraceFitResidual = None
         
         
@@ -64,10 +65,10 @@ class FlatOrder:
         self.logger.info('reducing flat order {}'.format(self.orderNum))
         
         # normalize flat
-        self.normFlatImg, self.mean =  image_lib.normalize(
+        self.normFlatImg, self.median =  image_lib.normalize(
                 self.cutout, self.onOrderMask, self.offOrderMask)
         self.normalized = True
-        self.logger.info('flat normalized, flat mean = ' + str(round(self.mean, 1)))
+        self.logger.info('flat normalized, flat median = ' + str(round(self.median, 1)))
         
         # spatially rectify flat
         self.rectFlatImg = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTrace)

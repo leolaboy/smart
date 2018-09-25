@@ -3,7 +3,7 @@
 
 class Order:
     
-    def __init__(self, frames, baseNames, flatOrder):
+    def __init__(self, frames, baseNames, flatOrder, etaImg=None):
         
         """
         Attributes:
@@ -44,6 +44,11 @@ class Order:
         self.objCutout = {}
         for frame in self.frames:
             self.objCutout[frame] = []
+
+        if etaImg is not None:
+            self.etaImg = etaImg
+            self.etaCutout = []
+
         
         self.onOrderMask = []
         self.offOrderMask = []
@@ -72,9 +77,9 @@ class Order:
 #         self.topEdgeProfiles = None
 #         self.botEdgeProfiles = None
          
-        self.flatNormalized = False
-        self.flattened = False
-        self.spatialRectified = False
+        self.flatNormalized    = False
+        self.flattened         = False
+        self.spatialRectified  = False
         self.spectralRectified = False
 
         self.flatMean = 0.0
@@ -82,8 +87,8 @@ class Order:
         """
         
         """
-        self.flatImg = []      
-        self.normalizedFlatImg = []
+        self.flatImg = []        
+        self.normalizedFlatImg = []    
         
         self.objImg = {}
         self.ffObjImg = {}
@@ -101,6 +106,8 @@ class Order:
         Attribute:
         
             srNormFlatImg: Normalized flat order image before spectral rectification.
+
+            srNormEtaImg: Normalized etalon order image before spectral rectification.
             
             srFlatObjAImg: Flat-fielded object A order image before spectral rectification.
             
@@ -110,6 +117,7 @@ class Order:
         
         """
         self.srNormFlatImg = []
+        self.srNormEtaImg = []
         
         self.srFfObjImg = {}
         for frame in self.frames:
@@ -195,6 +203,7 @@ class Order:
         
         """
         self.flatSpec = []
+        self.etalonSpec = []
         self.noiseSpec = {}
         for frame in frames:
             self.noiseSpec[frame] = []

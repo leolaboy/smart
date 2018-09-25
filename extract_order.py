@@ -106,7 +106,7 @@ def cut_out_order(obj, flat, order):
         order.onOrderMask, order.offOrderMask = get_masks(
                 order.objCutout.shape, order.topTrace, order.botTrace)
         
-    order.objCutout = np.ma.masked_array(order.objCutout, mask=order.offOrderMask)
+    order.objCutout  = np.ma.masked_array(order.objCutout, mask=order.offOrderMask)
     order.flatCutout = np.ma.masked_array(order.flatCutout, mask=order.offOrderMask)
 
     return

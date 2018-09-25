@@ -21,7 +21,7 @@ import nsdrp_koa
 #from DrpException import DrpException
 #import FlatCacher
 
-VERSION = '0.9.17'
+VERSION = '0.9.17.2'
 
 warnings.filterwarnings('ignore', category=UserWarning, append=True)
 
@@ -43,44 +43,51 @@ def main():
         print('KOA mode')
     else:
         # command line mode
-        config.params['cmnd_line_mode'] = True
-        config.params['verbose'] = True
+        config.params['cmnd_line_mode']        = True
+        config.params['verbose']               = True
 
     # setup configuration parameters based on command line args
-    config.params['debug'] = args.debug
-    config.params['verbose'] = args.verbose
-    config.params['subdirs'] = args.subdirs
-    config.params['dgn'] = args.dgn
-    config.params['npy'] = args.npy
-    config.params['no_cosmic'] = args.no_cosmic
-    config.params['no_products'] = args.no_products
+    config.params['debug']                     = args.debug
+    config.params['verbose']                   = args.verbose
+    config.params['subdirs']                   = args.subdirs
+    config.params['dgn']                       = args.dgn
+    config.params['npy']                       = args.npy
+    config.params['no_cosmic']                 = args.no_cosmic
+    config.params['no_products']               = args.no_products
+    config.params['no_clean']                  = args.no_clean
     if args.obj_window is not None:
-        config.params['obj_window'] = int(args.obj_window)
+        config.params['obj_window']            = int(args.obj_window)
     if args.sky_window is not None:
-        config.params['sky_window'] = int(args.sky_window)
+        config.params['sky_window']            = int(args.sky_window)
     if args.sky_separation is not None:
-        config.params['sky_separation'] = int(args.sky_separation)
+        config.params['sky_separation']        = int(args.sky_separation)
     if args.oh_filename is not None:
-        config.params['oh_filename'] = args.oh_filename
-        config.params['oh_envar_override'] = True
-    config.params['int_c'] = args.int_c
-    config.params['lla'] = args.lla
-    config.params['pipes'] = args.pipes
-    config.params['shortsubdir'] = args.shortsubdir
+        config.params['oh_filename']           = args.oh_filename
+        config.params['oh_envar_override']     = True
+    if args.eta_filename is not None:
+        config.params['eta_filename']          = args.eta_filename
+        config.params['etalon_filename']       = args.etalon_filename
+        config.params['etalon_envar_override'] = True
+    config.params['dark_file']                 = args.dark_filename
+    config.params['int_c']                     = args.int_c
+    config.params['lla']                       = args.lla
+    config.params['pipes']                     = args.pipes
+    config.params['shortsubdir']               = args.shortsubdir
     if args.ut is not None:
-        config.params['ut'] = args.ut
-    config.params['gunzip'] = args.gunzip
-    config.params['spatial_jump_override'] = args.spatial_jump_override
+        config.params['ut']                    = args.ut
+    config.params['gunzip']                    = args.gunzip
+    config.params['spatial_jump_override']     = args.spatial_jump_override
     if args.out_dir is not None:
-        config.params['out_dir'] = args.out_dir
-    config.params['jpg'] = args.jpg
-    config.params['sowc'] = args.sowc;
+        config.params['out_dir']               = args.out_dir
+    config.params['jpg']                       = args.jpg
+    config.params['override_ab']               = args.override_ab
+    config.params['sowc']                      = args.sowc;
 
     # initialize environment, setup main logger, check directories
 #     try:
     if config.params['cmnd_line_mode'] is True:
         init(config.params['out_dir'])
-        nsdrp_cmnd.process_frame(args.arg1, args.arg2, args.b, config.params['out_dir'])
+        nsdrp_cmnd.process_frame(args.arg1, args.arg2, args.b, config.params['out_dir'], eta=args.eta_filename, override=args.override_ab, dark=args.dark_filename)
     else:
         init(args.arg2, args.arg1)
         nsdrp_koa.process_dir(args.arg1, args.arg2)
@@ -223,6 +230,8 @@ def parse_cmnd_line_args():
             action='store_true')
     parser.add_argument('-no_products', help='inhibits data product generation', 
             action='store_true')
+    parser.add_argument('-no_clean', help='inhibits bad pixel cleaning', 
+            action='store_true')
 #     , default=config.DEFAULT_COSMIC)
     parser.add_argument('-obj_window', help='object extraction window width in pixels')
     #default=config.DEFAULT_OBJ_WINDOW)
@@ -231,6 +240,9 @@ def parse_cmnd_line_args():
     parser.add_argument('-sky_separation', help='separation between object and sky windows in pixels')
     #default=config.DEFAULT_SKY_DIST)
     parser.add_argument('-oh_filename', help='path and filename of OH emission line catalog file')
+    parser.add_argument('-eta_filename', help='path and filename of Etalon lamp fits file')
+    parser.add_argument('-etalon_filename', help='path and filename of Etalon line catalog file')
+    parser.add_argument('-dark_filename', help='path and filename of the master dark file')
     parser.add_argument('-int_c', help='user integer column values rather than fractional values \
             determined by centroiding in wavelength fit',
             action='store_true')
@@ -261,6 +273,7 @@ def parse_cmnd_line_args():
     parser.add_argument('-jpg', help='store preview plots in JPG format instead of PNG',
             action='store_true')
     parser.add_argument('-sowc', help='enable simple order width calculation', action='store_true')
+    parser.add_argument('-override_ab', help='removes AB pair check for the same object', action='store_true')
 
     return(parser.parse_args())
           
