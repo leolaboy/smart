@@ -306,6 +306,12 @@ class Flat:
         # smooth spatial trace
         flatOrder.smoothedSpatialTrace, flatOrder.spatialTraceMask = \
                 nirspec_lib.smooth_spatial_trace(flatOrder.avgEdgeTrace)
+
+        # smooth spatial trace for AB frames
+        flatOrder.smoothedSpatialTraceA, flatOrder.spatialTraceMaskA = \
+                nirspec_lib.smooth_spatial_trace(flatOrder.topEdgeTrace)
+        flatOrder.smoothedSpatialTraceB, flatOrder.spatialTraceMaskB = \
+                nirspec_lib.smooth_spatial_trace(flatOrder.botEdgeTrace)
                 
         self.logger.info('spatial trace smoothed, ' + \
                 str(self.flatImg.shape[1] - np.count_nonzero(flatOrder.spatialTraceMask)) + 

@@ -133,11 +133,21 @@ def gen(reduced, out_dir, eta=None):
         else:
             img = order.srFfObjImg['A']
         spatrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, img, order.srNormFlatImg)
+
+        #
+        # object and flat spectrally rectified order plot
+        #
+        if order.isPair:
+            img2 = order.sprFfObjImg['AB']
+        else:
+            img2 = order.sprFfObjImg['A']
+        specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, img, img2)
         
         if eta is not None:
-            specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.srNormEtaImg, order.ffEtaImg, eta=eta)
-        else:
-            specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.srFlatObjAImg, order.flattenedObjAImg)
+            specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.srNormEtaImg, order.sprNormEtaImg)
+            specrect_plot2(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.sprNormEtaImg, order.ffEtaImg, eta=eta)
+        #else: # Not sure why this doesn't work
+        #    specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.srFlatObjAImg, order.flattenedObjAImg)
        
         #
         # sky lines plot and table
@@ -369,44 +379,46 @@ def spatrect_plot(outpath, base_name, order_num, obj, flat):
     pl.tight_layout()
     pl.savefig(constructFileName(outpath, base_name, order_num, 'spatrect.png'))
     pl.close()
+
+
+def specrect_plot(outpath, base_name, order_num, before, after):
+
+    pl.figure('before, after spectral rectify', facecolor='white', figsize=(8, 10))
+    pl.cla()
+    pl.suptitle('before, after spectral rectify, {}, order {}'.format(
+            base_name, order_num), fontsize=14)
+    pl.set_cmap('Blues_r')
+
+    before_plot = pl.subplot(2, 1, 1)
     
-# def specrect_plot(outpath, base_name, order_num, before, after):
-# 
-#     pl.figure('before, after spectral rectify', facecolor='white', figsize=(8, 10))
-#     pl.cla()
-#     pl.suptitle('before, after spectral rectify, {}, order {}'.format(
-#             base_name, order_num), fontsize=14)
-#     pl.set_cmap('Blues_r')
-# 
-#     before_plot = pl.subplot(2, 1, 1)
-#     
-#     before = imresize(before, (500, 1024), interp='bilinear')
-#     
-#     try:
-#         before_plot.imshow(exposure.equalize_hist(before))
-#     except:
-#         before_plot.imshow(before)
-#     before_plot.set_title('before')
-# #     obj_plot.set_ylim([1023, 0])
-#     before_plot.set_xlim([0, 1023])
-#     
-#     after_plot = pl.subplot(2, 1, 2)
-#     
-#     after = imresize(after, (500, 1024), interp='bilinear')
-#     
-#     try:
-#         after_plot.imshow(exposure.equalize_hist(after))
-#     except:
-#         after_plot.imshow(after)
-#     after_plot.set_title('after')
-# #     flat_plot.set_ylim([1023, 0])
-#     after_plot.set_xlim([0, 1023])
-#  
-#     pl.tight_layout()
-#     pl.savefig(constructFileName(outpath, base_name, order_num, 'specrect.png'))
-#     pl.close()
+    before = imresize(before, (500, 1024), interp='bilinear')
     
-def specrect_plot(outpath, base_name, order_num, before, after, eta=None):
+    try:
+        before_plot.imshow(exposure.equalize_hist(before))
+    except:
+        before_plot.imshow(before)
+    before_plot.set_title('before')
+#     obj_plot.set_ylim([1023, 0])
+    before_plot.set_xlim([0, 1023])
+    
+    after_plot = pl.subplot(2, 1, 2)
+    
+    after = imresize(after, (500, 1024), interp='bilinear')
+    
+    try:
+        after_plot.imshow(exposure.equalize_hist(after))
+    except:
+        after_plot.imshow(after)
+    after_plot.set_title('after')
+#     flat_plot.set_ylim([1023, 0])
+    after_plot.set_xlim([0, 1023])
+ 
+    pl.tight_layout()
+    pl.savefig(constructFileName(outpath, base_name, order_num, 'specrect.png'))
+    pl.close()
+    
+
+def specrect_plot2(outpath, base_name, order_num, before, after, eta=None):
     
     pl.figure('spectral rectify', facecolor='white')
     pl.cla()
@@ -421,14 +433,14 @@ def specrect_plot(outpath, base_name, order_num, before, after, eta=None):
     pl.xlim(0, 1023)
     
     pl.plot(before[10, :], "k-", mfc='none', ms=3.0, linewidth=1, 
-            label='before')
+            label='before', alpha=0.5)
 
-    pl.plot(after[10, :], "b-", mfc='none', ms=3.0, linewidth=1, 
-            label='after')
+    pl.plot(after[10, :], "b-", mfc='none', ms=3.0, linewidth=0.7, 
+            label='after', alpha=0.5)
         
     pl.legend(loc='best', prop={'size': 8})
     
-    fn = constructFileName(outpath, base_name, order_num, 'specrect.png')
+    fn = constructFileName(outpath, base_name, order_num, 'specrectplot.png')
     pl.savefig(fn)
     #pl.show()
     pl.close()

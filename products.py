@@ -53,6 +53,8 @@ subdirs = dict([
                 ('wavecal.txt',         'ascii/wavecal'     ),
                 ('order.fits',          'fits/order'        ),
                 ('order.png',           'previews/order'    ),
+                #('specorder.fits',      'fits/specorder'        ),
+                #('specorder.png',       'previews/specorder'    ),
                 ('sky.fits',            'fits/sky'          ),
                 ('sky.png',             'previews/sky'      ),
                 ('snr.fits',            'fits/snr'          ),
@@ -132,13 +134,13 @@ def gen(reduced, out_dir, eta=None):
     
     # construct arrays for global wavelength cal table
     order_num = []
-    col = []
-    source = []
-    wave_exp = []
-    wave_fit = []
-    res = []
-    peak = []
-    slope = []
+    col       = []
+    source    = []
+    wave_exp  = []
+    wave_fit  = []
+    res       = []
+    peak      = []
+    slope     = []
     
     for order in reduced.orders:
         for line in order.lines:
@@ -344,7 +346,7 @@ def gen(reduced, out_dir, eta=None):
             multiSpectrumPlot(out_dir, reduced.baseNames[frame], order.flatOrder.orderNum, 'counts',
                 order.objSpec[frame], order.skySpec[frame], order.noiseSpec[frame], order.waveScale)
 
-"""
+        """
         #
         # rectified order plot 2-d image plot and FITS file
         #
@@ -353,6 +355,14 @@ def gen(reduced, out_dir, eta=None):
                 order.flatOrder.orderNum, order.ffObjImg[frame], order.waveScale, order.calMethod)
             twoDimOrderFits(out_dir, order.baseNames[frame], order.flatOrder.orderNum, 
                 order.ffObjImg[frame], header)
+        #
+        # spectrally rectified order plot 2-d image plot and FITS file
+        #
+        #for frame in order.frames:
+        #    twoDimOrderPlot(out_dir, order.baseNames[frame], 'spectral rectified order image', 'specorder.png', 
+        #        order.flatOrder.orderNum, order.ffObjImg[frame], order.waveScale, order.calMethod)
+        #    twoDimOrderFits(out_dir, order.baseNames[frame], order.flatOrder.orderNum, 
+        #        order.ffObjImg[frame], header)
         
         # end of for each order
 

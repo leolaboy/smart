@@ -58,6 +58,15 @@ class FlatOrder:
         self.smoothedSpatialTrace    = None
         self.spatialTraceMask        = None
         self.spatialTraceFitResidual = None
+
+        # set up for AB frames
+        self.smoothedSpatialTraceA    = None
+        self.spatialTraceMaskA        = None
+        self.spatialTraceFitResidualA = None
+
+        self.smoothedSpatialTraceB    = None
+        self.spatialTraceMaskB        = None
+        self.spatialTraceFitResidualB = None
         
         
     def reduce(self):
@@ -71,15 +80,20 @@ class FlatOrder:
         self.logger.info('flat normalized, flat median = ' + str(round(self.median, 1)))
         
         # spatially rectify flat
-        self.rectFlatImg = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTrace)
+        self.rectFlatImg  = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTrace)
+        self.rectFlatImgA = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTraceA)
+        self.rectFlatImgB = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTraceB)
 
         self.spatialRectified = True
         
         # compute top and bottom trim points
         self.calcTrimPoints()
+        self.calcTrimPointsAB()
 
         # trim rectified flat order images
-        self.rectFlatImg = self.rectFlatImg[self.botTrim:self.topTrim, :]
+        self.rectFlatImg  = self.rectFlatImg[self.botTrim:self.topTrim, :]
+        self.rectFlatImgA = self.rectFlatImgA[self.botTrimA:self.topTrimA, :]
+        self.rectFlatImgB = self.rectFlatImgB[self.botTrimB:self.topTrimB, :]
         
         self.logger.debug('reduction of flat order {} complete'.format(self.orderNum))
         
@@ -94,6 +108,27 @@ class FlatOrder:
         self.botTrim = self.topTrim - h + 3
         self.botTrim = int(max(0, self.botTrim))
         self.topTrim = int(min(self.topTrim, 1023))
+        
+        return
+
+    def calcTrimPointsAB(self):
+        if self.lowestPoint > self.cutoutPadding:
+            self.topTrimA = self.highestPoint - self.lowestPoint + self.cutoutPadding - 3
+        else:
+            self.topTrimA = self.highestPoint - 3
+        h = np.amin(self.topEdgeTrace - self.botEdgeTrace)
+        self.botTrimA = self.topTrimA - h + 3
+        self.botTrimA = int(max(0, self.botTrimA))
+        self.topTrimA = int(min(self.topTrimA, 1023))
+
+        if self.lowestPoint > self.cutoutPadding:
+            self.topTrimB = self.highestPoint - self.lowestPoint + self.cutoutPadding - 3
+        else:
+            self.topTrimB = self.highestPoint - 3
+        h = np.amin(self.topEdgeTrace - self.botEdgeTrace)
+        self.botTrimB = self.topTrimB - h + 3
+        self.botTrimB = int(max(0, self.botTrimA))
+        self.topTrimB = int(min(self.topTrimB, 1023))
         
         return
         

@@ -94,12 +94,24 @@ SKY_LINE_JUMP_LIMIT   = 10
 def trace_sky_line(data, start, eta=None):
 
     if eta is not None: # Change the parameters a little for Etalon lamps
-        SKY_LINE_JUMP_THRESH = 1
+        SKY_LINE_JUMP_THRESH  = 1
         SKY_LINE_SEARCH_WIDTH = 10
+    else:
+        SKY_LINE_SEARCH_WIDTH = 3
+        SKY_LINE_BG_WIDTH     = 0
+        SKY_LINE_JUMP_THRESH  = 1
+        SKY_LINE_JUMP_LIMIT   = 10 #old val
 
+    #print('11')
+    #print('111', data) 
+    #print('1111', start)
+    #print(SKY_LINE_SEARCH_WIDTH)
+    #print(SKY_LINE_BG_WIDTH) 
+    #print(SKY_LINE_JUMP_THRESH)
+    #print(data.shape)
     trace, nJumps =  tracer.trace_edge(
             data, start, SKY_LINE_SEARCH_WIDTH, SKY_LINE_BG_WIDTH, SKY_LINE_JUMP_THRESH, eta=eta)
-
+    #print('22', trace, nJumps)
     if trace is None:
         logger.warning('sky line trace failed')
         return None
@@ -107,6 +119,7 @@ def trace_sky_line(data, start, eta=None):
         logger.debug('sky line trace jump limit exceeded: n jumps=' + 
                 str(nJumps) + ' limit=' + str(SKY_LINE_JUMP_LIMIT))        
         return None
+    logger.debug('sky line accepted')  
     return trace
 
 
@@ -139,7 +152,7 @@ def smooth_spatial_trace(y_raw):
  
     return y_fit, mask
 
-SKY_SIGMA           = 2.25
+SKY_SIGMA           = 1.1
 EXTRA_PADDING       = 5
 MIN_LINE_SEPARATION = 5
 
@@ -148,30 +161,57 @@ MIN_LINE_SEPARATION = 5
 def find_spectral_trace(data, numrows=5, eta=None, TEST=False):
     """
     Locates sky lines in the bottom 5 rows (is this really optimal?) of the order image data. 
+    I fixed the above lines to check the bottom 5 rows and top 5 rows for which has more sky. - CAT
     Finds strongest peaks, sorts them, traces them, returns the average of the traces.
     Rejects line pairs that are too close together.
     Returns spectral trace as 1-d array.  Throws exception if can't find or trace lines.
     """
     
     # transpose the array because spectroid can only read horizontal peaks for now
-    data_t = data.transpose()
+    data_t0  = data.transpose()
 
 #     data_t = data_t[:, padding + 5:data_t.shape[1] - 5 - padding]
-    data_t = data_t[:, 5:data_t.shape[1] - 5]
-    s = np.sum(data_t[:, 0:numrows], axis=1)
+    data_t = data_t0[:, 5:data_t0.shape[1] - 5]
+    crit_val = np.median(data_t) # Get a value for the background
+    #print('Crit', crit_val, 2*crit_val)
+    #print(len(data_t.flatten() > 2*crit_val))
+    #print(np.where(data_t[:, 0:numrows].flatten() > 2*crit_val))
+    #print(len(np.where(data_t[:, 0:numrows].flatten() > 2*crit_val)[0]))
+    #print(data_t[:, -numrows:].shape, data_t[:, 0:numrows].shape)
+    #print(len(data_t[:, 0:numrows].flatten() > 2*crit_val))
+    #print(len(data_t[:, -numrows:].flatten() > 2*crit_val))
+    #print(len(np.where(data_t[:, 0:numrows].flatten() > 2*crit_val)[0]))
+    #print(len(np.where(data_t[:, -numrows:].flatten() > 2*crit_val)[0]))
+    #print(np.where(data_t[:, 0:numrows].flatten() > 2*crit_val)[0])
+    #print(len(np.where(data_t[:, 0:numrows].flatten() > 2*crit_val)[0]) > 1000)
+    # Check if we have the target in the slice instead of the sky
+    if len(np.where(data_t[:, 0:numrows].flatten() > 2*crit_val)[0]) > 1000: 
+        s = np.sum(data_t[:, -numrows:], axis=1)
+    else:
+        s = np.sum(data_t[:, 0:numrows], axis=1)
 
-    #import matplotlib.pyplot as plt
-    #plt.figure(10)
-    #plt.imshow(data_t)#, origin='lower')
-    
-    # import pylab as pl
-    # pl.figure(facecolor='white')
-    # pl.cla()
-    # pl.plot(s, 'k-')
-    # pl.xlim(0, 1024)
-    # pl.xlabel('column (pixels)')
-    # pl.ylabel('intensity summed over 5 rows (DN)')
-    # pl.show()
+    """
+    plt.figure(7)
+    plt.imshow(data_t[:, 0:numrows], origin='lower')
+    plt.figure(8)
+    plt.imshow(data_t[:, -numrows:], origin='lower')
+    plt.figure(9)
+    plt.imshow(data_t, origin='lower')
+    #plt.show()
+    """
+    """
+    import pylab as pl
+    sky_thres = SKY_SIGMA * np.median(s)
+    print('SIG', np.median(s), SKY_SIGMA, sky_thres)
+    pl.figure(facecolor='white')
+    pl.cla()
+    pl.plot(s, 'k-')
+    pl.axhline(SKY_SIGMA * np.median(s), c='r', ls=':')
+    pl.xlim(0, 1024)
+    pl.xlabel('column (pixels)')
+    pl.ylabel('intensity summed over 5 rows (DN)')
+    pl.show()
+    """
 
     # finds column indices of maxima
     if eta is not None:
@@ -184,7 +224,7 @@ def find_spectral_trace(data, numrows=5, eta=None, TEST=False):
     if eta is not None:# Do it slightly different for the etalon lamps
         sky_thres = 1.2 * np.median(s)
     else:
-        sky_thres = SKY_SIGMA * s.mean()
+        sky_thres = SKY_SIGMA * np.median(s)
     locmaxes = np.where(s[maxima_c[0]] > sky_thres)
     
     # indices in s or peaks
@@ -216,10 +256,12 @@ def find_spectral_trace(data, numrows=5, eta=None, TEST=False):
     #Pixels    = np.array([])
     centroids = []
     for maxskyloc in maxes:
+        #print(eta)
         #print('MAX LOC', maxskyloc)
         if 10 < maxskyloc < 1010:
-            
+            #print('start cent')
             centroid_sky = trace_sky_line(data_t, maxskyloc, eta=eta)
+            #print('cent', centroid_sky)
            
             if centroid_sky is None:
                 continue
@@ -233,16 +275,15 @@ def find_spectral_trace(data, numrows=5, eta=None, TEST=False):
             #print('SUM0', centroid_sky - centroid_sky[0])
             #print('SUM1', centroids)
 
-            if eta is None:
-                if fitnumber > 2: # Why are we limiting this?
-                    break
+            #if eta is None:
+            #    if fitnumber > 2: # Why are we limiting this?
+            #        break
 
             #p0    = np.polyfit(np.arange(len(centroid_sky)), centroid_sky, deg=1) 
             #z0    = np.poly1d(p0)
             #plt.scatter(np.arange(len(centroid_sky)), centroid_sky, color='r', s=1, alpha=0.5)
             #plt.plot(np.arange(len(centroid_sky)), z0(np.arange(len(centroid_sky))), 'r--', lw=0.5)
 
-    
     #print('SUM2', centroid_sky_sum)
     #plt.show()
     #sys.exit()

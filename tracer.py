@@ -6,15 +6,16 @@ import scipy.optimize as op
 
 def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, eta=None):
 
+    #print('0')
     # initialize trace array
     trace = np.zeros(data.shape[1])
-
+    #print('00')
     # nJumps is the number of times successive centroids differed by more than threshold
     nJumps = 0
-
+    #print('000')
     # first centroid assumed to be at start
-    trace[0] = start
-        
+    trace[0] = start   
+    #print('0000')
     # find centroids for the rest of the columns in data
 
     if start == 49: 
@@ -96,8 +97,12 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, eta=None):
             #sys.exit() 
             """
         else: 
+            #print('TEST', data[int(ymin):int(ymax) + 1, i:i+stepcount] - bgMean)
+            #print(bgMean)
+            #print('TEST', data[int(ymin):int(ymax) + 1, i] - bgMean)
             trace[i] = scipy.ndimage.measurements.center_of_mass(
                               data[int(ymin):int(ymax) + 1, i] - bgMean)[0] + ymin
+            #print('TRACING', trace[i])
         
         # if PLOT:        
         #     import pylab as pl
@@ -153,6 +158,7 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, eta=None):
             return None, None
     
         # centroid jumped more than traceDelta
+        #print('dist', np.abs(trace[i] - trace[i - 1]), 1)
         if np.abs(trace[i] - trace[i - 1]) > jumpThresh:
             nJumps += 1
             if i > 4:

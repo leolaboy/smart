@@ -115,7 +115,11 @@ def reduce_order(order, eta=None):
                                                  order.flatOrder.rectFlatImg, order.spectralTrace)
             __rectify_spectral(order, eta=eta)
             order.spectralRectified = True
-            #print('Etalon Rectified')
+
+        # save spatially rectified images before spectral rectify for diagnostics 
+        order.sprNormEtaImg = order.ffEtaImg
+        for frame in order.frames:
+            order.sprFfObjImg[frame] = order.ffObjImg[frame]
 
     else:
         # Find and smooth spectral trace, always use frame A
@@ -124,14 +128,21 @@ def reduce_order(order, eta=None):
                     nirspec_lib.find_spectral_trace(
                             order.ffObjImg['A']), order.ffObjImg['A'].shape[0])
         except Exception as e:
-            logger.warning('not rectifying order {} in spectral dimension'.format(
-                    order.flatOrder.orderNum))
+            try:
+                order.spectralTrace = nirspec_lib.smooth_spectral_trace(
+                    nirspec_lib.find_spectral_trace(
+                            order.ffObjImg['B']), order.ffObjImg['B'].shape[0])
+            except Exception as e:
+                logger.warning('not rectifying order {} in spectral dimension'.format(
+                        order.flatOrder.orderNum))
      
         else:
             order.flatOrder.rectFlatImg = image_lib.rectify_spectral(
                     order.flatOrder.rectFlatImg, order.spectralTrace)
             __rectify_spectral(order)
             order.spectralRectified = True
+            for frame in order.frames:
+                order.sprFfObjImg[frame] = order.ffObjImg[frame]
      
 
     #plt.figure(666) #XXX
@@ -162,8 +173,9 @@ def reduce_order(order, eta=None):
     '''
 
     # compute noise image
-    order.noiseImg = nirspec_lib.calc_noise_img(
-            order.objImg['A'], order.flatOrder.rectFlatImg, order.integrationTime)
+    for frame in order.frames:
+        order.noiseImg[frame] = nirspec_lib.calc_noise_img(
+                order.objImg[frame], order.flatOrder.rectFlatImg, order.integrationTime)
     
     # extract spectra
     __extract_spectra(order, eta=eta)
@@ -278,7 +290,24 @@ def __rectify_spatial(order, eta=None):
     #polyVals = cat.CreateSpatialMap(order)  
     
     for frame in order.frames:
-        
+        """
+        if frame == 'A':
+            order.objImg[frame] = image_lib.rectify_spatial(
+                    order.objImg[frame], order.flatOrder.smoothedSpatialTraceA)
+            order.ffObjImg[frame] = image_lib.rectify_spatial(
+                    order.ffObjImg[frame], order.flatOrder.smoothedSpatialTraceA)
+        elif frame == 'B':
+            order.objImg[frame] = image_lib.rectify_spatial(
+                    order.objImg[frame], order.flatOrder.smoothedSpatialTraceB)
+            order.ffObjImg[frame] = image_lib.rectify_spatial(
+                    order.ffObjImg[frame], order.flatOrder.smoothedSpatialTraceB)
+
+        else:
+            order.objImg[frame] = image_lib.rectify_spatial(
+                    order.objImg[frame], order.flatOrder.smoothedSpatialTrace)
+            order.ffObjImg[frame] = image_lib.rectify_spatial(
+                    order.ffObjImg[frame], order.flatOrder.smoothedSpatialTrace)
+        """
         order.objImg[frame] = image_lib.rectify_spatial(
                 order.objImg[frame], order.flatOrder.smoothedSpatialTrace)
         order.ffObjImg[frame] = image_lib.rectify_spatial(
@@ -382,7 +411,7 @@ def __extract_spectra(order, eta=None):
             # extract object, sky, etalon, and noise spectra for A and B and flat spectrum
             order.objSpec[frame], order.flatSpec, order.etalonSpec, order.skySpec[frame], order.noiseSpec[frame], \
                     order.topBgMean[frame], order.botBgMean[frame] = image_lib.extract_spectra(
-                            order.ffObjImg[frame], order.flatOrder.rectFlatImg, order.noiseImg, 
+                            order.ffObjImg[frame], order.flatOrder.rectFlatImg, order.noiseImg[frame], 
                             order.objWindow[frame], order.topSkyWindow[frame], 
                             order.botSkyWindow[frame], eta=order.ffEtaImg) 
 
@@ -390,7 +419,7 @@ def __extract_spectra(order, eta=None):
             # extract object, sky, and noise spectra for A and B and flat spectrum
             order.objSpec[frame], order.flatSpec, order.skySpec[frame], order.noiseSpec[frame], \
                     order.topBgMean[frame], order.botBgMean[frame] = image_lib.extract_spectra(
-                            order.ffObjImg[frame], order.flatOrder.rectFlatImg, order.noiseImg, 
+                            order.ffObjImg[frame], order.flatOrder.rectFlatImg, order.noiseImg[frame], 
                             order.objWindow[frame], order.topSkyWindow[frame], 
                             order.botSkyWindow[frame])  
 
@@ -400,7 +429,7 @@ def __extract_spectra(order, eta=None):
     from scipy import fftpack
     from scipy import signal
 
-    for frame in ['A', 'B', 'AB']:
+    for frame in frames:
         if order.flatOrder.orderNum == 33:
 
             #fit1 = np.polyfit(np.arange(len(order.objSpec['A'])), order.objSpec['A'], 10)

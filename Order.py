@@ -94,10 +94,12 @@ class Order:
         self.ffObjImg = {}
         
         for frame in self.frames:
-            self.objImg[frame] = []
+            self.objImg[frame]   = []
             self.ffObjImg[frame] = []
         
-        self.noiseImg = []
+        self.noiseImg = {}
+        for frame in self.frames:
+            self.noiseImg[frame] = []
         
         """
         These attributes are used for storing order images after spatial
@@ -117,11 +119,32 @@ class Order:
         
         """
         self.srNormFlatImg = []
-        self.srNormEtaImg = []
+        self.srNormEtaImg  = []
         
         self.srFfObjImg = {}
         for frame in self.frames:
             self.srFfObjImg[frame] = []
+        """
+        These attributes are used for storing order images after spectral
+        rectification for diagnostic purposes.
+        
+        Attribute:
+        
+            sprNormFlatImg: Normalized flat order image after spectral rectification.
+
+            sprNormEtaImg: Normalized etalon order image after spectral rectification.
+            
+            sprFlatObjAImg: Flat-fielded object A order image after spectral rectification.
+            
+            sprFlatObjBImg: Flat-fielded object B order image after spectral rectification.
+            
+            sprFlatObjABImg: Flat-fielded object A - B order image after spectral rectification.
+        
+        """
+        self.sprNormEtaImg  = []
+        self.sprFfObjImg    = {}
+        for frame in self.frames:
+            self.sprFfObjImg[frame] = []
             
         
         """
