@@ -81,8 +81,10 @@ class FlatOrder:
         
         # spatially rectify flat
         self.rectFlatImg  = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTrace)
+        """
         self.rectFlatImgA = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTraceA)
         self.rectFlatImgB = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTraceB)
+        """
 
         self.spatialRectified = True
         
@@ -92,8 +94,8 @@ class FlatOrder:
 
         # trim rectified flat order images
         self.rectFlatImg  = self.rectFlatImg[self.botTrim:self.topTrim, :]
-        self.rectFlatImgA = self.rectFlatImgA[self.botTrimA:self.topTrimA, :]
-        self.rectFlatImgB = self.rectFlatImgB[self.botTrimB:self.topTrimB, :]
+        #self.rectFlatImgA = self.rectFlatImgA[self.botTrimA:self.topTrimA, :]
+        #self.rectFlatImgB = self.rectFlatImgB[self.botTrimB:self.topTrimB, :]
         
         self.logger.debug('reduction of flat order {} complete'.format(self.orderNum))
         

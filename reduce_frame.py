@@ -242,9 +242,10 @@ def reduce_orders(reduced, eta=None):
         if flatOrder.valid is not True:
             continue        
         
-        logger.info('***** order ' + str(flatOrder.orderNum) + ' *****')
+        logger.info('*********** ORDER ' + str(flatOrder.orderNum) + ' ***********')
 
         #if flatOrder.orderNum != 33: continue #XXX
+        #if flatOrder.orderNum != 37: continue #XXX
             
         if eta is not None:
             order = Order.Order(reduced.frames, reduced.baseNames, flatOrder, etaImg=reduced.etaImg)
@@ -352,10 +353,7 @@ def find_global_wavelength_soln(reduced):
             
     reduced.nLinesFound = len(col)
     for l in loggers:
-        logging.getLogger(l).log(INFO, 'n sky lines identified = {:d}'.format(reduced.nLinesFound))
-    reduced.nELinesFound = len(col)
-    for l in loggers:
-        logging.getLogger(l).log(INFO, 'n etalon lines identified = {:d}'.format(reduced.nELinesFound))
+        logging.getLogger(l).log(INFO, 'n sky/etalon lines identified = {:d}'.format(reduced.nLinesFound))
     
     if config.params['int_c'] is True:
         logger.warning('using integer column numbers in wavelength fit')
@@ -430,7 +428,7 @@ def apply_wavelength_soln(reduced):
         if np.all(dx <= 0) or np.all(dx >= 0):
             # wavelength scale is monotonic
             order.waveScale = order.frameCalWaveScale
-            print('TEST1', order.waveScale)
+            #print('TEST1', order.waveScale)
             np.save('wave_%s.npy'%order.flatOrder.orderNum, order.waveScale) 
             order.calMethod = 'frame sky line cal'
         else:

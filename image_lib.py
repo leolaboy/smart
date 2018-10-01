@@ -67,7 +67,7 @@ def rectify_spectral(data, curve, eta=None):
     # pivot curve around peak 
     # and change sign so shift is corrective 
     profile = data.sum(axis=1)
-    peak = np.argmax(profile)
+    peak    = np.argmax(profile)
     curve_p = -1.0 * (curve - curve[peak])
         
     rectified = []

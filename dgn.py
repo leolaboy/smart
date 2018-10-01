@@ -138,9 +138,9 @@ def gen(reduced, out_dir, eta=None):
         # object and flat spectrally rectified order plot
         #
         if order.isPair:
-            img2 = order.sprFfObjImg['AB']
+            img2 = order.ffObjImg['AB']
         else:
-            img2 = order.sprFfObjImg['A']
+            img2 = order.ffObjImg['A']
         specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, img, img2)
         
         if eta is not None:

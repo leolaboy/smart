@@ -78,7 +78,7 @@ class Flat:
         
         for orderNum in range(config.get_starting_order(self.filterName), 0, -1):
             
-            self.logger.info('***** flat order {} *****'.format(orderNum))
+            self.logger.info('*********** FLAT ORDER {} ***********'.format(orderNum))
 
             flatOrder = FlatOrder.FlatOrder(self.baseName, orderNum, self.logger)
             
@@ -158,9 +158,11 @@ class Flat:
         self.logger.info('n orders found = {}'.format(self.nOrdersFound))
         return
         
+
     def getBaseName(self):
         return self.fn[self.fn.rfind('/') + 1:self.fn.rfind('.')]
         
+
     def findEdgeProfilePeaks(self):
         
         # make top and bottom edge profile images
@@ -176,6 +178,7 @@ class Flat:
         
         return
         
+
     def findPeaks(self, edgeProfile):
         
         peak_rows = argrelextrema(edgeProfile, np.greater, order=35)[0]
@@ -184,6 +187,7 @@ class Flat:
         
         return(peak_rows[tall_peaks_i[0]])
         
+
     def findOrderSowc(self, flatOrder):
         
         flatOrder.topMeas = None
@@ -218,6 +222,7 @@ class Flat:
                 flatOrder.botCalc - flatOrder.botMeas))     
         return
               
+
     def findEdge(self, calc, maxDelta, topOrBot): 
         if topOrBot == 'bot': 
             meas = min((abs(calc - i), i) for i in self.botEdgePeaks)[1] 
@@ -231,6 +236,7 @@ class Flat:
         else:
             return meas
         
+
     def findOrder(self, flatOrder):
          
         flatOrder.topMeas = min((abs(flatOrder.topCalc - i), i) for i in self.topEdgePeaks)[1]
@@ -306,13 +312,13 @@ class Flat:
         # smooth spatial trace
         flatOrder.smoothedSpatialTrace, flatOrder.spatialTraceMask = \
                 nirspec_lib.smooth_spatial_trace(flatOrder.avgEdgeTrace)
-
-        # smooth spatial trace for AB frames
+        """
+        # smooth spatial trace for A and B frames (maybe implement later)
         flatOrder.smoothedSpatialTraceA, flatOrder.spatialTraceMaskA = \
                 nirspec_lib.smooth_spatial_trace(flatOrder.topEdgeTrace)
         flatOrder.smoothedSpatialTraceB, flatOrder.spatialTraceMaskB = \
                 nirspec_lib.smooth_spatial_trace(flatOrder.botEdgeTrace)
-                
+        """
         self.logger.info('spatial trace smoothed, ' + \
                 str(self.flatImg.shape[1] - np.count_nonzero(flatOrder.spatialTraceMask)) + 
                 ' points ignored')

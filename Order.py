@@ -39,7 +39,10 @@ class Order:
         self.topMeas = 0.0
         self.botCalc = 0.0
 
-        self.spectralTrace = []
+        #self.spectralTrace = []
+        self.spectralTrace = {}
+        for frame in self.frames:
+            self.spectralTrace[frame] = []
                             
         self.objCutout = {}
         for frame in self.frames:
