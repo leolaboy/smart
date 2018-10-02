@@ -144,8 +144,10 @@ def gen(reduced, out_dir, eta=None):
         specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, img, img2)
         
         if eta is not None:
-            specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.srNormEtaImg, order.sprNormEtaImg)
-            specrect_plot2(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.sprNormEtaImg, order.ffEtaImg, eta=eta)
+            img  = order.srNormEtaImg
+            img2 = order.ffEtaImg
+            specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, img, img2)
+            #specrect_plot2(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.sprNormEtaImg, order.ffEtaImg, eta=eta)
         #else: # Not sure why this doesn't work
         #    specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.srFlatObjAImg, order.flattenedObjAImg)
        
@@ -353,25 +355,25 @@ def cutouts_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, fla
 
 def spatrect_plot(outpath, base_name, order_num, obj, flat):
 
-    pl.figure('spatially rectified', facecolor='white', figsize=(8, 5))
+    pl.figure('spatially rectified', facecolor='white', figsize=(8, 10))
     pl.cla()
     pl.suptitle('spatially rectified, {}, order {}'.format(base_name, order_num), fontsize=14)
     pl.set_cmap('Blues_r')
 
     obj_plot = pl.subplot(2, 1, 1)
     try:
-        obj_plot.imshow(exposure.equalize_hist(obj))
+        obj_plot.imshow(exposure.equalize_hist(obj), aspect='auto')
     except:
-        obj_plot.imshow(obj)
+        obj_plot.imshow(obj, aspect='auto')
     obj_plot.set_title('object')
 #     obj_plot.set_ylim([1023, 0])
     obj_plot.set_xlim([0, 1023])
     
     flat_plot = pl.subplot(2, 1, 2)
     try:
-        flat_plot.imshow(exposure.equalize_hist(flat))
+        flat_plot.imshow(exposure.equalize_hist(flat), aspect='auto')
     except:
-        flat_plot.imshow(flat)
+        flat_plot.imshow(flat, aspect='auto')
     flat_plot.set_title('flat')
 #     flat_plot.set_ylim([1023, 0])
     flat_plot.set_xlim([0, 1023])
@@ -394,9 +396,9 @@ def specrect_plot(outpath, base_name, order_num, before, after):
     before = imresize(before, (500, 1024), interp='bilinear')
     
     try:
-        before_plot.imshow(exposure.equalize_hist(before))
+        before_plot.imshow(exposure.equalize_hist(before), aspect='auto')
     except:
-        before_plot.imshow(before)
+        before_plot.imshow(before, aspect='auto')
     before_plot.set_title('before')
 #     obj_plot.set_ylim([1023, 0])
     before_plot.set_xlim([0, 1023])
@@ -406,9 +408,9 @@ def specrect_plot(outpath, base_name, order_num, before, after):
     after = imresize(after, (500, 1024), interp='bilinear')
     
     try:
-        after_plot.imshow(exposure.equalize_hist(after))
+        after_plot.imshow(exposure.equalize_hist(after), aspect='auto')
     except:
-        after_plot.imshow(after)
+        after_plot.imshow(after, aspect='auto')
     after_plot.set_title('after')
 #     flat_plot.set_ylim([1023, 0])
     after_plot.set_xlim([0, 1023])

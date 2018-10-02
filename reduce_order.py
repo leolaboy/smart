@@ -127,7 +127,8 @@ def reduce_order(order, eta=None):
                     except Exception as e:
                         logger.warning('not rectifying frame {} order {} in spectral dimension (etalon)'.format(
                             frame, order.flatOrder.orderNum))
-                logger.warning('not rectifying frame {} order {} in spectral dimension'.format(
+                else:
+                    logger.warning('not rectifying frame {} order {} in spectral dimension'.format(
                     frame, order.flatOrder.orderNum))
         else: 
             try:
@@ -146,7 +147,8 @@ def reduce_order(order, eta=None):
                     except Exception as e:
                         logger.warning('not rectifying frame {} order {} in spectral dimension (etalon)'.format(
                             frame, order.flatOrder.orderNum))
-                logger.warning('not rectifying frame {} order {} in spectral dimension'.format(
+                else:
+                    logger.warning('not rectifying frame {} order {} in spectral dimension'.format(
                     frame, order.flatOrder.orderNum))
 
     if eta is not None:
@@ -156,7 +158,7 @@ def reduce_order(order, eta=None):
                     frame, order.flatOrder.orderNum))
             order.spectralTrace = nirspec_lib.smooth_spectral_trace(
                                         nirspec_lib.find_spectral_trace(
-                                        order.ffEtaImg, numrows=20, eta=eta), order.ffEtaImg.shape[0], eta=eta)
+                                        order.ffEtaImg, eta=eta), order.ffEtaImg.shape[0], eta=eta)
         except Exception as e:
             logger.warning('not rectifying etalon order {} in spectral dimension (etalon)'.format(
                     order.flatOrder.orderNum))
