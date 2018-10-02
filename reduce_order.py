@@ -116,9 +116,17 @@ def reduce_order(order, eta=None):
                 logger.info('attempting rectification of frame {} order {} in spectral dimension'.format(
                     frame, order.flatOrder.orderNum))
                 order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
-                        nirspec_lib.find_spectral_trace(
-                                order.ffObjImg['A']), order.ffObjImg['A'].shape[0])
+                        nirspec_lib.find_spectral_trace(order.ffObjImg['A']), order.ffObjImg['A'].shape[0])
             except Exception as e:
+                if eta is not None: 
+                    try:           
+                        logger.info('attempting rectification of frame {} order {} in spectral dimension (etalon)'.format(
+                                frame, order.flatOrder.orderNum))
+                        order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
+                            nirspec_lib.find_spectral_trace(order.ffEtaImg), order.ffObjImg['A'].shape[0])
+                    except Exception as e:
+                        logger.warning('not rectifying frame {} order {} in spectral dimension (etalon)'.format(
+                            frame, order.flatOrder.orderNum))
                 logger.warning('not rectifying frame {} order {} in spectral dimension'.format(
                     frame, order.flatOrder.orderNum))
         else: 
@@ -129,19 +137,28 @@ def reduce_order(order, eta=None):
                         nirspec_lib.find_spectral_trace(
                                 order.ffObjImg['B']), order.ffObjImg['B'].shape[0])
             except Exception as e:
+                if eta is not None: 
+                    try:           
+                        logger.info('attempting rectification of frame {} order {} in spectral dimension (etalon)'.format(
+                                frame, order.flatOrder.orderNum))
+                        order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
+                            nirspec_lib.find_spectral_trace(order.ffEtaImg), order.ffObjImg['B'].shape[0])
+                    except Exception as e:
+                        logger.warning('not rectifying frame {} order {} in spectral dimension (etalon)'.format(
+                            frame, order.flatOrder.orderNum))
                 logger.warning('not rectifying frame {} order {} in spectral dimension'.format(
                     frame, order.flatOrder.orderNum))
 
     if eta is not None:
 
         try:
-            logger.info('attempting rectification of etalon order {} in spectral dimension'.format(
+            logger.info('attempting rectification of etalon order {} in spectral dimension (etalon)'.format(
                     frame, order.flatOrder.orderNum))
             order.spectralTrace = nirspec_lib.smooth_spectral_trace(
                                         nirspec_lib.find_spectral_trace(
                                         order.ffEtaImg, numrows=20, eta=eta), order.ffEtaImg.shape[0], eta=eta)
         except Exception as e:
-            logger.warning('not rectifying etalon order {} in spectral dimension'.format(
+            logger.warning('not rectifying etalon order {} in spectral dimension (etalon)'.format(
                     order.flatOrder.orderNum))
         
         else:
