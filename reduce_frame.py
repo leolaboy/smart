@@ -247,11 +247,7 @@ def reduce_orders(reduced, eta=None):
         #if flatOrder.orderNum != 33: continue #XXX
         #if flatOrder.orderNum != 37: continue #XXX
             
-        if eta is not None:
-            order = Order.Order(reduced.frames, reduced.baseNames, flatOrder, etaImg=reduced.etaImg)
-
-        else:
-            order = Order.Order(reduced.frames, reduced.baseNames, flatOrder)
+        order = Order.Order(reduced.frames, reduced.baseNames, flatOrder, etaImg=reduced.etaImg)
         
         order.isPair = reduced.isPair
         

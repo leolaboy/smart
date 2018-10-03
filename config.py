@@ -92,7 +92,7 @@ long_slit_cutout_padding = {
         'NIRSPEC-5': 0, 
         'NIRSPEC-6': 15, 
         'NIRSPEC-7': 30,
-        'K-AO': 50          
+        'K-AO': 20          
 }
 short_slit_cutout_padding = {
         'NIRSPEC-1': 0, 
@@ -102,7 +102,7 @@ short_slit_cutout_padding = {
         'NIRSPEC-5': 15, 
         'NIRSPEC-6': 15, 
         'NIRSPEC-7': 30,
-        'K-AO': 50          
+        'K-AO': 20          
 }
 
 def get_cutout_padding(filtername, slit):

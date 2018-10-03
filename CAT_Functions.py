@@ -14,7 +14,7 @@ def NormDist(x, mean, sigma, baseline, amplitude):
 
 
 
-def CreateSpatialMap(image, numrows=3, clip=8, plot=True, plotvid=False):
+def CreateSpatialMap(image, numrows=3, clip=15, plot=False, plotvid=False):
 
 	#print(image.shape)
 	Centroids = []
@@ -37,6 +37,7 @@ def CreateSpatialMap(image, numrows=3, clip=8, plot=True, plotvid=False):
 				Xs = np.arange(len(np.sum(image[clip:-clip, 0:numrows+1], axis=1))) + clip
 				Ys = np.sum(image[clip:-clip,0:numrows+1], axis=1)
 				guess1 = Xs[np.where(Ys == np.max(Ys))]
+				#guess1 = Xs[len(Xs)//2]
 				#print('Guess', guess1)
 
 				popt, pcov = op.curve_fit(NormDist, Xs, Ys, 
@@ -83,11 +84,12 @@ def CreateSpatialMap(image, numrows=3, clip=8, plot=True, plotvid=False):
 				Xs = np.arange(len(np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1))) + clip
 				Ys = np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1)
 				guess1 = Xs[np.where(Ys == np.max(Ys))]
+				#guess1 = Xs[len(Xs)//2]
 				#print('Guess', guess1)
 			
 				popt, pcov = op.curve_fit(NormDist, Xs, Ys, 
 			                          	  p0=[guess1, 2., np.median(Ys), np.max(Ys)],
-                                          bounds = ( (guess1-3., 1., 1., 1.), (guess1+3., 8., 1e7, 1e7) ), 
+                                          bounds = ( (guess1-5., 1., 1., 1.), (guess1+5., 8., 1e7, 1e7) ), 
 			                          	  maxfev=100000) # Where should a pixel start? (0, 1, 0.5?)
 				#print(i,popt[0])
 				

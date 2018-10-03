@@ -65,7 +65,7 @@ subdirs = dict([
                 ('noise.png',           'previews/noise'    ),
                 ('flux_vs_noise.fits',  'fits/flux_vs_noise'),
                 ('flux_vs_noise.png',   'previews/flux_vs_noise'), 
-                ('spectra.png',         'previews/spectra'  ),
+                #('spectra.png',         'previews/spectra'  ),
                 ('wave.fits',           'fits/wave'         ),
                 ('all.fits',            'fits/all'          ),  
                ])
@@ -244,13 +244,13 @@ def gen(reduced, out_dir, eta=None):
             if frame == 'AB':
                 topSkyWindow = None
                 botSkyWindow = None
-                topBgMean = None
-                botBgMean = None
+                topBgMean    = None
+                botBgMean    = None
             else:
                 topSkyWindow = order.topSkyWindow[frame]
                 botSkyWindow = order.botSkyWindow[frame]
-                topBgMean = order.topBgMean[frame]
-                botBgMean = order.botBgMean[frame]
+                topBgMean    = order.topBgMean[frame]
+                botBgMean    = order.botBgMean[frame]
             
             profilePlot(out_dir, reduced.baseNames[frame], order.flatOrder.orderNum, 
                     order.spatialProfile[frame], order.peakLocation[frame], order.centroid[frame], 
@@ -408,9 +408,9 @@ def tracePlot(outpath, base_name, order_num, raw, fit, mask):
     return
 
 def traceFits(outpath, base_name, order_num, trace):
-    hdu = fits.PrimaryHDU(trace)
+    hdu     = fits.PrimaryHDU(trace)
     hdulist = fits.HDUList(hdu)
-    fn = constructFileName(outpath, base_name, order_num, 'trace.fits')     
+    fn      = constructFileName(outpath, base_name, order_num, 'trace.fits')     
     hdulist.writeto(fn, clobber=True)
     log_fn(fn)
     return
@@ -458,12 +458,12 @@ def traceFits(outpath, base_name, order_num, trace):
 
 def profileAsciiTable(outpath, base_name, order_num, profile):
     
-    names = ['row', 'mean_flux'] 
-    units = ['pixels', 'counts']
+    names   = ['row', 'mean_flux'] 
+    units   = ['pixels', 'counts']
     formats = ['.0f', '.0f']
-    widths = [6, 9] 
+    widths  = [6, 9] 
     
-    buff = []
+    buff    = []
     
     if config.params['pipes'] is True:
         p_char = '|'
@@ -540,8 +540,8 @@ def profilePlot(outpath, base_name, order_num, profile, peak, centroid,
 
     # set axes limits
     yrange = profile.max() - profile.min()
-    ymin = profile.min() - (0.1 * yrange)
-    ymax = profile.max() + (0.1 * yrange)
+    ymin   = profile.min() - (0.1 * yrange)
+    ymax   = profile.max() + (0.1 * yrange)
     pl.ylim(ymin, ymax)
     
     # set ticks and grid
@@ -556,7 +556,7 @@ def profilePlot(outpath, base_name, order_num, profile, peak, centroid,
    
     # draw extraction window
     wvlh = 0.01 * yrange;
-    ewh = 0.05 * yrange
+    ewh  = 0.05 * yrange
     
     pl.plot((ext_range[0], ext_range[-1]), (profile.max(), profile.max()), 
             'r', linewidth=0.5, label='extraction window')
@@ -631,14 +631,14 @@ def fluxAsciiTable(outpath, base_name, order_num, wave, flux, sky, synth_sky, sn
                      flat, trace_upper, trace_lower, trace_mean, trace_fit, fit_res):
      
     names = [   'col',         'wave',         'flux',         'sky', 
-                'synth_sky',   'snr',          'flat',        'trace_upper', 
+                'synth_sky',   'snr',          'flat',         'trace_upper', 
                 'trace_lower', 'trace_mean',   'trace_fit',    'fit_res']
     units = [   'pixels',      'Angstroms',    'counts',       'counts', 
                 '',            '',             '',             'pixel', 
                 'pixels',      'pixels',       'pixels',       'pixels']
-    formats = [ 'd',            '.6e',          '.3e',          '.3e',
-                '.3e',          '.3e',          '.3e',          '.3e',
-                '.3e',          '.3e',          '.3e',          '.3e']
+    formats = [ 'd',           '.6e',          '.3e',          '.3e',
+                '.3e',         '.3e',          '.3e',          '.3e',
+                '.3e',         '.3e',          '.3e',          '.3e']
     nominal_width = 10
     widths = []
     
@@ -723,7 +723,7 @@ def spectrumPlot(outpath, base_name, title, order_num, y_units, cont, wave,
     pl.figure(title, facecolor='white')
     pl.clf()
     pl.title(title + ', ' + base_name + ", order " + str(order_num), fontsize=12)
-    pl.xlabel('wavelength ($\AA$) (' + wave_note + ')')
+    pl.xlabel('Wavelength ($\AA$) (' + wave_note + ')')
     if len(y_units) > 0:
         pl.ylabel(title + '(' + y_units + ')')
     else:
@@ -861,7 +861,7 @@ def multiSpectrumPlot(outpath, base_name, order, y_units, cont, sky, noise, wave
     pl.figure(title, facecolor='white')
     pl.clf()
     pl.title(title + ', ' + base_name + ", order " + str(order), fontsize=12)
-    pl.xlabel('wavelength ($\AA$)')
+    pl.xlabel('Wavelength ($\AA$)')
     pl.ylabel(title + '(' + y_units + ')')
     pl.grid(True)
     
@@ -888,11 +888,11 @@ def multiSpectrumPlot(outpath, base_name, order, y_units, cont, sky, noise, wave
 def wavelengthCalAsciiTable(outpath, base_name, order, col, source, wave_exp, wave_fit, res, peak, 
         slope):
     
-    names = ['order', 'source', 'col', 'wave_exp', 'wave_fit', 'res', 'peak', 'disp'] 
-    units = ['', '', 'pixels', 'Angstroms', 'Angstroms',  'Angstroms', 'counts', 'Angstroms/pixel']
-    formats = [ 'd', '', '.3f', '.6e', '.6e', '.3f', 'd', '.3e']
+    names         = ['order', 'source', 'col', 'wave_exp', 'wave_fit', 'res', 'peak', 'disp'] 
+    units         = ['', '', 'pixels', 'Angstroms', 'Angstroms',  'Angstroms', 'counts', 'Angstroms/pixel']
+    formats       = [ 'd', '', '.3f', '.6e', '.6e', '.3f', 'd', '.3e']
     nominal_width = 10
-    widths = []
+    widths        = []
     
     if config.params['pipes'] is True:
         p_char = '|'
@@ -1000,9 +1000,9 @@ def twoDimOrderPlot(outpath, base_name, title, base_filename, order_num, data, x
     
 
 def twoDimOrderFits(outpath, base_name, order_num, data, header):     
-    hdu = fits.PrimaryHDU(data)
+    hdu     = fits.PrimaryHDU(data)
     hdulist = fits.HDUList(hdu)
-    hdr = hdulist[0].header
+    hdr     = hdulist[0].header
     for k, v in header.items():
         try:
             hdr[k] = v

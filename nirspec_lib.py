@@ -156,7 +156,7 @@ EXTRA_PADDING       = 5
 MIN_LINE_SEPARATION = 5
 
 
-def find_spectral_trace(data, numrows=5, eta=None, plot=True):
+def find_spectral_trace(data, numrows=5, eta=None, plot=False):
     """
     Locates sky/etalon lines in the bottom 5 rows (is this really optimal?) of the order image data. 
     I fixed the above lines to check the bottom 5 rows and top 5 rows for which has more sky. - CAT
@@ -306,7 +306,7 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=True):
     raise StandardError('failed to find sky/etalon line trace')
     
     
-def smooth_spectral_trace(data, l, eta=None, version2=True, plot=True):
+def smooth_spectral_trace(data, l, eta=None, version2=True, plot=False):
     
     if version2 == True:
         AllPix   = []
