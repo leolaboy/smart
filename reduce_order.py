@@ -624,7 +624,7 @@ def __characterize_spatial_profile(order):
                 logger.debug('gaussian window width = {}'.format(2 * w))
                 x0 = max(0, order.peakLocation[frame] - w)
                 x1 = min(len(order.spatialProfile[frame]) - 1, order.peakLocation[frame] + w)
-                x = range(x1 - x0)
+                x  = range(x1 - x0)
                 order.gaussianParams[frame], pcov = scipy.optimize.curve_fit(
                         image_lib.gaussian, x, order.spatialProfile[frame][x0:x1] - \
                         np.amin(order.spatialProfile[frame][x0:x1]))
@@ -663,8 +663,8 @@ def __find_spatial_profile_and_peak(order):
                 frame, order.peakLocation[frame]))
     
         # fit peak to Gaussian, save Gaussian parameters and real centroid location
-        p0 = order.peakLocation[frame] - (config.params['obj_window'] / 2)
-        p1 = order.peakLocation[frame] + (config.params['obj_window'] / 2)
+        p0 = order.peakLocation[frame] - (config.params['obj_window'] // 2)
+        p1 = order.peakLocation[frame] + (config.params['obj_window'] // 2)
         order.centroid[frame] = (scipy.ndimage.measurements.center_of_mass(
             order.spatialProfile[frame][p0:p1]))[0] + p0 
         logger.info('frame {} spatial profile peak centroid row {:.1f}'.format(
