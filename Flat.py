@@ -86,13 +86,15 @@ class Flat:
             flatOrder.topCalc, flatOrder.botCalc, flatOrder.gratingEqWaveScale = self.gratingEq.evaluate(
                     orderNum, self.filterName, self.slit, self.echelleAngle, self.disperserAngle)
 
-            # TESTING TO PLOT ORDER CUTOUTS
-            #print(flatOrder.topCalc, flatOrder.botCalc)
-            #plt.imshow(self.flatImg, origin='lower')
-            #plt.axhline(flatOrder.topCalc, c='r', ls='--')
-            #plt.axhline(flatOrder.botCalc, c='b', ls='--')
-            #plt.show()
+            """
+            # TESTING TO PLOT ORDER CUTOUTS XXX
+            print(flatOrder.topCalc, flatOrder.botCalc)
+            plt.imshow(self.flatImg, origin='lower', aspect='auto')
+            plt.axhline(flatOrder.topCalc, c='r', ls='--')
+            plt.axhline(flatOrder.botCalc, c='b', ls='--')
+            plt.show()
             #sys.exit()
+            """
             
             self.logger.info('predicted top edge location = {:.0f} pixels'.format(flatOrder.topCalc))
             self.logger.info('predicted bot edge location = {:.0f} pixels'.format(flatOrder.botCalc))
@@ -125,7 +127,15 @@ class Flat:
                     self.logger.info('failed to find spatial trace: {}'.format(e.message))
                     flatOrder.valid = False
                     continue
-   
+                """
+                # TESTING TO PLOT ORDER CUTOUTS XXX
+                print(flatOrder.botEdgeTrace)
+                plt.imshow(self.flatImg, origin='lower', aspect='auto')
+                plt.plot(flatOrder.topEdgeTrace, c='r', ls='--')
+                plt.plot(flatOrder.botEdgeTrace, c='b', ls='--')
+                plt.show()
+                #sys.exit()
+                """
                 if flatOrder.spatialTraceFitResidual > config.params['max_spatial_trace_res']:
                     self.logger.info('spatial trace fit residual too large, limit = {}'.format(
                             config.params['max_spatial_trace_res']))
@@ -303,7 +313,16 @@ class Flat:
             if flatOrder.topEdgeTrace is not None:
                 flatOrder.topEdgeTrace -= config.params['long_slit_edge_margin']
             if flatOrder.botEdgeTrace is not None:
-                flatOrder.botEdgeTrace += config.params['long_slit_edge_margin']   
+                flatOrder.botEdgeTrace += config.params['long_slit_edge_margin']
+
+        # apply K-AO correction to raw traces
+        if 'K-AO' in self.filterName:
+            self.logger.info('applying K-AO filter edge margins of {} pixels'.format(
+                config.params['K-AO_edge_margin']))
+            if flatOrder.topEdgeTrace is not None:
+                flatOrder.topEdgeTrace -= config.params['K-AO_edge_margin']
+            #if flatOrder.botEdgeTrace is not None:
+            #    flatOrder.botEdgeTrace += config.params['K-AO_edge_margin']   
             
         # if bottom edge trace successful, use to refine LHS bottom location
         if flatOrder.botEdgeTrace is not None:

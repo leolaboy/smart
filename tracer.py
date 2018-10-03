@@ -5,7 +5,7 @@ import CAT_Functions as cat
 import scipy.optimize as op
 import matplotlib.pyplot as plt
 
-def trace_edge(data, start, searchWidth, bgWidth, jumpThresh):
+def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, plot=False):
 
     # initialize trace array
     trace = np.zeros(data.shape[1])
@@ -57,22 +57,23 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh):
         trace[i] = scipy.ndimage.measurements.center_of_mass(
                 data[int(ymin):int(ymax) + 1, i] - bgMean)[0] + ymin
                 
-#         import pylab as pl
-#         x0 = max(0, int(trace[i - 1]) - 50)
-#         x1 = min(1023, int(trace[i-1]) + 50)
-#         pl.figure()
-#         pl.cla()
-#         pl.plot(np.arange(x0, x1), data[x0:x1, i])
-#         pl.plot([trace[i], trace[i]], pl.ylim())
+        if plot:
+            import pylab as pl
+            x0 = max(0, int(trace[i - 1]) - 50)
+            x1 = min(1023, int(trace[i-1]) + 50)
+            pl.figure()
+            pl.cla()
+            pl.plot(np.arange(x0, x1), data[x0:x1, i])
+            pl.plot([trace[i], trace[i]], pl.ylim())
 
-        
-#         pl.plot(data[x0:x1, i], 'ro')
-#         pl.plot(data[int(ymin):int(ymax) + 1, i] - bgMean, 'go')
-#         pl.plot([trace[i], trace[i]], [0, pl.ylim()[0]], 'g-')
-#         print(trace[max(0, i-10):i])
-        
- 
-#         pl.show()
+            
+            pl.plot(data[x0:x1, i], 'ro')
+            pl.plot(data[int(ymin):int(ymax) + 1, i] - bgMean, 'go')
+            pl.plot([trace[i], trace[i]], [0, pl.ylim()[0]], 'g-')
+            print(trace[max(0, i-10):i])
+            
+     
+            pl.show()
 
         if trace[i] is np.inf or trace[i] is -np.inf:  
             # went off array
@@ -95,7 +96,7 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh):
     return trace, nJumps
 
 
-def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, plot=False):
+def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, plotvid=False):
 
     # initialize trace array
     trace = np.zeros(data.shape[1])
@@ -105,6 +106,9 @@ def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, plo
 
     # find centroids for the rest of the columns in data
     stepcount = 3
+    if eta is not None: # Need some extra signal for etalon lamps
+        stepcount = 7 
+
 
     # first centroid assumed to be at start
     trace[0] = start 
@@ -153,17 +157,21 @@ def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, plo
             Xs = np.arange(len(np.sum(data[int(ymin):int(ymax)+1, i:i+stepcount+1], axis=1))) + ymin
             Ys = np.sum(data[int(ymin):int(ymax)+1, i:i+stepcount+1], axis=1)
             guess1 = Xs[int(len(Xs)/2)]
-            popt, pcov = op.curve_fit(cat.NormDist, Xs, Ys, 
-                                  p0     = [guess1, 2, np.min(Ys), np.max(Ys)], 
-                                  bounds = ( (guess1-3, 1, 0, 0), (guess1+3, 4, 1e10, 1e10) ),
-                                  maxfev = 1000000) 
-            trace[i] = popt[0]
+            try:
+                popt, pcov = op.curve_fit(cat.NormDist, Xs, Ys, 
+                                      p0     = [guess1, 2, np.min(Ys), np.max(Ys)], 
+                                      bounds = ( (guess1-3, 1, 0, 0), (guess1+3, 4, 1e10, 1e10) ),
+                                      maxfev = 1000000) 
+                trace[i] = popt[0]
+            except:
+                nJumps += 1
+                continue
 
-            if plot:
+            if plotvid:
                 fig0 = plt.figure(198, figsize=(8,4))
                 ax1 = fig0.add_subplot(121)
                 ax2 = fig0.add_subplot(122)
-                ax1.imshow(data[int(ymin):int(ymax) + 1, i-stepcount:i+stepcount], origin='lower', aspect='auto')
+                ax1.imshow(data[int(ymin):int(ymax) + 1, i:i+stepcount+1], origin='lower', aspect='auto')
                 ax1.axhline(popt[0]-ymin, c='r', ls=':')
                 ax2.plot(Xs, Ys)
                 Xs2 = np.linspace(np.min(Xs), np.max(Xs))
@@ -172,7 +180,7 @@ def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, plo
                 ax1.minorticks_on()
                 ax2.minorticks_on()
                 plt.draw()
-                plt.pause(0.1)
+                plt.pause(0.05)
                 plt.close('all')
                 #plt.show()
                 #sys.exit() 
@@ -182,17 +190,21 @@ def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, plo
             Xs = np.arange(len(np.sum(data[int(ymin):int(ymax)+1, i-stepcount:i+stepcount+1], axis=1))) + ymin
             Ys = np.sum(data[int(ymin):int(ymax)+1, i-stepcount:i+stepcount+1], axis=1)
             guess1 = Xs[int(len(Xs)/2)]
-            popt, pcov = op.curve_fit(cat.NormDist, Xs, Ys, 
-                                  p0     = [guess1, 2, np.min(Ys), np.max(Ys)], 
-                                  bounds = ( (guess1-3, 1, 0, 0), (guess1+3, 4, 1e10, 1e10) ),
-                                  maxfev = 1000000) 
-            trace[i] = popt[0]
+            try:
+                popt, pcov = op.curve_fit(cat.NormDist, Xs, Ys, 
+                                      p0     = [guess1, 2, np.min(Ys), np.max(Ys)], 
+                                      bounds = ( (guess1-3, 1, 0, 0), (guess1+3, 4, 1e10, 1e10) ),
+                                      maxfev = 1000000) 
+                trace[i] = popt[0]
+            except:
+                nJumps += 1
+                continue
 
-            if plot:
+            if plotvid:
                 fig0 = plt.figure(198, figsize=(8,4))
                 ax1 = fig0.add_subplot(121)
                 ax2 = fig0.add_subplot(122)
-                ax1.imshow(data[int(ymin):int(ymax) + 1, i-stepcount:i+stepcount], origin='lower', aspect='auto')
+                ax1.imshow(data[int(ymin):int(ymax) + 1, i-stepcount:i+stepcount+1], origin='lower', aspect='auto')
                 ax1.axhline(popt[0]-ymin, c='r', ls=':')
                 ax2.plot(Xs, Ys)
                 Xs2 = np.linspace(np.min(Xs), np.max(Xs))
@@ -201,7 +213,7 @@ def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, plo
                 ax1.minorticks_on()
                 ax2.minorticks_on()
                 plt.draw()
-                plt.pause(0.1)
+                plt.pause(0.05)
                 plt.close('all')
                 #plt.show()
                 #sys.exit() 

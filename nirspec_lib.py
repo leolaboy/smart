@@ -100,6 +100,9 @@ def trace_sky_line(data, start, eta=None):
 
     # updated params based on trial and error
     SKY_LINE_SEARCH_WIDTH = 5
+    #print('ETA1', eta)
+    if eta is not None: # Make a specific modification for etalon lamps
+        SKY_LINE_SEARCH_WIDTH = 11
     SKY_LINE_BG_WIDTH     = 0
     SKY_LINE_JUMP_THRESH  = 1
     SKY_LINE_JUMP_LIMIT   = 12
@@ -153,7 +156,7 @@ EXTRA_PADDING       = 5
 MIN_LINE_SEPARATION = 5
 
 
-def find_spectral_trace(data, numrows=5, eta=None, plot=False):
+def find_spectral_trace(data, numrows=5, eta=None, plot=True):
     """
     Locates sky/etalon lines in the bottom 5 rows (is this really optimal?) of the order image data. 
     I fixed the above lines to check the bottom 5 rows and top 5 rows for which has more sky. - CAT
@@ -189,6 +192,8 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=False):
         pl.xlim(0, 1024)
         pl.xlabel('column (pixels)')
         pl.ylabel('intensity summed over 5 rows (DN)')
+        ymin, ymax = pl.ylim()
+        pl.ylim(0, ymax)
         pl.show()
 
     # finds column indices of maxima
@@ -226,7 +231,7 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=False):
     # Try to find some fainter lines if the threshold was too large
     #print('MAXES', maxes, len(maxes), SKY_SIGMA)
     if len(maxes) < 5:
-        for SKY_SIGMA in [1.5, 1.2, 1.1, 1.05]: 
+        for SKY_SIGMA in [1.5, 1.2]: 
             sky_thres = SKY_SIGMA * np.median(s)
             locmaxes  = np.where(s[maxima_c[0]] > sky_thres)
 
@@ -258,7 +263,7 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=False):
                     sky_thres, len(maxes)))
     
     if plot:
-        import pylab as pl
+        print('MAXES', maxes)
         pl.figure(facecolor='white')
         pl.cla()
         pl.plot(s, 'k-')
@@ -266,6 +271,8 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=False):
         pl.xlim(0, 1024)
         pl.xlabel('column (pixels)')
         pl.ylabel('intensity summed over 5 rows (DN)')
+        ymin, ymax = pl.ylim()
+        pl.ylim(0, ymax)
         pl.show()
     
     centroid_sky_sum = np.zeros(data_t.shape[1])
@@ -299,7 +306,7 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=False):
     raise StandardError('failed to find sky/etalon line trace')
     
     
-def smooth_spectral_trace(data, l, eta=None, version2=True, plot=False):
+def smooth_spectral_trace(data, l, eta=None, version2=True, plot=True):
     
     if version2 == True:
         AllPix   = []

@@ -49,7 +49,8 @@ class Order:
             self.objCutout[frame] = []
 
         if etaImg is not None:
-            self.etaImg = etaImg
+            self.etaImg    = etaImg
+            self.etaImgB   = etaImg
             self.etaCutout = []
 
         

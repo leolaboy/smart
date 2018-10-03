@@ -25,11 +25,10 @@ def reduce_order(order, eta=None):
     #print(order.flatOrder.orderNum)
     #if order.flatOrder.orderNum != 33: continue
     #sys.exit()
+
     # flatten object images for this order
-    if eta is not None:
-        __flatten(order, eta=eta)
-    else:    
-        __flatten(order)
+    __flatten(order, eta=eta)
+
     """
     from astropy.visualization import ZScaleInterval, ImageNormalize
     plt.figure(1)
@@ -47,12 +46,12 @@ def reduce_order(order, eta=None):
         for frame in order.frames:
             logger.info('bad pixel cleaning object frame %s'%frame)
             order.ffObjImg[frame] = fixpix.fixpix_rs(order.ffObjImg[frame])
-            logger.debug('bad pixel cleaning object frame %s complete'%frame)
+            logger.info('bad pixel cleaning object frame %s complete'%frame)
         
         if eta is not None:
             logger.info('bad pixel cleaning etalon frame')
             order.ffEtaImg = fixpix.fixpix_rs(order.ffEtaImg)
-            logger.debug('bad pixel cleaning etalon frame complete')
+            logger.info('bad pixel cleaning etalon frame complete')
     """
     plt.figure(3)
     norm = ImageNormalize(order.ffObjImg['A'], interval=ZScaleInterval())
@@ -69,38 +68,42 @@ def reduce_order(order, eta=None):
     ### XXX TESTING AREA
  
     # rectify obj and flattened obj in spatial dimension
-    if eta is not None:
-        __rectify_spatial(order, eta=eta)
-    else:    
-        __rectify_spatial(order)
+    __rectify_spatial(order, eta=eta)
 
     #plt.figure(2)
     #plt.imshow(order.ffEtaImg, origin='lower')
  
     # trim rectified order
-    if eta is not None:
-        __trim(order, eta=eta)
-    else: 
-        __trim(order)
-    """
+    __trim(order, eta=eta)
+
     plt.figure(4)
-    norm = ImageNormalize(order.ffObjImg['A'], interval=ZScaleInterval())
-    #plt.imshow(order.ffEtaImg, origin='lower', norm=norm)
-    plt.imshow(order.ffObjImg['A'], origin='lower', aspect='auto')#, norm=norm)
+    norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
+    plt.imshow(order.ffEtaImg, origin='lower', norm=norm, aspect='auto')
     #np.save('unrect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
     #plt.savefig('%s_unrect.png'%order.flatOrder.orderNum, dpi=600, bbox_inches='tight')
     plt.figure(44)
+    norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
+    plt.imshow(order.ffEtaImg, origin='lower', norm=norm, aspect='auto')
+    plt.figure(444)
+    norm = ImageNormalize(order.ffObjImg['A'], interval=ZScaleInterval())
+    plt.imshow(order.ffObjImg['A'], origin='lower', aspect='auto', norm=norm)
+    #np.save('unrect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
+    #plt.savefig('%s_unrect.png'%order.flatOrder.orderNum, dpi=600, bbox_inches='tight')
+    plt.figure(4444)
     norm = ImageNormalize(order.ffObjImg['B'], interval=ZScaleInterval())
-    #plt.imshow(order.ffEtaImg, origin='lower', norm=norm)
-    plt.imshow(order.ffObjImg['B'], origin='lower', aspect='auto')#, norm=norm)
+    plt.imshow(order.ffObjImg['B'], origin='lower', aspect='auto', norm=norm)
     plt.show(block=True)
-    """
+    
     # save spatially rectified images before spectral rectify for diagnostics 
     order.srNormFlatImg = order.flatOrder.rectFlatImg
     for frame in order.frames:
         order.srFfObjImg[frame] = order.ffObjImg[frame]
-    if eta is not None:
-        order.srNormEtaImg = order.ffEtaImg
+
+        if eta is not None:
+            if frame == 'B':
+                order.srNormEtaImgB = order.ffEtaImgB
+            else:
+                order.srNormEtaImg = order.ffEtaImg
            
     # find spatial profile and peak
     __find_spatial_profile_and_peak(order)
@@ -112,45 +115,50 @@ def reduce_order(order, eta=None):
     for frame in order.frames:
         #print('FRAME', frame)
         if frame in ['A', 'AB']:
-            try:
-                logger.info('attempting rectification of frame {} order {} in spectral dimension'.format(
-                    frame, order.flatOrder.orderNum))
-                order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
-                        nirspec_lib.find_spectral_trace(order.ffObjImg['A']), order.ffObjImg['A'].shape[0])
-            except Exception as e:
-                if eta is not None: 
-                    try:           
-                        logger.info('attempting rectification of frame {} order {} in spectral dimension (etalon)'.format(
+            if eta is not None: # Do spectral rectification using the etalon lamps
+                try:           
+                    logger.info('attempting rectification of frame {} order {} in spectral dimension (etalon)'.format(
                                 frame, order.flatOrder.orderNum))
-                        order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
-                            nirspec_lib.find_spectral_trace(order.ffEtaImg), order.ffObjImg['A'].shape[0])
-                    except Exception as e:
-                        logger.warning('not rectifying frame {} order {} in spectral dimension (etalon)'.format(
-                            frame, order.flatOrder.orderNum))
-                else:
-                    logger.warning('not rectifying frame {} order {} in spectral dimension'.format(
-                    frame, order.flatOrder.orderNum))
-        else: 
-            try:
-                logger.info('attempting rectification of frame {} order {} in spectral dimension'.format(
-                    frame, order.flatOrder.orderNum))
-                order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
-                        nirspec_lib.find_spectral_trace(
-                                order.ffObjImg['B']), order.ffObjImg['B'].shape[0])
-            except Exception as e:
-                if eta is not None: 
-                    try:           
-                        logger.info('attempting rectification of frame {} order {} in spectral dimension (etalon)'.format(
+                    order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
+                                                 nirspec_lib.find_spectral_trace(order.ffEtaImg, eta=eta), 
+                                                 order.ffObjImg['A'].shape[0])
+                except Exception as e:
+                    logger.warning('not rectifying frame {} order {} in spectral dimension (etalon)'.format(
+                                   frame, order.flatOrder.orderNum))
+            else:
+                try:
+                    logger.info('attempting rectification of frame {} order {} in spectral dimension'.format(
                                 frame, order.flatOrder.orderNum))
-                        order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
-                            nirspec_lib.find_spectral_trace(order.ffEtaImg), order.ffObjImg['B'].shape[0])
-                    except Exception as e:
-                        logger.warning('not rectifying frame {} order {} in spectral dimension (etalon)'.format(
-                            frame, order.flatOrder.orderNum))
-                else:
+                    order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
+                                                 nirspec_lib.find_spectral_trace(order.ffObjImg['A']), 
+                                                 order.ffObjImg['A'].shape[0])
+                except Exception as e:
                     logger.warning('not rectifying frame {} order {} in spectral dimension'.format(
-                    frame, order.flatOrder.orderNum))
+                                   frame, order.flatOrder.orderNum))
 
+        else: # B frame
+            if eta is not None: # Do spectral rectification using the etalon lamps
+                try:           
+                    logger.info('attempting rectification of frame {} order {} in spectral dimension (etalon)'.format(
+                                frame, order.flatOrder.orderNum))
+                    order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
+                                                 nirspec_lib.find_spectral_trace(order.ffEtaImg, eta=eta), 
+                                                 order.ffObjImg['B'].shape[0])
+                except Exception as e:
+                    logger.warning('not rectifying frame {} order {} in spectral dimension (etalon)'.format(
+                                   frame, order.flatOrder.orderNum))
+            else:
+                try:
+                    logger.info('attempting rectification of frame {} order {} in spectral dimension'.format(
+                        frame, order.flatOrder.orderNum))
+                    order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
+                            nirspec_lib.find_spectral_trace(
+                                    order.ffObjImg['B']), order.ffObjImg['B'].shape[0])
+                except Exception as e:
+                    logger.warning('not rectifying frame {} order {} in spectral dimension'.format(
+                                   frame, order.flatOrder.orderNum))
+                
+    """
     if eta is not None:
 
         try:
@@ -168,7 +176,7 @@ def reduce_order(order, eta=None):
                                                  order.flatOrder.rectFlatImg, order.spectralTrace)
             __rectify_spectral(order, eta=eta)
             order.spectralRectified = True
-
+    """
     """
     else:
         # Find and smooth spectral trace, always use frame A
@@ -320,10 +328,13 @@ def __flatten(order, eta=None):
             if np.amin(order.ffObjImg[frame]) < 0:
                 order.ffObjImg[frame] -= np.amin(order.ffObjImg[frame])
 
-    if eta is not None:
-
-        order.etaImg   = np.array(order.etaCutout) 
-        order.ffEtaImg = np.array(order.etaCutout / order.flatOrder.normFlatImg)
+        if eta is not None:
+            if frame == 'B':
+                order.etaImgB   = np.array(order.etaCutout) 
+                order.ffEtaImgB = np.array(order.etaCutout / order.flatOrder.normFlatImg)
+            else:
+                order.etaImg   = np.array(order.etaCutout) 
+                order.ffEtaImg = np.array(order.etaCutout / order.flatOrder.normFlatImg)
 
     
     order.flattened = True
@@ -337,6 +348,7 @@ def __rectify_spatial(order, eta=None):
     """     
     
     for frame in order.frames:
+        print('FRAME', frame)
         """
         if frame == 'A':
             order.objImg[frame] = image_lib.rectify_spatial(
@@ -362,23 +374,32 @@ def __rectify_spatial(order, eta=None):
         order.ffObjImg[frame] = image_lib.rectify_spatial(
                 order.ffObjImg[frame], order.flatOrder.smoothedSpatialTrace)
         """
-        polyVals1 = cat.CreateSpatialMap(order.objImg[frame])  
-        #print('TEST2', polyVals1)
-        order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
-        polyVals2 = cat.CreateSpatialMap(order.ffObjImg[frame])  
-        #print('TEST2', polyVals2)
-        order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+        if frame in ['A', 'B']:
+            polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
+            order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
+            polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
+            order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
 
-    if eta is not None:
-        """
-        order.etaImg   = image_lib.rectify_spatial(
-                order.etaImg, order.flatOrder.smoothedSpatialTrace)
-        order.ffEtaImg = image_lib.rectify_spatial(
-                order.ffEtaImg, order.flatOrder.smoothedSpatialTrace)
-        """
-        order.etaImg   = image_lib.rectify_spatial(order.etaImg, polyVals1)
-        order.ffEtaImg = image_lib.rectify_spatial(order.ffEtaImg, polyVals2)
+            if eta is not None:
+                if frame == 'B':
+                    order.etaImgB     = image_lib.rectify_spatial(order.etaImgB, polyVals1)
+                    order.ffEtaImgB   = image_lib.rectify_spatial(order.ffEtaImgB, polyVals2)
 
+                else:
+                    order.etaImg      = image_lib.rectify_spatial(order.etaImg, polyVals1)
+                    order.ffEtaImg    = image_lib.rectify_spatial(order.ffEtaImg, polyVals2)
+        else:
+            order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
+            order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+        """
+        if eta is not None:
+            
+            #order.etaImg   = image_lib.rectify_spatial(order.etaImg, order.flatOrder.smoothedSpatialTrace)
+            #order.ffEtaImg = image_lib.rectify_spatial(order.ffEtaImg, order.flatOrder.smoothedSpatialTrace)
+            
+            order.etaImg   = image_lib.rectify_spatial(order.etaImg, polyVals1)
+            order.ffEtaImg = image_lib.rectify_spatial(order.ffEtaImg, polyVals2)
+        """
     order.spatialRectified = True
     logger.info('order has been rectified in the spatial dimension')
         
@@ -390,17 +411,16 @@ def __trim(order, eta=None):
     """
     """
     for frame in order.frames:
-        order.objImg[frame] = \
-                order.objImg[frame][order.flatOrder.botTrim:order.flatOrder.topTrim, :]
-        order.ffObjImg[frame] = \
-                order.ffObjImg[frame][order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+        order.objImg[frame]   = order.objImg[frame][order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+        order.ffObjImg[frame] = order.ffObjImg[frame][order.flatOrder.botTrim:order.flatOrder.topTrim, :]
 
-    if eta is not None:
-
-        order.etaImg   = \
-                order.etaImg[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
-        order.ffEtaImg = \
-                order.ffEtaImg[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+        if eta is not None:
+            if frame == 'B':
+                order.etaImgB   = order.etaImgB[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+                order.ffEtaImgB = order.ffEtaImgB[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+            else:
+                order.etaImg    = order.etaImg[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+                order.ffEtaImg  = order.ffEtaImg[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
         
     return
 
@@ -414,9 +434,13 @@ def __rectify_spectral(order, eta=None):
         order.objImg[frame]   = image_lib.rectify_spectral(order.objImg[frame], order.spectralTrace)
         order.ffObjImg[frame] = image_lib.rectify_spectral(order.ffObjImg[frame], order.spectralTrace)
 
-    if eta is not None:
-        order.etaImg   = image_lib.rectify_spectral(order.etaImg, order.spectralTrace)
-        order.ffEtaImg = image_lib.rectify_spectral(order.ffEtaImg, order.spectralTrace)
+        if eta is not None:
+            if frame == 'B':
+                order.etaImgB   = image_lib.rectify_spectral(order.etaImgB, order.spectralTrace)
+                order.ffEtaImgB = image_lib.rectify_spectral(order.ffEtaImgB, order.spectralTrace)
+            else:
+                order.etaImg    = image_lib.rectify_spectral(order.etaImg, order.spectralTrace)
+                order.ffEtaImg  = image_lib.rectify_spectral(order.ffEtaImg, order.spectralTrace)
     
     return     
 
