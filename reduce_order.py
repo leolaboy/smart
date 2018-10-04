@@ -44,14 +44,15 @@ def reduce_order(order, eta=None):
 
     else:
         for frame in order.frames:
+            if frame == 'AB': continue # Don't need to do this one
             logger.info('bad pixel cleaning object frame %s'%frame)
             order.ffObjImg[frame] = fixpix.fixpix_rs(order.ffObjImg[frame])
-            logger.info('bad pixel cleaning object frame %s complete'%frame)
+            logger.debug('bad pixel cleaning object frame %s complete'%frame)
         
         if eta is not None:
             logger.info('bad pixel cleaning etalon frame')
             order.ffEtaImg = fixpix.fixpix_rs(order.ffEtaImg)
-            logger.info('bad pixel cleaning etalon frame complete')
+            logger.debug('bad pixel cleaning etalon frame complete')
     ### XXX TESTING AREA
 
     """
@@ -128,8 +129,6 @@ def reduce_order(order, eta=None):
                     order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
                                                  nirspec_lib.find_spectral_trace(order.ffEtaImg, eta=eta), 
                                                  order.ffObjImg['A'].shape[0])
-                    order.flatOrder.rectFlatImg = image_lib.rectify_spectral(
-                                                 order.flatOrder.rectFlatImg, order.spectralTrace)
                 except Exception as e:
                     logger.warning('not rectifying frame {} order {} in spectral dimension (etalon)'.format(
                                    frame, order.flatOrder.orderNum))
@@ -166,8 +165,10 @@ def reduce_order(order, eta=None):
                 except Exception as e:
                     logger.warning('not rectifying frame {} order {} in spectral dimension'.format(
                                    frame, order.flatOrder.orderNum))
-                
-    __rectify_spectral(order, eta=eta)
+    try: 
+        __rectify_spectral(order, eta=eta)
+    except:
+        print('keeping going')
 
     # if AB pair then subtract B from A
     if order.isPair:
@@ -385,19 +386,22 @@ def __trim(order, eta=None):
 def __rectify_spectral(order, eta=None):
     """
     """   
-       
     for frame in order.frames:
+        print('FRAME', frame)
         if frame == 'AB': continue
-        order.objImg[frame]   = image_lib.rectify_spectral(order.objImg[frame], order.spectralTrace[frame])
-        order.ffObjImg[frame] = image_lib.rectify_spectral(order.ffObjImg[frame], order.spectralTrace[frame])
+        order.objImg[frame], peak1   = image_lib.rectify_spectral(order.objImg[frame], order.spectralTrace[frame], returnpeak=True)
+        order.ffObjImg[frame], peak2 = image_lib.rectify_spectral(order.ffObjImg[frame], order.spectralTrace[frame], returnpeak=True)
+
+        if frame == 'A':
+            order.flatOrder.rectFlatImg, peak0 = image_lib.rectify_spectral(order.flatOrder.rectFlatImg, order.spectralTrace[frame], returnpeak=True)
 
         if eta is not None:
             if frame == 'B':
-                order.etaImgB   = image_lib.rectify_spectral(order.etaImgB, order.spectralTrace[frame])
-                order.ffEtaImgB = image_lib.rectify_spectral(order.ffEtaImgB, order.spectralTrace[frame])
+                order.etaImgB   = image_lib.rectify_spectral(order.etaImgB, order.spectralTrace[frame], peak1)
+                order.ffEtaImgB = image_lib.rectify_spectral(order.ffEtaImgB, order.spectralTrace[frame], peak2)
             else:
-                order.etaImg    = image_lib.rectify_spectral(order.etaImg, order.spectralTrace[frame])
-                order.ffEtaImg  = image_lib.rectify_spectral(order.ffEtaImg, order.spectralTrace[frame])
+                order.etaImg    = image_lib.rectify_spectral(order.etaImg, order.spectralTrace[frame], peak1)
+                order.ffEtaImg  = image_lib.rectify_spectral(order.ffEtaImg, order.spectralTrace[frame], peak2)
     
     return     
 

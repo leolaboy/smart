@@ -90,7 +90,6 @@ class FlatOrder:
         
         # compute top and bottom trim points
         self.calcTrimPoints()
-        self.calcTrimPointsAB()
         """
         ### TESTING PLOT XXX
         import matplotlib.pyplot as plt
@@ -112,39 +111,18 @@ class FlatOrder:
         return
     
     def calcTrimPoints(self):
-        print(self.lowestPoint, self.cutoutPadding, self.lowestPoint > self.cutoutPadding)
         if self.lowestPoint > self.cutoutPadding:
             self.topTrim = self.highestPoint - self.lowestPoint + self.cutoutPadding - 3
         else:
             self.topTrim = self.highestPoint - 3
         h = np.amin(self.topEdgeTrace - self.botEdgeTrace)
-        print(h)
         self.botTrim = self.topTrim - h + 3
         self.botTrim = int(max(0, self.botTrim))
         self.topTrim = int(min(self.topTrim, 1023))
         
         return
 
-    def calcTrimPointsAB(self):
-        if self.lowestPoint > self.cutoutPadding:
-            self.topTrimA = self.highestPoint - self.lowestPoint + self.cutoutPadding - 3
-        else:
-            self.topTrimA = self.highestPoint - 3
-        h = np.amin(self.topEdgeTrace - self.botEdgeTrace)
-        self.botTrimA = self.topTrimA - h + 3
-        self.botTrimA = int(max(0, self.botTrimA))
-        self.topTrimA = int(min(self.topTrimA, 1023))
 
-        if self.lowestPoint > self.cutoutPadding:
-            self.topTrimB = self.highestPoint - self.lowestPoint + self.cutoutPadding - 3
-        else:
-            self.topTrimB = self.highestPoint - 3
-        h = np.amin(self.topEdgeTrace - self.botEdgeTrace)
-        self.botTrimB = self.topTrimB - h + 3
-        self.botTrimB = int(max(0, self.botTrimA))
-        self.topTrimB = int(min(self.topTrimB, 1023))
-        
-        return
         
         
         

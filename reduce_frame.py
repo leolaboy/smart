@@ -244,6 +244,7 @@ def reduce_orders(reduced, eta=None):
         
         logger.info('*********** ORDER ' + str(flatOrder.orderNum) + ' ***********')
 
+        #if flatOrder.orderNum != 32: continue #XXX
         #if flatOrder.orderNum != 33: continue #XXX
         #if flatOrder.orderNum != 37: continue #XXX
             

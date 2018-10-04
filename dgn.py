@@ -12,6 +12,7 @@ import config
 
 import scipy.misc
 from scipy.misc.pilutil import imresize
+from astropy.visualization import ZScaleInterval, ImageNormalize
 
 # import Order
 # import ReducedDataSet
@@ -401,7 +402,10 @@ def specrect_plot(outpath, base_name, order_num, before, after):
     before = imresize(before, (500, 1024), interp='bilinear')
     
     try:
-        before_plot.imshow(exposure.equalize_hist(before), aspect='auto')
+        before[np.where(before < 0)] = np.median(before)
+        norm = ImageNormalize(before, interval=ZScaleInterval())
+        before_plot.imshow(before, aspect='auto', norm=norm)
+        #before_plot.imshow(exposure.equalize_hist(before), aspect='auto')
     except:
         before_plot.imshow(before, aspect='auto')
     before_plot.set_title('before')
@@ -413,7 +417,10 @@ def specrect_plot(outpath, base_name, order_num, before, after):
     after = imresize(after, (500, 1024), interp='bilinear')
     
     try:
-        after_plot.imshow(exposure.equalize_hist(after), aspect='auto')
+        after[np.where(after < 0)] = np.median(after)
+        norm = ImageNormalize(after, interval=ZScaleInterval())
+        after_plot.imshow(after, aspect='auto', norm=norm)
+        #after_plot.imshow(exposure.equalize_hist(after), aspect='auto')
     except:
         after_plot.imshow(after, aspect='auto')
     after_plot.set_title('after')
