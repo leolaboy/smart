@@ -83,7 +83,7 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
         reduced.cosmicCleaned = True 
 
     ### XXX TESTING AREA
-    '''
+    
     if config.params['no_clean']:
         logger.info("bad pixel rejection on object frame inhibited by command line flag")
 
@@ -101,7 +101,7 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
             logger.debug('bad pixel cleaning etalon frame complete')
 
         reduced.pixelCleaned = True 
-    '''
+
     ### XXX TESTING AREA
            
     # if darks are available, combine them if there are more than one
@@ -245,7 +245,7 @@ def reduce_orders(reduced, eta=None):
         logger.info('*********** ORDER ' + str(flatOrder.orderNum) + ' ***********')
 
         #if flatOrder.orderNum != 32: continue #XXX
-        #if flatOrder.orderNum != 33: continue #XXX
+        if flatOrder.orderNum != 33: continue #XXX
         #if flatOrder.orderNum != 37: continue #XXX
             
         order = Order.Order(reduced.frames, reduced.baseNames, flatOrder, etaImg=reduced.etaImg)

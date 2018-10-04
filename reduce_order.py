@@ -39,6 +39,7 @@ def reduce_order(order, eta=None):
     """
 
     ### XXX TESTING AREA
+    """
     if config.params['no_clean']:
         logger.info("bad pixel rejection on object frame/order inhibited by command line flag")
 
@@ -53,6 +54,7 @@ def reduce_order(order, eta=None):
             logger.info('bad pixel cleaning etalon frame')
             order.ffEtaImg = fixpix.fixpix_rs(order.ffEtaImg)
             logger.debug('bad pixel cleaning etalon frame complete')
+    """
     ### XXX TESTING AREA
 
     """
@@ -331,6 +333,7 @@ def __rectify_spatial(order, eta=None):
                 order.ffObjImg[frame], order.flatOrder.smoothedSpatialTrace)
         """
         if frame in ['A', 'B']:
+            print('FRAME', frame)
             polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
             order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
             polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
