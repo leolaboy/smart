@@ -39,7 +39,7 @@ def reduce_order(order, eta=None):
     """
 
     ### XXX TESTING AREA
-    """
+    
     if config.params['no_clean']:
         logger.info("bad pixel rejection on object frame/order inhibited by command line flag")
 
@@ -54,7 +54,7 @@ def reduce_order(order, eta=None):
             logger.info('bad pixel cleaning etalon frame')
             order.ffEtaImg = fixpix.fixpix_rs(order.ffEtaImg)
             logger.debug('bad pixel cleaning etalon frame complete')
-    """
+    
     ### XXX TESTING AREA
 
     """
@@ -123,6 +123,7 @@ def reduce_order(order, eta=None):
     # Try to find the spectral trace using etalon lamps if provided
     for frame in order.frames:
         #print('FRAME', frame)
+        if frame == 'AB': continue # Build the AB frame using A and B later
         if frame in ['A']:
             if eta is not None: # Do spectral rectification using the etalon lamps
                 try:           
@@ -170,7 +171,8 @@ def reduce_order(order, eta=None):
     try: 
         __rectify_spectral(order, eta=eta)
     except:
-        print('keeping going')
+        logger.warning('not able to rectify all of order {} in spectral dimension'.format(
+                                   order.flatOrder.orderNum))
 
     # if AB pair then subtract B from A
     if order.isPair:
@@ -328,12 +330,11 @@ def __rectify_spatial(order, eta=None):
         """
         order.objImg[frame] = image_lib.rectify_spatial(
                 order.objImg[frame], order.flatOrder.smoothedSpatialTrace)
-        print('TEST1', order.flatOrder.smoothedSpatialTrace)
         order.ffObjImg[frame] = image_lib.rectify_spatial(
                 order.ffObjImg[frame], order.flatOrder.smoothedSpatialTrace)
         """
         if frame in ['A', 'B']:
-            print('FRAME', frame)
+            #print('FRAME', frame)
             polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
             order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
             polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
@@ -390,7 +391,7 @@ def __rectify_spectral(order, eta=None):
     """
     """   
     for frame in order.frames:
-        print('FRAME', frame)
+        #print('FRAME', frame)
         if frame == 'AB': continue
         order.objImg[frame], peak1   = image_lib.rectify_spectral(order.objImg[frame], order.spectralTrace[frame], returnpeak=True)
         order.ffObjImg[frame], peak2 = image_lib.rectify_spectral(order.ffObjImg[frame], order.spectralTrace[frame], returnpeak=True)

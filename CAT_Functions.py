@@ -4,6 +4,7 @@ import scipy.optimize as op
 import image_lib
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
+from scipy import signal
 
 
 def NormDist(x, mean, sigma, baseline, amplitude):
@@ -14,44 +15,108 @@ def NormDist(x, mean, sigma, baseline, amplitude):
 
 
 
-def CreateSpatialMap(image, numrows=3, clip=15, plot=False, plotvid=False):
+def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutoff=10):
 
 	#print(image.shape)
 	Centroids = []
 	Pixels    = []
-	for i in range(image.shape[1]):
+	for i in range(image.shape[1]-cutoff):
 		#print(i)
+		if i >= image.shape[1]-cutoff:
+			continue
 
 		if i < numrows:
 			#guess1 = np.where(np.sum(image[clip:-clip,0:numrows+1], axis=1) == np.max(np.sum(image[clip:-clip,0:numrows+1], axis=1)))[0][0]
 			#guess1 = len(np.sum(image[7:-7,0:numrows+1], axis=1)) / 2. + 7
 			#print('Guess', guess1)
-			"""
+			
 			if plot:
-				fig0 = plt.figure(198, figsize=(8,6))
-				ax1 = fig0.add_subplot(111)
-				ax1.plot(np.sum(image[clip:-clip,0:numrows+1], axis=1))
+				fig0 = plt.figure(198, figsize=(10,6))
+				ax1 = fig0.add_subplot(121)
+				ax2 = fig0.add_subplot(122)
+				#ax1.plot(np.arange(len(np.sum(image[clip:-clip, 0:numrows+1], axis=1))) + clip,
+				#	     np.sum(image[clip:-clip,0:numrows+1], axis=1))
+				ax1.plot(np.arange(len(np.sum(image[:, 0:20], axis=1))),
+					     np.sum(image[:, 0:20], axis=1) )#+ np.sum(image[:, -40:], axis=1))
+				ax2.plot(np.arange(len(np.sum(image[:, -40:-20], axis=1))),
+					     np.sum(image[:, -40:-20], axis=1) )#+ np.sum(image[:, -40:], axis=1))
 				plt.show()
-			"""
-			try:
-				Xs = np.arange(len(np.sum(image[clip:-clip, 0:numrows+1], axis=1))) + clip
-				Ys = np.sum(image[clip:-clip,0:numrows+1], axis=1)
-				guess1 = Xs[np.where(Ys == np.max(Ys))]
-				#guess1 = Xs[len(Xs)//2]
-				#print('Guess', guess1)
+			
+			Xs0  = np.arange(len(np.sum(image[:, 0:20], axis=1)))
+			Ys0  = np.sum(image[:, 0:20], axis=1)
 
+			Xs00 = np.arange(len(np.sum(image[:, -40:-20], axis=1)))
+			Ys00 = np.sum(image[:, -40:-20], axis=1)
+
+			Xs  = np.arange(len(np.sum(image[:, 0:numrows*2+1], axis=1)))
+			Ys  = np.sum(image[clip:-clip, 0:numrows*2+1], axis=1)
+
+			guess1 = Xs0[np.where(Ys0 == np.max(Ys0))][0]
+			guess2 = Xs00[np.where(Ys00 == np.max(Ys00))][0]
+			#print('Guess', guess1, guess2)
+			#print(np.min([guess1, guess2]))
+			#print(np.max([guess1, guess2]))
+
+			range1 = np.min([guess1, guess2]) - 10
+			range2 = np.max([guess1, guess2]) + 10
+			if range1 < 0: range1 = 0
+			if range2 > image.shape[0]: range2 = image.shape[0]
+			#print(image.shape)
+			#print('Guess1', guess1)
+			#guess2 = signal.find_peaks_cwt(Ys, np.arange(1,30))#, min_length=5)
+			#guess2, _ = signal.find_peaks(Ys, width=3)
+			#print('Guess2', guess2+clip)
+			
+			if i == 0:
+				if plot:
+					fig0 = plt.figure(198, figsize=(8,6))
+					ax1 = fig0.add_subplot(111)
+					#ax1.plot(np.arange(len(np.sum(image[clip:-clip, 0:numrows*2+1], axis=1))) + clip,
+					#	     np.sum(image[clip:-clip,0:numrows*2+1], axis=1))
+					ax1.plot(np.arange(len(np.sum(image[:, 0:numrows*2+1], axis=1))),
+						     np.sum(image[:,0:numrows*2+1], axis=1))
+					ax1.axvline(guess1, c='r', ls=':')
+					#for G in guess2:
+					#	ax1.axvline(G+clip, c='b', ls='--')
+					ax1.axvline(range1, c='m', ls=':')
+					ax1.axvline(range2, c='m', ls=':')
+					print(range1, range2)
+					plt.show()
+					#sys.exit()
+			
+			try:
+				#print(range1, range2)
+				#Xs = np.arange(len(np.sum(image[clip:-clip, 0:numrows*2+1], axis=1))) + clip
+				#Ys = np.sum(image[clip:-clip, 0:numrows*2+1], axis=1)
+				Xs = np.arange(len(np.sum(image[range1:range2+1, 0:numrows*2+1], axis=1))) + range1
+				#print('Xs', Xs)
+				Ys = np.sum(image[range1:range2+1, 0:numrows*2+1], axis=1)
+				#print('Ys', Ys)
+				guess1 = Xs[np.where(Ys == np.max(Ys))]
+				#print('Guess1', guess1)
+				#guess2 = signal.find_peaks_cwt(Ys, np.arange(8,20), min_length=9)
+				#print('Guess2', guess1)
+				#guess2, _ = signal.find_peaks(Ys, width=3)
+				#guess1 = Xs[np.where(Ys[guess2] == np.max(Ys[guess2]))]
+				#print('Guess11', guess1)
+				#guess1 = Xs[len(Xs)//2]
+				
 				popt, pcov = op.curve_fit(NormDist, Xs, Ys, 
 			                          	  p0=[guess1, 2., np.median(Ys), np.max(Ys)], 
-                                          bounds = ( (guess1-5., 1., 1., 1.), (guess1+5., 8., 1e7, 1e7) ),
+                                          bounds = ( (guess1-7., 1., -1000., 0.), (guess1+7., 4., 1e7, 1e7) ),
                                           maxfev=100000) # Where should a pixel start? (0, 1, 0.5?)
-				#print(i,popt[0])
+				#print(i,popt)
 				
+				#popt = [guess1]
   				if plotvid:
 					fig0 = plt.figure(199, figsize=(8,4))
 					ax1 = fig0.add_subplot(121)
 					ax2 = fig0.add_subplot(122)
-					ax1.imshow(image[clip:-clip, 0:numrows+1], origin='lower', aspect='auto')
-					ax1.axhline(popt[0]-clip, c='r', ls=':')
+					#ax1.imshow(image[clip:-clip, 0:numrows*2+1], origin='lower', aspect='auto')
+					#ax1.axhline(popt[0]-clip, c='r', ls=':')
+					ax1.imshow(image[range1:range2+1, 0:numrows*2+1], origin='lower', aspect='auto')
+					#ax1.axhline(popt[0]-clip, c='r', ls=':')
+					ax1.axhline(popt[0]-range1, c='r', ls=':')
 					ax2.plot(Xs, Ys)
 					Xs2 = np.linspace(np.min(Xs), np.max(Xs))
 					ax2.plot(Xs2, NormDist(Xs2, *popt), 'r--')
@@ -77,28 +142,43 @@ def CreateSpatialMap(image, numrows=3, clip=15, plot=False, plotvid=False):
 			if plot:
 				fig0 = plt.figure(198, figsize=(8,6))
 				ax1 = fig0.add_subplot(111)
-				ax1.plot(np.sum(image[clip:-clip,0:numrows+1], axis=1))
+				ax1.plot(np.arange(len(np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1))) + clip,
+				         np.sum(image[clip:-clip,0:numrows+1], axis=1))
 				plt.show()
 			"""
 			try:
-				Xs = np.arange(len(np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1))) + clip
-				Ys = np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1)
+				#Xs = np.arange(len(np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1))) + clip
+				#Ys = np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1)
+				Xs = np.arange(len(np.sum(image[range1:range2+1, i-numrows:i+numrows+1], axis=1))) + range1
+				Ys = np.sum(image[range1:range2+1, i-numrows:i+numrows+1], axis=1)
 				guess1 = Xs[np.where(Ys == np.max(Ys))]
+				#guess1 = popt[0]
+				#guess2, _ = signal.find_peaks(Ys, width=3)
+				#guess1 = Xs[np.where(Ys[guess2] == np.max(Ys[guess2]))]+clip
 				#guess1 = Xs[len(Xs)//2]
 				#print('Guess', guess1)
-			
+				#print('Guess1', guess1)
+				#print('Guess2', popt)
+				#prevGuess = Centroids[-1]
+				
 				popt, pcov = op.curve_fit(NormDist, Xs, Ys, 
 			                          	  p0=[guess1, 2., np.median(Ys), np.max(Ys)],
-                                          bounds = ( (guess1-5., 1., 1., 1.), (guess1+5., 8., 1e7, 1e7) ), 
+                                          bounds = ( (guess1-7., 1., -1000., 0.), (guess1+7., 4., 1e7, 1e7) ), 
 			                          	  maxfev=100000) # Where should a pixel start? (0, 1, 0.5?)
-				#print(i,popt[0])
-				
+				#print(i,popt)
+				#popt = [guess1]
+				#print(abs(popt[0]-prevGuess))
+				#if abs(popt[0]-prevGuess) > 10: 
+				#	continue
+
   				if plotvid:
 					fig0 = plt.figure(199, figsize=(8,4))
 					ax1 = fig0.add_subplot(121)
 					ax2 = fig0.add_subplot(122)
-					ax1.imshow(image[clip:-clip, i-numrows:i+numrows+1], origin='lower', aspect='auto')
-					ax1.axhline(popt[0]-clip, c='r', ls=':')
+					#ax1.imshow(image[clip:-clip, i-numrows:i+numrows+1], origin='lower', aspect='auto')
+					#ax1.axhline(popt[0]-clip, c='r', ls=':')
+					ax1.imshow(image[range1:range2+1, i-numrows:i+numrows+1], origin='lower', aspect='auto')
+					ax1.axhline(popt[0]-range1, c='r', ls=':')
 					ax2.plot(Xs, Ys)
 					Xs2 = np.linspace(np.min(Xs), np.max(Xs))
 					ax2.plot(Xs2, NormDist(Xs2, *popt), 'r--')
@@ -121,7 +201,8 @@ def CreateSpatialMap(image, numrows=3, clip=15, plot=False, plotvid=False):
 	Centroids   = np.array(Centroids)
 	pixels      = np.array(Pixels)
 	#print(pixels)
-	#print(len(pixels), len(Centroids))
+	#print(Centroids)
+	#print('LENGTHS:',len(pixels), len(Centroids))
 	#pixels      = np.arange(image.shape[1])
 
 	unFitted = True
@@ -144,10 +225,11 @@ def CreateSpatialMap(image, numrows=3, clip=15, plot=False, plotvid=False):
 		# Do the fit
 		hist = Centroids - p1(pixels)
 		sig  = np.std(hist)
+		#print('sigma', sig, 2*sig, 5*sig)
 		if count == 0: 
-			ind1 = np.where(abs(hist) < 2*sig)
+			ind1 = np.where(abs(hist) < 1*sig)
 		else:
-			ind1 = np.where(abs(hist) < 5*sig)
+			ind1 = np.where(abs(hist) < 2.5*sig)
 
 		#plt.scatter(pixels[ind1], Pixels[ind1], marker='x', c='r')
 		#plt.show()
