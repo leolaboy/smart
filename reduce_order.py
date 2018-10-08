@@ -308,58 +308,48 @@ def __rectify_spatial(order, eta=None):
     """     
     
     for frame in order.frames:
-        if frame == 'AB': continue
-        """
-        if frame == 'A':
-            order.objImg[frame] = image_lib.rectify_spatial(
-                    order.objImg[frame], order.flatOrder.smoothedSpatialTraceA)
-            order.ffObjImg[frame] = image_lib.rectify_spatial(
-                    order.ffObjImg[frame], order.flatOrder.smoothedSpatialTraceA)
-        elif frame == 'B':
-            order.objImg[frame] = image_lib.rectify_spatial(
-                    order.objImg[frame], order.flatOrder.smoothedSpatialTraceB)
-            order.ffObjImg[frame] = image_lib.rectify_spatial(
-                    order.ffObjImg[frame], order.flatOrder.smoothedSpatialTraceB)
+        if frame == 'AB': continue # Skip the AB frame, we will subtract them after rectification
 
-        else:
-            order.objImg[frame] = image_lib.rectify_spatial(
-                    order.objImg[frame], order.flatOrder.smoothedSpatialTrace)
-            order.ffObjImg[frame] = image_lib.rectify_spatial(
-                    order.ffObjImg[frame], order.flatOrder.smoothedSpatialTrace)
-        """
-        """
-        order.objImg[frame] = image_lib.rectify_spatial(
-                order.objImg[frame], order.flatOrder.smoothedSpatialTrace)
-        order.ffObjImg[frame] = image_lib.rectify_spatial(
-                order.ffObjImg[frame], order.flatOrder.smoothedSpatialTrace)
-        """
-        if frame in ['A', 'B']:
-            #print('FRAME', frame)
-            polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
-            order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
-            polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
-            order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+        logger.info('attempting spatial rectification using object trace')
+        try:
+            if frame in ['A', 'B']:
+                #print('FRAME', frame)
+                polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
+                order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
+                polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
+                order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
 
+                if eta is not None:
+                    if frame == 'B':
+                        order.etaImgB     = image_lib.rectify_spatial(order.etaImgB, polyVals1)
+                        order.ffEtaImgB   = image_lib.rectify_spatial(order.ffEtaImgB, polyVals2)
+
+                    else:
+                        order.etaImg      = image_lib.rectify_spatial(order.etaImg, polyVals1)
+                        order.ffEtaImg    = image_lib.rectify_spatial(order.ffEtaImg, polyVals2)
+            else:
+                order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
+                order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+        except:
+            logger.warning('could not rectify using object trace, falling back to edge trace')
+            order.objImg[frame] = image_lib.rectify_spatial(order.objImg[frame], 
+                                                            order.flatOrder.smoothedSpatialTrace)
+            order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], 
+                                                              order.flatOrder.smoothedSpatialTrace)
             if eta is not None:
-                if frame == 'B':
-                    order.etaImgB     = image_lib.rectify_spatial(order.etaImgB, polyVals1)
-                    order.ffEtaImgB   = image_lib.rectify_spatial(order.ffEtaImgB, polyVals2)
+                    if frame == 'B':
+                        order.etaImgB     = image_lib.rectify_spatial(order.etaImgB, 
+                                                                      order.flatOrder.smoothedSpatialTrace)
+                        order.ffEtaImgB   = image_lib.rectify_spatial(order.ffEtaImgB, 
+                                                                      order.flatOrder.smoothedSpatialTrace)
 
-                else:
-                    order.etaImg      = image_lib.rectify_spatial(order.etaImg, polyVals1)
-                    order.ffEtaImg    = image_lib.rectify_spatial(order.ffEtaImg, polyVals2)
-        else:
-            order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
-            order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
-        """
-        if eta is not None:
-            
-            #order.etaImg   = image_lib.rectify_spatial(order.etaImg, order.flatOrder.smoothedSpatialTrace)
-            #order.ffEtaImg = image_lib.rectify_spatial(order.ffEtaImg, order.flatOrder.smoothedSpatialTrace)
-            
-            order.etaImg   = image_lib.rectify_spatial(order.etaImg, polyVals1)
-            order.ffEtaImg = image_lib.rectify_spatial(order.ffEtaImg, polyVals2)
-        """
+                    else:
+                        order.etaImg      = image_lib.rectify_spatial(order.etaImg, 
+                                                                      order.flatOrder.smoothedSpatialTrace)
+                        order.ffEtaImg    = image_lib.rectify_spatial(order.ffEtaImg, 
+                                                                      order.flatOrder.smoothedSpatialTrace)
+
+
     order.spatialRectified = True
     logger.info('order has been rectified in the spatial dimension')
         
