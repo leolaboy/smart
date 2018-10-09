@@ -28,45 +28,36 @@ class FlatOrder:
         self.topMeas            = None  # measured LHS top row of order
         self.botMeas            = None  # measured LHS bottom row of order
         
-        self.topEdgeTrace = None         # top edge trace
-        self.botEdgeTrace = None         # bot edge trace
-        self.avgEdgeTrace = None
+        self.topEdgeTrace       = None # top edge trace
+        self.botEdgeTrace       = None # bot edge trace
+        self.avgEdgeTrace       = None
 
         self.longSlitEdgeMargin = 0
         self.cutoutPadding      = 0
         
-        self.highestPoint = None
-        self.lowestPoint  = None
-        self.topTrim      = None
-        self.botTrim      = None
+        self.highestPoint       = None
+        self.lowestPoint        = None
+        self.topTrim            = None
+        self.botTrim            = None
                 
-        self.onOrderMask  = None
-        self.offOrderMask = None
+        self.onOrderMask        = None
+        self.offOrderMask       = None
         
-        self.mean   = None
-        self.median = None
+        self.mean               = None
+        self.median             = None
         
-        self.cutout      = None
+        self.cutout             = None
 #         self.flatImg = None
-        self.normFlatImg = None
-        self.rectFlatImg = None
+        self.normFlatImg        = None
+        self.rectFlatImg        = None
         
-        self.normalized        = False
-        self.spatialRectified  = False
-        self.spectralRectified = False
+        self.normalized         = False
+        self.spatialRectified   = False
+        self.spectralRectified  = False
 
         self.smoothedSpatialTrace    = None
         self.spatialTraceMask        = None
         self.spatialTraceFitResidual = None
-
-        # set up for AB frames
-        self.smoothedSpatialTraceA    = None
-        self.spatialTraceMaskA        = None
-        self.spatialTraceFitResidualA = None
-
-        self.smoothedSpatialTraceB    = None
-        self.spatialTraceMaskB        = None
-        self.spatialTraceFitResidualB = None
         
         
     def reduce(self):

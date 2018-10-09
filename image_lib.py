@@ -96,7 +96,7 @@ def normalize(data, on_order, off_order):
     on-order pixels set to 1.0 and off order (padding) pixels set to 0.0.
     
     off_order is array of same size as data with 
-    off-order (padding) pixels set to 1.0 and on order pixels sto to 0.0.
+    off-order (padding) pixels set to 1.0 and on order pixels set to 0.0.
     
     returns normalized data array and median(mean) of the on-order pixels
     """
@@ -218,7 +218,7 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
     plt.imshow(flat)
     plt.figure(22)
     plt.imshow(noise)
-    #plt.show()
+    plt.show()
     #sys.exit()
     """
     
@@ -250,8 +250,11 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
 
 
 #     sky_mean -= np.median(sky_mean) 
-
+    #print('Obj sum', obj_sum)
+    #print('Sky mean', sky_mean)
     obj_sp            = obj_sum - (len(obj_range) * sky_mean)
+    #print('Obj sp', obj_sp)
+    #sys.exit()
 
     sky_sp            = sky_mean - sky_mean.mean() # why this?
     
@@ -285,15 +288,6 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
         etalon_sub  = etalon_sum - np.median(etalon_sum) # put the floor at ~0
         etalon_norm = etalon_sub / np.max(etalon_sub) * 0.9 # normalize for comparison to synthesized etalon
         etalon_sp   = etalon_norm + 0.9 # Add to the continuum for comparison to synthesized etalon
-        
-        #print(etalon_norm)
-        #print(etalon_norm + 0.9)
-        #import matplotlib.pyplot as plt
-        #plt.figure(1019)
-        #plt.plot(etalon_norm, c='r', alpha=0.5)
-        #plt.plot(etalon_sp, c='b', alpha=0.5)
-        #plt.show(block=False)
-        #sys.exit()
         
         return obj_sp, flat_sp, etalon_sp, sky_sp, noise_sp, top_bg_mean, bot_bg_mean
     else:
