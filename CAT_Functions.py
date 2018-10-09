@@ -102,13 +102,13 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 				#guess1 = Xs[len(Xs)//2]
 				
 				popt, pcov = op.curve_fit(NormDist, Xs, Ys, 
-			                          	  p0=[guess1, 2., np.median(Ys), np.max(Ys)], 
-                                          bounds = ( (guess1-7., 1., -1000., 0.), (guess1+7., 4., 1e7, 1e7) ),
-                                          maxfev=100000) # Where should a pixel start? (0, 1, 0.5?)
+										  p0=[guess1, 2., np.median(Ys), np.max(Ys)], 
+										  bounds = ( (guess1-7., 1., -1000., 0.), (guess1+7., 4., 1e7, 1e7) ),
+										  maxfev=100000) # Where should a pixel start? (0, 1, 0.5?)
 				#print(i,popt)
 				
 				#popt = [guess1]
-  				if plotvid:
+				if plotvid:
 					fig0 = plt.figure(199, figsize=(8,4))
 					ax1 = fig0.add_subplot(121)
 					ax2 = fig0.add_subplot(122)
@@ -162,16 +162,16 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 				#prevGuess = Centroids[-1]
 				
 				popt, pcov = op.curve_fit(NormDist, Xs, Ys, 
-			                          	  p0=[guess1, 2., np.median(Ys), np.max(Ys)],
-                                          bounds = ( (guess1-7., 1., -1000., 0.), (guess1+7., 4., 1e7, 1e7) ), 
-			                          	  maxfev=100000) # Where should a pixel start? (0, 1, 0.5?)
+										  p0=[guess1, 2., np.median(Ys), np.max(Ys)],
+										  bounds = ( (guess1-7., 1., -1000., 0.), (guess1+7., 4., 1e7, 1e7) ), 
+										  maxfev=100000) # Where should a pixel start? (0, 1, 0.5?)
 				#print(i,popt)
 				#popt = [guess1]
 				#print(abs(popt[0]-prevGuess))
 				#if abs(popt[0]-prevGuess) > 10: 
 				#	continue
 
-  				if plotvid:
+				if plotvid:
 					fig0 = plt.figure(199, figsize=(8,4))
 					ax1 = fig0.add_subplot(121)
 					ax2 = fig0.add_subplot(122)
