@@ -16,7 +16,7 @@ def calc_noise_img(obj, flat, integration_time):
     """
     
     G  = 5.8  # e-/ADU    
-    RN = 23.0 # e-
+    RN = 23.0 # e-/pixel
     DC = 0.8  # e-/second/pixel
     
     # calculate photon noise
@@ -96,6 +96,8 @@ SKY_LINE_BG_WIDTH     = 0
 SKY_LINE_JUMP_THRESH  = 0.8
 SKY_LINE_JUMP_LIMIT   = 10
         
+
+
 def trace_sky_line(data, start, eta=None):
 
     # updated params based on trial and error
@@ -111,13 +113,13 @@ def trace_sky_line(data, start, eta=None):
             data, start, SKY_LINE_SEARCH_WIDTH, SKY_LINE_BG_WIDTH, SKY_LINE_JUMP_THRESH, eta=eta)
     
     if trace is None:
-        logger.warning('sky line trace failed')
+        logger.warning('sky/etalon line trace failed')
         return None
     if nJumps > SKY_LINE_JUMP_LIMIT:
-        logger.debug('sky line trace jump limit exceeded: n jumps=' + 
+        logger.debug('sky/etalon line trace jump limit exceeded: n jumps=' + 
                 str(nJumps) + ' limit=' + str(SKY_LINE_JUMP_LIMIT))        
         return None
-    logger.debug('sky line accepted')  
+    logger.debug('sky/etalon line accepted')  
     return trace
 
 
@@ -151,10 +153,10 @@ def smooth_spatial_trace(y_raw):
     return y_fit, mask
 
 
+
 SKY_SIGMA           = 1.1
 EXTRA_PADDING       = 5
 MIN_LINE_SEPARATION = 5
-
 
 def find_spectral_trace(data, numrows=5, eta=None, plot=False):
     """

@@ -2,6 +2,7 @@ import numpy as np
 from astropy.io import fits
 import DrpException
 
+
 class RawDataSet:
     """Represents a complete raw data set consisting an object frame or an object frame pair,
     one or more flats and zero or more darks.
@@ -80,6 +81,7 @@ class RawDataSet:
                 
         return baseName
     
+    
     def __combineBaseNames(self, A, B):
         
         if A.startswith('NS.') and B.startswith('NS.') and \
@@ -92,7 +94,6 @@ class RawDataSet:
 
         return A + '-' + B[i:]
         
-
                 
     def isPair(self):
         return self.pair
@@ -109,7 +110,7 @@ class RawDataSet:
 #     def getObjHeader(self):
 #         return(self.objHeader)
  
-    
+
     def getShape(self):
         return((self.objHeader['NAXIS1'], self.objHeader['NAXIS2']))
  

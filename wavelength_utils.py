@@ -1003,7 +1003,7 @@ def find_peaks_2(s, eta=None):
     sp       -= np.median(sp)
     #print(np.median(sp), 1.1*np.median(sp))
     if eta is not None:
-        peaks_i   = argrelextrema(sp, np.greater, order=2)
+        #peaks_i   = argrelextrema(sp, np.greater, order=2)
         #print(peaks_i)
         peaks_i   = find_peaks_cwt(sp, [4,5,6,7,8])#, min_length=20)#, min_snr=3)
         #print(peaks_i)

@@ -112,7 +112,7 @@ def reduce_order(order, eta=None):
             if frame == 'B':
                 order.srNormEtaImgB = order.ffEtaImgB
             else:
-                order.srNormEtaImg = order.ffEtaImg
+                order.srNormEtaImg  = order.ffEtaImg
     
     # find spatial profile and peak
     __find_spatial_profile_and_peak(order)
@@ -314,15 +314,24 @@ def __rectify_spatial(order, eta=None):
         try:
             if frame in ['A', 'B']:
                 #print('FRAME', frame)
-                polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
-                order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
-                polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
-                order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+                if config.params['onoff'] == True and frame == 'B': 
+                    order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
+                    order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+
+                else:
+                    polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
+                    order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
+                    polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
+                    order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
 
                 if eta is not None:
                     if frame == 'B':
-                        order.etaImgB     = image_lib.rectify_spatial(order.etaImgB, polyVals1)
-                        order.ffEtaImgB   = image_lib.rectify_spatial(order.ffEtaImgB, polyVals2)
+                        if config.params['onoff'] == True:
+                            order.etaImgB     = order.etaImg
+                            order.ffEtaImgB   = order.ffEtaImg
+                        else:
+                            order.etaImgB     = image_lib.rectify_spatial(order.etaImgB, polyVals1)
+                            order.ffEtaImgB   = image_lib.rectify_spatial(order.ffEtaImgB, polyVals2)
 
                     else:
                         order.etaImg      = image_lib.rectify_spatial(order.etaImg, polyVals1)
@@ -332,8 +341,8 @@ def __rectify_spatial(order, eta=None):
                 order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
         except:
             logger.warning('could not rectify using object trace, falling back to edge trace')
-            order.objImg[frame] = image_lib.rectify_spatial(order.objImg[frame], 
-                                                            order.flatOrder.smoothedSpatialTrace)
+            order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], 
+                                                              order.flatOrder.smoothedSpatialTrace)
             order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], 
                                                               order.flatOrder.smoothedSpatialTrace)
             if eta is not None:
@@ -383,16 +392,24 @@ def __rectify_spectral(order, eta=None):
     for frame in order.frames:
         #print('FRAME', frame)
         if frame == 'AB': continue
-        order.objImg[frame], peak1   = image_lib.rectify_spectral(order.objImg[frame], order.spectralTrace[frame], returnpeak=True)
-        order.ffObjImg[frame], peak2 = image_lib.rectify_spectral(order.ffObjImg[frame], order.spectralTrace[frame], returnpeak=True)
+        if config.params['onoff'] == True and frame == 'B':
+            order.objImg[frame], peak1   = image_lib.rectify_spectral(order.objImg[frame], order.spectralTrace['A'], returnpeak=True)
+            order.ffObjImg[frame], peak2 = image_lib.rectify_spectral(order.ffObjImg[frame], order.spectralTrace['A'], returnpeak=True)
+        else:
+            order.objImg[frame], peak1   = image_lib.rectify_spectral(order.objImg[frame], order.spectralTrace[frame], returnpeak=True)
+            order.ffObjImg[frame], peak2 = image_lib.rectify_spectral(order.ffObjImg[frame], order.spectralTrace[frame], returnpeak=True)
 
         if frame == 'A':
             order.flatOrder.rectFlatImg, peak0 = image_lib.rectify_spectral(order.flatOrder.rectFlatImg, order.spectralTrace[frame], returnpeak=True)
 
         if eta is not None:
             if frame == 'B':
-                order.etaImgB   = image_lib.rectify_spectral(order.etaImgB, order.spectralTrace[frame], peak1)
-                order.ffEtaImgB = image_lib.rectify_spectral(order.ffEtaImgB, order.spectralTrace[frame], peak2)
+                if config.params['onoff'] == True:
+                    order.etaImgB   = order.etaImg
+                    order.ffEtaImgB = iorder.ffEtaImg
+                else:
+                    order.etaImgB   = image_lib.rectify_spectral(order.etaImgB, order.spectralTrace[frame], peak1)
+                    order.ffEtaImgB = image_lib.rectify_spectral(order.ffEtaImgB, order.spectralTrace[frame], peak2)
             else:
                 order.etaImg    = image_lib.rectify_spectral(order.etaImg, order.spectralTrace[frame], peak1)
                 order.ffEtaImg  = image_lib.rectify_spectral(order.ffEtaImg, order.spectralTrace[frame], peak2)
@@ -464,6 +481,7 @@ def __extract_spectra(order, eta=None):
                             order.botSkyWindow[frame])  
 
     ### XXX TESTING AREA
+    '''
     # Try the defringe filter
     import matplotlib.pyplot as plt
     from scipy import fftpack
@@ -564,7 +582,7 @@ def __extract_spectra(order, eta=None):
             """
             order.objSpec[frame] = newsig
     
-       
+    '''
     ### XXX TESTING AREA
         
     if order.isPair:
@@ -618,17 +636,21 @@ def __characterize_spatial_profile(order):
     
     for frame in order.frames:
         try:
-            for w in range(10, 30, 10):
-                logger.debug('gaussian window width = {}'.format(2 * w))
-                x0 = max(0, order.peakLocation[frame] - w)
-                x1 = min(len(order.spatialProfile[frame]) - 1, order.peakLocation[frame] + w)
-                x  = range(x1 - x0)
-                order.gaussianParams[frame], pcov = scipy.optimize.curve_fit(
-                        image_lib.gaussian, x, order.spatialProfile[frame][x0:x1] - \
-                        np.amin(order.spatialProfile[frame][x0:x1]))
-                order.gaussianParams[frame][1] += x0
-                if order.gaussianParams[frame][2] > 1.0:
-                    break
+            if frame == 'B' and config.params['onoff']  == True:
+                logger.debug('using frame A window width = {}'.format(abs(order.gaussianParams['A'][2])))
+                order.gaussianParams[frame] = order.gaussianParams['A']
+            else:
+                for w in range(10, 30, 10):
+                    logger.debug('gaussian window width = {}'.format(2 * w))
+                    x0 = max(0, order.peakLocation[frame] - w)
+                    x1 = min(len(order.spatialProfile[frame]) - 1, order.peakLocation[frame] + w)
+                    x  = range(x1 - x0)
+                    order.gaussianParams[frame], pcov = scipy.optimize.curve_fit(
+                            image_lib.gaussian, x, order.spatialProfile[frame][x0:x1] - \
+                            np.amin(order.spatialProfile[frame][x0:x1]))
+                    order.gaussianParams[frame][1] += x0
+                    if order.gaussianParams[frame][2] > 1.0:
+                        break
         except Exception as e:
             logger.warning('cannot fit frame {} spatial profile to Gaussian'.format(frame))
             order.gaussianParams[frame] = None
@@ -649,24 +671,30 @@ def __find_spatial_profile_and_peak(order):
     for frame in order.frames:
         
         # find spatial profile(s)
-        order.spatialProfile[frame] = order.ffObjImg[frame].mean(axis=1)
-        if len(order.spatialProfile[frame]) < (2 * MARGIN) + 2:
-            raise DrpException.DrpException(
-                    'cannot find spatial profile for frame {} order {}'.format(
-                    frame, order.flatOrder.orderNum))
-            
-        # find peak locations
-        order.peakLocation[frame] = np.argmax(order.spatialProfile[frame][MARGIN:-MARGIN]) + MARGIN
-        logger.info('frame {} spatial profile peak intensity row {:d}'.format(
-                frame, order.peakLocation[frame]))
-    
-        # fit peak to Gaussian, save Gaussian parameters and real centroid location
-        p0 = order.peakLocation[frame] - (config.params['obj_window'] // 2)
-        p1 = order.peakLocation[frame] + (config.params['obj_window'] // 2)
-        order.centroid[frame] = (scipy.ndimage.measurements.center_of_mass(
-            order.spatialProfile[frame][p0:p1]))[0] + p0 
-        logger.info('frame {} spatial profile peak centroid row {:.1f}'.format(
-                frame, float(order.centroid[frame])))     
+        if frame == 'B' and config.params['onoff'] == True:
+            order.spatialProfile[frame] = order.spatialProfile['A']
+            order.peakLocation[frame]   = order.peakLocation['A']
+            order.centroid[frame]       = order.centroid['A']
+
+        else:
+            order.spatialProfile[frame] = order.ffObjImg[frame].mean(axis=1)
+            if len(order.spatialProfile[frame]) < (2 * MARGIN) + 2:
+                raise DrpException.DrpException(
+                        'cannot find spatial profile for frame {} order {}'.format(
+                        frame, order.flatOrder.orderNum))
+                
+            # find peak locations
+            order.peakLocation[frame] = np.argmax(order.spatialProfile[frame][MARGIN:-MARGIN]) + MARGIN
+            logger.info('frame {} spatial profile peak intensity row {:d}'.format(
+                    frame, order.peakLocation[frame]))
+        
+            # fit peak to Gaussian, save Gaussian parameters and real centroid location
+            p0 = order.peakLocation[frame] - (config.params['obj_window'] // 2)
+            p1 = order.peakLocation[frame] + (config.params['obj_window'] // 2)
+            order.centroid[frame] = (scipy.ndimage.measurements.center_of_mass(
+                order.spatialProfile[frame][p0:p1]))[0] + p0 
+            logger.info('frame {} spatial profile peak centroid row {:.1f}'.format(
+                    frame, float(order.centroid[frame])))     
     
     return
 

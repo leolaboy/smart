@@ -11,6 +11,7 @@ import config
 
 failed2reduce = {'itype':0, 'dispmode':0, 'n1':0, 'n2':0, 'fil':0} #, 'dmode':0}
 
+
 def create(in_dir):
     """
     Given an input directory path, creates and returns a list of RawDataSet objects.
@@ -112,6 +113,7 @@ def create(in_dir):
     return(rawDataSetsWithFlats)
 
 
+
 def get_headers(in_dir):
     """
     Makes a list of FITS files found in in_dir, unzips them as needed and.
@@ -136,6 +138,8 @@ def get_headers(in_dir):
             headers[full_filename] = fits.getheader(full_filename)
         
     return headers
+
+
 
 def obj_criteria_met(header, failed2reduce):
     """
@@ -172,6 +176,8 @@ def obj_criteria_met(header, failed2reduce):
         return False
     return True
     
+
+
 def flat_criteria_met(obj_header, flat_header, ignore_dispers=False):
     """Takes an object frame header and a flat frame header and determines if 
     the flat satisfies the criteria for association with the object frame
@@ -191,6 +197,8 @@ def flat_criteria_met(obj_header, flat_header, ignore_dispers=False):
         if obj_header[kwd] != flat_header[kwd]:
             return False
     return True
+
+
 
 def is_valid_pair(obj_A_header, obj_B_header, override=False):
     """Determines if the frames associated with the two headers passed as arguments
@@ -216,6 +224,8 @@ def is_valid_pair(obj_A_header, obj_B_header, override=False):
         if obj_A_header[kwd] != obj_B_header[kwd]:
             return False
     return True
+
+
 
 def dark_criteria_met(obj_header, dark_header):
     """

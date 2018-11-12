@@ -15,7 +15,7 @@ def NormDist(x, mean, sigma, baseline, amplitude):
 
 
 
-def CreateSpatialMap(image, numrows=5, clip=15, plot=True, plotvid=False, cutoff=10):
+def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutoff=10):
 
 	#print(image.shape)
 	Centroids = []

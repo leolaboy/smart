@@ -62,7 +62,9 @@ subdirs = dict([
                 ('trace.fits',          'fits/trace'        ),
                 ('trace.png',           'previews/trace'    ),
                 ('noise.fits',          'fits/noise'        ),
+                ('noiseorder.fits',     'fits/noiseorder'   ),
                 ('noise.png',           'previews/noise'    ),
+                ('noiseorder.png',      'previews/noiseorder'),
                 ('flux_vs_noise.fits',  'fits/flux_vs_noise'),
                 ('flux_vs_noise.png',   'previews/flux_vs_noise'), 
                 #('spectra.png',         'previews/spectra'  ),
@@ -208,13 +210,13 @@ def gen(reduced, out_dir, eta=None):
         # flux ASCII and FITS tables
         #
         if order.isPair:
-            obj_spec = order.objSpec['AB']
+            obj_spec   = order.objSpec['AB']
             noise_spec = order.noiseSpec['AB']
-            snr_spec = np.absolute(order.objSpec['AB'] / order.noiseSpec['AB'])
+            snr_spec   = np.absolute(order.objSpec['AB'] / order.noiseSpec['AB'])
         else:
-            obj_spec = order.objSpec['A']
+            obj_spec   = order.objSpec['A']
             noise_spec = order.noiseSpec['A']
-            snr_spec = np.absolute(order.objSpec['A'] / order.noiseSpec['A'])
+            snr_spec   = np.absolute(order.objSpec['A'] / order.noiseSpec['A'])
             
         fluxAsciiTable(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.waveScale, 
                 obj_spec, order.skySpec['A'], order.synthesizedSkySpec, snr_spec,
@@ -363,6 +365,12 @@ def gen(reduced, out_dir, eta=None):
         #        order.flatOrder.orderNum, order.ffObjImg[frame], order.waveScale, order.calMethod)
         #    twoDimOrderFits(out_dir, order.baseNames[frame], order.flatOrder.orderNum, 
         #        order.ffObjImg[frame], header)
+
+        for frame in order.frames:
+            twoDimNoiseOrderPlot(out_dir, order.baseNames[frame], 'noise order image', 'noiseorder.png', 
+                order.flatOrder.orderNum, order.noiseImg[frame], order.waveScale, order.calMethod)
+            twoDimNoiseOrderFits(out_dir, order.baseNames[frame], 
+                order.flatOrder.orderNum, order.noiseImg[frame], header)
         
         # end of for each order
 
@@ -997,6 +1005,41 @@ def twoDimOrderPlot(outpath, base_name, title, base_filename, order_num, data, x
     pl.close()
         
     return
+
+def twoDimNoiseOrderPlot(outpath, base_name, title, base_filename, order_num, data, x_scale,
+            wave_note='unknown'):
+    """
+    Produces a generic 2-d image plot.
+    
+    Arguments:
+        output: Directory path of root products directory.
+        base_name: Base name of object frame.
+        title: Title of plot, e.g. rectified order image.
+        base_filename:
+        order_num:
+        data:
+        x_scale:
+    """
+    pl.figure('2d order image', facecolor='white', figsize=(8, 5))
+    pl.cla()
+    pl.title(title + ', ' + base_name + ", order " + str(order_num), fontsize=14)
+    pl.xlabel('wavelength($\AA$) (' + wave_note + ')', fontsize=12)
+    pl.ylabel('row (pixel)', fontsize=12)
+    
+    pl.imshow(exposure.equalize_hist(data), origin='lower', 
+                  extent=[x_scale[0], x_scale[-1], 0, data.shape[0]], aspect='auto')      
+       
+#    pl.colorbar()
+#    pl.set_cmap('jet')
+    pl.set_cmap('gray')
+#     pl.set_cmap('Blues_r')
+
+    fn = constructFileName(outpath, base_name, order_num, base_filename)
+    savePreviewPlot(fn)
+    log_fn(fn)
+    pl.close()
+        
+    return
     
 
 def twoDimOrderFits(outpath, base_name, order_num, data, header):     
@@ -1011,6 +1054,22 @@ def twoDimOrderFits(outpath, base_name, order_num, data, header):
             pass
             
     fn = constructFileName(outpath, base_name, order_num, 'order.fits')
+    hdulist.writeto(fn, clobber=True)
+    log_fn(fn)
+    return
+
+def twoDimNoiseOrderFits(outpath, base_name, order_num, data, header):     
+    hdu     = fits.PrimaryHDU(data)
+    hdulist = fits.HDUList(hdu)
+    hdr     = hdulist[0].header
+    for k, v in header.items():
+        try:
+            hdr[k] = v
+        except Exception as e:
+            #obj_logger.warning(e.message)
+            pass
+            
+    fn = constructFileName(outpath, base_name, order_num, 'noiseorder.fits')
     hdulist.writeto(fn, clobber=True)
     log_fn(fn)
     return

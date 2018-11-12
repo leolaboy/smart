@@ -159,8 +159,8 @@ def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, plo
             guess1 = Xs[int(len(Xs)/2)]
             try:
                 popt, pcov = op.curve_fit(cat.NormDist, Xs, Ys, 
-                                      p0     = [guess1, 2, np.min(Ys), np.max(Ys)], 
-                                      bounds = ( (guess1-3, 1, 0, 0), (guess1+3, 4, 1e10, 1e10) ),
+                                      p0     = [guess1, 2., np.min(Ys), np.max(Ys)], 
+                                      bounds = ( (guess1-3, 1., -100., 0.), (guess1+3, 8., 1e10, 1e10) ),
                                       maxfev = 1000000) 
                 trace[i] = popt[0]
             except:
@@ -192,8 +192,8 @@ def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, plo
             guess1 = Xs[int(len(Xs)/2)]
             try:
                 popt, pcov = op.curve_fit(cat.NormDist, Xs, Ys, 
-                                      p0     = [guess1, 2, np.min(Ys), np.max(Ys)], 
-                                      bounds = ( (guess1-3, 1, 0, 0), (guess1+3, 4, 1e10, 1e10) ),
+                                      p0     = [guess1, 2., np.min(Ys), np.max(Ys)], 
+                                      bounds = ( (guess1-3, 1., -100., 0.), (guess1+3, 8., 1e10, 1e10) ),
                                       maxfev = 1000000) 
                 trace[i] = popt[0]
             except:

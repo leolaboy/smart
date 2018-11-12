@@ -55,6 +55,7 @@ def main():
     config.params['no_cosmic']                 = args.no_cosmic
     config.params['no_products']               = args.no_products
     config.params['no_clean']                  = args.no_clean
+    config.params['onoff']                     = args.onoff
     if args.obj_window is not None:
         config.params['obj_window']            = int(args.obj_window)
     if args.sky_window is not None:
@@ -231,6 +232,8 @@ def parse_cmnd_line_args():
     parser.add_argument('-no_products', help='inhibits data product generation', 
             action='store_true')
     parser.add_argument('-no_clean', help='inhibits bad pixel cleaning', 
+            action='store_true')
+    parser.add_argument('-onoff', help='does On-Off for the AB frame instead of A-B', 
             action='store_true')
 #     , default=config.DEFAULT_COSMIC)
     parser.add_argument('-obj_window', help='object extraction window width in pixels')

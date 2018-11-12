@@ -132,6 +132,7 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
     return(reduced)
 
 
+
 def getEtas(raw, etaCacher):
     """Given a raw data set and a etalon cacher, creates and returns a etalon object XXX Do we need this?
     
@@ -173,6 +174,7 @@ def getEtas(raw, etaCacher):
     else:
         return(etaCacher.getEta(raw.etaFns))
  
+
  
 def getFlat(raw, flatCacher):
     """Given a raw data set and a flat cacher, creates and returns a Flat object
@@ -216,6 +218,7 @@ def getFlat(raw, flatCacher):
         return(flatCacher.getFlat(raw.flatFns))
      
  
+
 def reduce_orders(reduced, eta=None):
     """Reduces each order in the frame.  
     
@@ -405,6 +408,8 @@ def find_global_wavelength_soln(reduced):
     
     return True
 
+
+
 def apply_wavelength_soln(reduced):
     
     if reduced.frameCalCoeffs is None:
@@ -436,6 +441,8 @@ def apply_wavelength_soln(reduced):
             order.calMethod = 'grating equation'
                    
     return
+    
+
     
 def init(baseName, out_dir):
     """
