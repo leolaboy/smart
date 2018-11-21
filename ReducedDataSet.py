@@ -92,9 +92,6 @@ class ReducedDataSet:
         
         self.nLinesFound = 0
         self.nLinesUsed  = 0
-
-        self.nELinesFound = 0
-        self.nELinesUsed  = 0
         
         self.frameCalAvailable = False
         self.frameCalRmsRes    = None  # rms per-frame fit residual

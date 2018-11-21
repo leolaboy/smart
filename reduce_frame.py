@@ -82,8 +82,8 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
 
         reduced.cosmicCleaned = True 
 
-    ### XXX TESTING AREA
-    '''
+    ### XXX TESTING AREA 
+    """ moved this to reduce order
     if config.params['no_clean']:
         logger.info("bad pixel rejection on object frame inhibited by command line flag")
 
@@ -101,7 +101,7 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
             logger.debug('bad pixel cleaning etalon frame complete')
 
         reduced.pixelCleaned = True 
-    '''
+    """
     ### XXX TESTING AREA
            
     # if darks are available, combine them if there are more than one
@@ -130,6 +130,7 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
             order.calMethod = 'grating equation'
     
     return(reduced)
+
 
 
 def getEtas(raw, etaCacher):
@@ -173,6 +174,7 @@ def getEtas(raw, etaCacher):
     else:
         return(etaCacher.getEta(raw.etaFns))
  
+
  
 def getFlat(raw, flatCacher):
     """Given a raw data set and a flat cacher, creates and returns a Flat object
@@ -216,6 +218,7 @@ def getFlat(raw, flatCacher):
         return(flatCacher.getFlat(raw.flatFns))
      
  
+
 def reduce_orders(reduced, eta=None):
     """Reduces each order in the frame.  
     
@@ -242,15 +245,13 @@ def reduce_orders(reduced, eta=None):
         if flatOrder.valid is not True:
             continue        
         
-        logger.info('***** order ' + str(flatOrder.orderNum) + ' *****')
+        logger.info('*********** ORDER ' + str(flatOrder.orderNum) + ' ***********')
 
+        #if flatOrder.orderNum != 32: continue #XXX
         #if flatOrder.orderNum != 33: continue #XXX
+        #if flatOrder.orderNum != 37: continue #XXX
             
-        if eta is not None:
-            order = Order.Order(reduced.frames, reduced.baseNames, flatOrder, etaImg=reduced.etaImg)
-
-        else:
-            order = Order.Order(reduced.frames, reduced.baseNames, flatOrder)
+        order = Order.Order(reduced.frames, reduced.baseNames, flatOrder, etaImg=reduced.etaImg)
         
         order.isPair = reduced.isPair
         
@@ -352,10 +353,7 @@ def find_global_wavelength_soln(reduced):
             
     reduced.nLinesFound = len(col)
     for l in loggers:
-        logging.getLogger(l).log(INFO, 'n sky lines identified = {:d}'.format(reduced.nLinesFound))
-    reduced.nELinesFound = len(col)
-    for l in loggers:
-        logging.getLogger(l).log(INFO, 'n etalon lines identified = {:d}'.format(reduced.nELinesFound))
+        logging.getLogger(l).log(INFO, 'n sky/etalon lines identified = {:d}'.format(reduced.nLinesFound))
     
     if config.params['int_c'] is True:
         logger.warning('using integer column numbers in wavelength fit')
@@ -410,6 +408,8 @@ def find_global_wavelength_soln(reduced):
     
     return True
 
+
+
 def apply_wavelength_soln(reduced):
     
     if reduced.frameCalCoeffs is None:
@@ -430,7 +430,7 @@ def apply_wavelength_soln(reduced):
         if np.all(dx <= 0) or np.all(dx >= 0):
             # wavelength scale is monotonic
             order.waveScale = order.frameCalWaveScale
-            print('TEST1', order.waveScale)
+            #print('TEST1', order.waveScale)
             np.save('wave_%s.npy'%order.flatOrder.orderNum, order.waveScale) 
             order.calMethod = 'frame sky line cal'
         else:
@@ -441,6 +441,8 @@ def apply_wavelength_soln(reduced):
             order.calMethod = 'grating equation'
                    
     return
+    
+
     
 def init(baseName, out_dir):
     """

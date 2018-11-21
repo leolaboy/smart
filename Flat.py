@@ -78,7 +78,7 @@ class Flat:
         
         for orderNum in range(config.get_starting_order(self.filterName), 0, -1):
             
-            self.logger.info('***** flat order {} *****'.format(orderNum))
+            self.logger.info('*********** FLAT ORDER {} ***********'.format(orderNum))
 
             flatOrder = FlatOrder.FlatOrder(self.baseName, orderNum, self.logger)
             
@@ -86,13 +86,15 @@ class Flat:
             flatOrder.topCalc, flatOrder.botCalc, flatOrder.gratingEqWaveScale = self.gratingEq.evaluate(
                     orderNum, self.filterName, self.slit, self.echelleAngle, self.disperserAngle)
 
-            # TESTING TO PLOT ORDER CUTOUTS
-            #print(flatOrder.topCalc, flatOrder.botCalc)
-            #plt.imshow(self.flatImg, origin='lower')
-            #plt.axhline(flatOrder.topCalc, c='r', ls='--')
-            #plt.axhline(flatOrder.botCalc, c='b', ls='--')
-            #plt.show()
+            """
+            # TESTING TO PLOT ORDER CUTOUTS XXX
+            print(flatOrder.topCalc, flatOrder.botCalc)
+            plt.imshow(self.flatImg, origin='lower', aspect='auto')
+            plt.axhline(flatOrder.topCalc, c='r', ls='--')
+            plt.axhline(flatOrder.botCalc, c='b', ls='--')
+            plt.show()
             #sys.exit()
+            """
             
             self.logger.info('predicted top edge location = {:.0f} pixels'.format(flatOrder.topCalc))
             self.logger.info('predicted bot edge location = {:.0f} pixels'.format(flatOrder.botCalc))
@@ -125,7 +127,15 @@ class Flat:
                     self.logger.info('failed to find spatial trace: {}'.format(e.message))
                     flatOrder.valid = False
                     continue
-   
+                """
+                # TESTING TO PLOT ORDER CUTOUTS XXX
+                print(flatOrder.botEdgeTrace)
+                plt.imshow(self.flatImg, origin='lower', aspect='auto')
+                plt.plot(flatOrder.topEdgeTrace, c='r', ls='--')
+                plt.plot(flatOrder.botEdgeTrace, c='b', ls='--')
+                plt.show()
+                #sys.exit()
+                """
                 if flatOrder.spatialTraceFitResidual > config.params['max_spatial_trace_res']:
                     self.logger.info('spatial trace fit residual too large, limit = {}'.format(
                             config.params['max_spatial_trace_res']))
@@ -158,9 +168,11 @@ class Flat:
         self.logger.info('n orders found = {}'.format(self.nOrdersFound))
         return
         
+
     def getBaseName(self):
         return self.fn[self.fn.rfind('/') + 1:self.fn.rfind('.')]
         
+
     def findEdgeProfilePeaks(self):
         
         # make top and bottom edge profile images
@@ -176,6 +188,7 @@ class Flat:
         
         return
         
+
     def findPeaks(self, edgeProfile):
         
         peak_rows = argrelextrema(edgeProfile, np.greater, order=35)[0]
@@ -184,6 +197,7 @@ class Flat:
         
         return(peak_rows[tall_peaks_i[0]])
         
+
     def findOrderSowc(self, flatOrder):
         
         flatOrder.topMeas = None
@@ -218,6 +232,7 @@ class Flat:
                 flatOrder.botCalc - flatOrder.botMeas))     
         return
               
+
     def findEdge(self, calc, maxDelta, topOrBot): 
         if topOrBot == 'bot': 
             meas = min((abs(calc - i), i) for i in self.botEdgePeaks)[1] 
@@ -231,6 +246,7 @@ class Flat:
         else:
             return meas
         
+
     def findOrder(self, flatOrder):
          
         flatOrder.topMeas = min((abs(flatOrder.topCalc - i), i) for i in self.topEdgePeaks)[1]
@@ -297,7 +313,16 @@ class Flat:
             if flatOrder.topEdgeTrace is not None:
                 flatOrder.topEdgeTrace -= config.params['long_slit_edge_margin']
             if flatOrder.botEdgeTrace is not None:
-                flatOrder.botEdgeTrace += config.params['long_slit_edge_margin']   
+                flatOrder.botEdgeTrace += config.params['long_slit_edge_margin']
+
+        # apply K-AO correction to raw traces
+        if 'K-AO' in self.filterName:
+            self.logger.info('applying K-AO filter edge margins of {} pixels'.format(
+                config.params['K-AO_edge_margin']))
+            if flatOrder.topEdgeTrace is not None:
+                flatOrder.topEdgeTrace -= config.params['K-AO_edge_margin']
+            #if flatOrder.botEdgeTrace is not None:
+            #    flatOrder.botEdgeTrace += config.params['K-AO_edge_margin']   
             
         # if bottom edge trace successful, use to refine LHS bottom location
         if flatOrder.botEdgeTrace is not None:
@@ -306,7 +331,13 @@ class Flat:
         # smooth spatial trace
         flatOrder.smoothedSpatialTrace, flatOrder.spatialTraceMask = \
                 nirspec_lib.smooth_spatial_trace(flatOrder.avgEdgeTrace)
-                
+        """
+        # smooth spatial trace for A and B frames (maybe implement later)
+        flatOrder.smoothedSpatialTraceA, flatOrder.spatialTraceMaskA = \
+                nirspec_lib.smooth_spatial_trace(flatOrder.topEdgeTrace)
+        flatOrder.smoothedSpatialTraceB, flatOrder.spatialTraceMaskB = \
+                nirspec_lib.smooth_spatial_trace(flatOrder.botEdgeTrace)
+        """
         self.logger.info('spatial trace smoothed, ' + \
                 str(self.flatImg.shape[1] - np.count_nonzero(flatOrder.spatialTraceMask)) + 
                 ' points ignored')

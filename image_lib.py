@@ -49,7 +49,7 @@ def rectify_spatial(data, curve):
 
 
 
-def rectify_spectral(data, curve, eta=None):
+def rectify_spectral(data, curve, peak=None, eta=None, returnpeak=None):
     """
     Shift data, row by row, along x-axis according to curve.
     
@@ -58,7 +58,7 @@ def rectify_spectral(data, curve, eta=None):
     Throws IndexError exception if length of curve
     is not equal to number of rows in data.
     """
-
+    #print('TEST2')
     #print(curve)
     #print(curve.shape)
     #print(data.shape)
@@ -66,16 +66,24 @@ def rectify_spectral(data, curve, eta=None):
     
     # pivot curve around peak 
     # and change sign so shift is corrective 
-    profile = data.sum(axis=1)
-    peak = np.argmax(profile)
-    curve_p = -1.0 * (curve - curve[peak])
+    profile  = data.sum(axis=1)
+    #import matplotlib.pyplot as plt
+    #plt.plot(profile)
+    #print('PEAK', peak)
+    #plt.show()
+    if peak == None:
+        peak     = np.argmax(profile)
+    curve_p  = -1.0 * (curve - curve[peak])
         
     rectified = []
     for i in range(0, len(curve_p)):
         s = data[i, :]
         rectified.append(ndimage.interpolation.shift(
-                s, curve_p[i], order=3, mode='nearest', prefilter=True))  
-    
+                s, curve_p[i], order=3, mode='nearest', prefilter=True)) 
+
+    if returnpeak == True:
+        return(np.array(rectified), peak)
+
     return(np.array(rectified))
 
 
@@ -88,7 +96,7 @@ def normalize(data, on_order, off_order):
     on-order pixels set to 1.0 and off order (padding) pixels set to 0.0.
     
     off_order is array of same size as data with 
-    off-order (padding) pixels set to 1.0 and on order pixels sto to 0.0.
+    off-order (padding) pixels set to 1.0 and on order pixels set to 0.0.
     
     returns normalized data array and median(mean) of the on-order pixels
     """
@@ -198,6 +206,21 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
     """
     #print('OBJ RANGE:', obj_range)
     #sys.exit()
+
+    ### TESTING AREA XXX
+    """
+    print(obj_range)
+    print(sky_range_top, sky_range_bot)
+    import matplotlib.pyplot as plt
+    plt.figure(20)
+    plt.imshow(obj)
+    plt.figure(21)
+    plt.imshow(flat)
+    plt.figure(22)
+    plt.imshow(noise)
+    plt.show()
+    #sys.exit()
+    """
     
     obj_sum     = np.sum(obj[i, :] for i in obj_range)
     flat_sum    = np.sum(flat[i, :] for i in obj_range)
@@ -206,6 +229,8 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
 
     sky_top_sum = np.sum(obj[i, :] for i in sky_range_top)
     sky_bot_sum = np.sum(obj[i, :] for i in sky_range_bot)
+    #print(sky_top_sum)
+    #print(sky_bot_sum)
     
     if len(sky_range_top) > 0:
         top_bg_mean = (sky_top_sum / len(sky_range_top)).mean()
@@ -217,10 +242,19 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
         bot_bg_mean = None
     
     sky_mean = (sky_top_sum + sky_bot_sum) / (len(sky_range_top) + len(sky_range_bot))
+    """
+    print(top_bg_mean)
+    print(bot_bg_mean)
+    print(sky_mean)
+    """
+
 
 #     sky_mean -= np.median(sky_mean) 
-
+    #print('Obj sum', obj_sum)
+    #print('Sky mean', sky_mean)
     obj_sp            = obj_sum - (len(obj_range) * sky_mean)
+    #print('Obj sp', obj_sp)
+    #sys.exit()
 
     sky_sp            = sky_mean - sky_mean.mean() # why this?
     
@@ -228,8 +262,25 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
     sky_noise_top_sum = np.sum(noise[i, :] for i in sky_range_top)
     sky_noise_bot_sum = np.sum(noise[i, :] for i in sky_range_bot)
     
-    k = np.square(len(obj_range)) / np.square((len(sky_range_top) + len(sky_range_bot)))
+    k = float(np.square(len(obj_range))) / float(np.square((len(sky_range_top) + len(sky_range_bot))))
+    """
+    print(k)
+    print(np.square(len(obj_range)) / np.square((len(sky_range_top) + len(sky_range_bot))))
+    print(np.square(len(obj_range)))
+    print(np.square((len(sky_range_top) + len(sky_range_bot))))
+    print()
+    """
     noise_sp = np.sqrt(obj_noise_sum + (k * (sky_noise_top_sum + sky_noise_bot_sum)))
+    """
+    print(obj_noise_sum)
+    print((k * (sky_noise_top_sum + sky_noise_bot_sum)))
+    print(sky_noise_top_sum)
+    print(sky_noise_bot_sum)
+    print(noise_sp)
+
+    plt.show()
+    sys.exit()
+    """
     
     if eta is not None:
         #etalon_sum  = np.sum(eta[i, :] for i in obj_range) 
@@ -237,15 +288,6 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
         etalon_sub  = etalon_sum - np.median(etalon_sum) # put the floor at ~0
         etalon_norm = etalon_sub / np.max(etalon_sub) * 0.9 # normalize for comparison to synthesized etalon
         etalon_sp   = etalon_norm + 0.9 # Add to the continuum for comparison to synthesized etalon
-        
-        #print(etalon_norm)
-        #print(etalon_norm + 0.9)
-        #import matplotlib.pyplot as plt
-        #plt.figure(1019)
-        #plt.plot(etalon_norm, c='r', alpha=0.5)
-        #plt.plot(etalon_sp, c='b', alpha=0.5)
-        #plt.show(block=False)
-        #sys.exit()
         
         return obj_sp, flat_sp, etalon_sp, sky_sp, noise_sp, top_bg_mean, bot_bg_mean
     else:
@@ -273,7 +315,7 @@ def cut_out(data, top, bot, padding):
 def centroid(spec, width, window, approx):
     p0 = max(0, approx - (window // 2))
     p1 = min(width - 1, approx + (window // 2)) + 1
-    c = p0 + ndimage.center_of_mass(spec[p0:p1])[0]
+    c  = p0 + ndimage.center_of_mass(spec[p0:p1])[0]
     
     if abs(c - approx) > 1:
         #logger.debug('centroid error, approx = {}, centroid = {:.3f}'.format(approx, c))

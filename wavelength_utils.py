@@ -714,9 +714,9 @@ def max_corr(a, b):
     coarse_max = np.argmax(np.correlate(a, b, mode='full')) - length + 1
 
     omega = np.zeros(length)
-    omega[0:length // 2] = (2 * np.pi * np.arange(length / 2)) // length
+    omega[0:length // 2] = (2 * np.pi * np.arange(length // 2)) / length
     omega[length // 2 + 1:] = (2 * np.pi *
-                              (np.arange(length // 2 + 1, length) - length)) // length
+                              (np.arange(length // 2 + 1, length) - length)) / length
 
     fft_a = fft.fft(a)
 
@@ -1003,7 +1003,7 @@ def find_peaks_2(s, eta=None):
     sp       -= np.median(sp)
     #print(np.median(sp), 1.1*np.median(sp))
     if eta is not None:
-        peaks_i   = argrelextrema(sp, np.greater, order=2)
+        #peaks_i   = argrelextrema(sp, np.greater, order=2)
         #print(peaks_i)
         peaks_i   = find_peaks_cwt(sp, [4,5,6,7,8])#, min_length=20)#, min_snr=3)
         #print(peaks_i)

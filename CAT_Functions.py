@@ -4,6 +4,7 @@ import scipy.optimize as op
 import image_lib
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
+from scipy import signal
 
 
 def NormDist(x, mean, sigma, baseline, amplitude):
@@ -14,114 +15,277 @@ def NormDist(x, mean, sigma, baseline, amplitude):
 
 
 
-def CreateSpatialMap(order):
+def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutoff=10):
 
-	for frame in order.frames:
+	#print(image.shape)
+	Centroids = []
+	Pixels    = []
+	for i in range(image.shape[1]-cutoff):
+		#print(i)
+		if i >= image.shape[1]-cutoff:
+			continue
 
-		# I think this is the image?
-		image   = order.objImg[frame]
-		ffimage = order.ffObjImg[frame]
+		if i < numrows:
+			#guess1 = np.where(np.sum(image[clip:-clip,0:numrows+1], axis=1) == np.max(np.sum(image[clip:-clip,0:numrows+1], axis=1)))[0][0]
+			#guess1 = len(np.sum(image[7:-7,0:numrows+1], axis=1)) / 2. + 7
+			#print('Guess', guess1)
+			
+			if plot:
+				fig0 = plt.figure(198, figsize=(10,6))
+				ax1 = fig0.add_subplot(121)
+				ax2 = fig0.add_subplot(122)
+				#ax1.plot(np.arange(len(np.sum(image[clip:-clip, 0:numrows+1], axis=1))) + clip,
+				#	     np.sum(image[clip:-clip,0:numrows+1], axis=1))
+				ax1.plot(np.arange(len(np.sum(image[:, 0:20], axis=1))),
+					     np.sum(image[:, 0:20], axis=1) )#+ np.sum(image[:, -40:], axis=1))
+				ax2.plot(np.arange(len(np.sum(image[:, -40:-20], axis=1))),
+					     np.sum(image[:, -40:-20], axis=1) )#+ np.sum(image[:, -40:], axis=1))
+				plt.show()
+			
+			Xs0  = np.arange(len(np.sum(image[:, 0:20], axis=1)))
+			Ys0  = np.sum(image[:, 0:20], axis=1)
 
-		#print(image.shape)
-		Pixels = []
-		for i in range(ffimage.shape[1]):
-			#print(i)
-			guess1 = np.where(ffimage[:,i] == np.max(ffimage[:,i]))[0][0]
-			#print(guess1)
+			Xs00 = np.arange(len(np.sum(image[:, -40:-20], axis=1)))
+			Ys00 = np.sum(image[:, -40:-20], axis=1)
+
+			Xs  = np.arange(len(np.sum(image[:, 0:numrows*2+1], axis=1)))
+			Ys  = np.sum(image[clip:-clip, 0:numrows*2+1], axis=1)
+
+			guess1 = Xs0[np.where(Ys0 == np.max(Ys0))][0]
+			guess2 = Xs00[np.where(Ys00 == np.max(Ys00))][0]
+			#print('Guess', guess1, guess2)
+			#print(np.min([guess1, guess2]))
+			#print(np.max([guess1, guess2]))
+
+			range1 = np.min([guess1, guess2]) - 10
+			range2 = np.max([guess1, guess2]) + 10
+			if range1 < 0: range1 = 0
+			if range2 > image.shape[0]: range2 = image.shape[0]
+			#print(image.shape)
+			#print('Guess1', guess1)
+			#guess2 = signal.find_peaks_cwt(Ys, np.arange(1,30))#, min_length=5)
+			#guess2, _ = signal.find_peaks(Ys, width=3)
+			#print('Guess2', guess2+clip)
+			
+			if i == 0:
+				if plot:
+					fig0 = plt.figure(198, figsize=(8,6))
+					ax1 = fig0.add_subplot(111)
+					#ax1.plot(np.arange(len(np.sum(image[clip:-clip, 0:numrows*2+1], axis=1))) + clip,
+					#	     np.sum(image[clip:-clip,0:numrows*2+1], axis=1))
+					ax1.plot(np.arange(len(np.sum(image[:, 0:numrows*2+1], axis=1))),
+						     np.sum(image[:,0:numrows*2+1], axis=1))
+					ax1.axvline(guess1, c='r', ls=':')
+					#for G in guess2:
+					#	ax1.axvline(G+clip, c='b', ls='--')
+					ax1.axvline(range1, c='m', ls=':')
+					ax1.axvline(range2, c='m', ls=':')
+					print(range1, range2)
+					plt.show()
+					#sys.exit()
+			
 			try:
-				popt, pcov = op.curve_fit(NormDist, np.arange(len(ffimage[:,i])), ffimage[:,i], p0=[guess1, 2, np.median(ffimage[:,i]), np.max(ffimage[:,i])], maxfev=10000) # Where should a pixel start? (0, 1, 0.5?)
-				#print(popt)
-				#print(pcov)
-				Pixels.append(popt[0])
+				#print(range1, range2)
+				#Xs = np.arange(len(np.sum(image[clip:-clip, 0:numrows*2+1], axis=1))) + clip
+				#Ys = np.sum(image[clip:-clip, 0:numrows*2+1], axis=1)
+				Xs = np.arange(len(np.sum(image[range1:range2+1, 0:numrows*2+1], axis=1))) + range1
+				#print('Xs', Xs)
+				Ys = np.sum(image[range1:range2+1, 0:numrows*2+1], axis=1)
+				#print('Ys', Ys)
+				guess1 = Xs[np.where(Ys == np.max(Ys))]
+				#print('Guess1', guess1)
+				#guess2 = signal.find_peaks_cwt(Ys, np.arange(8,20), min_length=9)
+				#print('Guess2', guess1)
+				#guess2, _ = signal.find_peaks(Ys, width=3)
+				#guess1 = Xs[np.where(Ys[guess2] == np.max(Ys[guess2]))]
+				#print('Guess11', guess1)
+				#guess1 = Xs[len(Xs)//2]
+				
+				popt, pcov = op.curve_fit(NormDist, Xs, Ys, 
+										  p0=[guess1, 2., np.median(Ys), np.max(Ys)], 
+										  bounds = ( (guess1-7., 1., -1000., 0.), (guess1+7., 4., 1e7, 1e7) ),
+										  maxfev=100000) # Where should a pixel start? (0, 1, 0.5?)
+				#print(i,popt)
+				
+				#popt = [guess1]
+				if plotvid:
+					fig0 = plt.figure(199, figsize=(8,4))
+					ax1 = fig0.add_subplot(121)
+					ax2 = fig0.add_subplot(122)
+					#ax1.imshow(image[clip:-clip, 0:numrows*2+1], origin='lower', aspect='auto')
+					#ax1.axhline(popt[0]-clip, c='r', ls=':')
+					ax1.imshow(image[range1:range2+1, 0:numrows*2+1], origin='lower', aspect='auto')
+					#ax1.axhline(popt[0]-clip, c='r', ls=':')
+					ax1.axhline(popt[0]-range1, c='r', ls=':')
+					ax2.plot(Xs, Ys)
+					Xs2 = np.linspace(np.min(Xs), np.max(Xs))
+					ax2.plot(Xs2, NormDist(Xs2, *popt), 'r--')
+					ax2.axvline(popt[0], c='r', ls=':')
+					ax1.minorticks_on()
+					ax2.minorticks_on()
+					#plt.show()
+					plt.draw()
+					plt.pause(0.05)
+					plt.close('all')
+				
+				Pixels.append(i)
+				Centroids.append(popt[0])
 			except: 
-				Pixels.append(0)
-			#if i > 270:
-		#		plt.plot(image[:,i])
-	#			plt.plot(np.arange(len(image[:,i])), NormDist(np.arange(len(image[:,i])), *popt), 'r-', lw=0.5)
-	#			plt.show()
-			#sys.exit()
+				continue
+				#Pixels.append(0)
 
-		Pixels = np.array(Pixels)
-		pixels = np.arange(ffimage.shape[1])
+		else:
+			#guess1 = np.where(np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1) == np.max(np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1)))[0][0]
+			#guess1 = len(np.sum(image[7:-7,0:numrows+1], axis=1)) / 2. + 7
+			#print('Guess', guess1)
+			"""
+			if plot:
+				fig0 = plt.figure(198, figsize=(8,6))
+				ax1 = fig0.add_subplot(111)
+				ax1.plot(np.arange(len(np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1))) + clip,
+				         np.sum(image[clip:-clip,0:numrows+1], axis=1))
+				plt.show()
+			"""
+			try:
+				#Xs = np.arange(len(np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1))) + clip
+				#Ys = np.sum(image[clip:-clip, i-numrows:i+numrows+1], axis=1)
+				Xs = np.arange(len(np.sum(image[range1:range2+1, i-numrows:i+numrows+1], axis=1))) + range1
+				Ys = np.sum(image[range1:range2+1, i-numrows:i+numrows+1], axis=1)
+				guess1 = Xs[np.where(Ys == np.max(Ys))]
+				#guess1 = popt[0]
+				#guess2, _ = signal.find_peaks(Ys, width=3)
+				#guess1 = Xs[np.where(Ys[guess2] == np.max(Ys[guess2]))]+clip
+				#guess1 = Xs[len(Xs)//2]
+				#print('Guess', guess1)
+				#print('Guess1', guess1)
+				#print('Guess2', popt)
+				#prevGuess = Centroids[-1]
+				
+				popt, pcov = op.curve_fit(NormDist, Xs, Ys, 
+										  p0=[guess1, 2., np.median(Ys), np.max(Ys)],
+										  bounds = ( (guess1-7., 1., -1000., 0.), (guess1+7., 4., 1e7, 1e7) ), 
+										  maxfev=100000) # Where should a pixel start? (0, 1, 0.5?)
+				#print(i,popt)
+				#popt = [guess1]
+				#print(abs(popt[0]-prevGuess))
+				#if abs(popt[0]-prevGuess) > 10: 
+				#	continue
 
-		unFitted = True
-		count = 0
+				if plotvid:
+					fig0 = plt.figure(199, figsize=(8,4))
+					ax1 = fig0.add_subplot(121)
+					ax2 = fig0.add_subplot(122)
+					#ax1.imshow(image[clip:-clip, i-numrows:i+numrows+1], origin='lower', aspect='auto')
+					#ax1.axhline(popt[0]-clip, c='r', ls=':')
+					ax1.imshow(image[range1:range2+1, i-numrows:i+numrows+1], origin='lower', aspect='auto')
+					ax1.axhline(popt[0]-range1, c='r', ls=':')
+					ax2.plot(Xs, Ys)
+					Xs2 = np.linspace(np.min(Xs), np.max(Xs))
+					ax2.plot(Xs2, NormDist(Xs2, *popt), 'r--')
+					ax2.axvline(popt[0], c='r', ls=':')
+					ax1.minorticks_on()
+					ax2.minorticks_on()
+					#plt.show()
+					plt.draw()
+					plt.pause(0.05)
+					plt.close('all')
+				
 
-		#fig = plt.figure(3)
-		#ax = fig.add_subplot(111)
-		#ax.scatter(pixels, Pixels, c='0.5', s=3, alpha=0.5)
+				Pixels.append(i)
+				Centroids.append(popt[0])
+			except: 
+				continue
+				#Pixels.append(0)
+	
+	
+	Centroids   = np.array(Centroids)
+	pixels      = np.array(Pixels)
+	#print(pixels)
+	#print(Centroids)
+	#print('LENGTHS:',len(pixels), len(Centroids))
+	#pixels      = np.arange(image.shape[1])
 
-		while unFitted:
-			#plt.figure(3)
-			#plt.scatter(pixels, Pixels, c='0.5')
-			z1 = np.polyfit(pixels, Pixels, 3)
-			p1 = np.poly1d(z1)
-			#plt.plot(pixels, p1(pixels), 'r--')
-			#plt.show()
-			#sys.exit()
+	unFitted = True
+	count    = 0
 
-			# Do the fit
-			hist = Pixels - p1(pixels)
-			sig  = np.std(hist)
-			if count == 0: 
-				ind1 = np.where(abs(hist) < 2*sig)
-			else:
-				ind1 = np.where(abs(hist) < 5*sig)
+	if plot:
+		fig = plt.figure(3)
+		ax = fig.add_subplot(111)
+		ax.scatter(pixels, Centroids, c='0.5', s=3, alpha=0.5)
 
-			#plt.scatter(pixels[ind1], Pixels[ind1], marker='x', c='r')
-			#plt.show()
-			newpix = pixels[ind1].flatten()
-			newPix = Pixels[ind1].flatten()
+	while unFitted:
+		#plt.figure(3)
+		#plt.scatter(pixels, Pixels, c='0.5')
+		z1 = np.polyfit(pixels, Centroids, 3)
+		p1 = np.poly1d(z1)
+		#plt.plot(pixels, p1(pixels), 'r--')
+		#plt.show()
+		#sys.exit()
 
-			#print(len(Pixels) == len(newPix))
-			#print(unFitted)
-			if len(Pixels) == len(newPix): 
-				#ax.plot(np.arange(ffimage.shape[1]), p1(np.arange(ffimage.shape[1])), 'r--')
-				#ax.scatter(newpix, newPix, marker='x', c='b', s=3)
+		# Do the fit
+		hist = Centroids - p1(pixels)
+		sig  = np.std(hist)
+		#print('sigma', sig, 2*sig, 5*sig)
+		if count == 0: 
+			ind1 = np.where(abs(hist) < 1*sig)
+		else:
+			ind1 = np.where(abs(hist) < 2.5*sig)
 
-				# Calc the RMS
-				rms   = np.sqrt(np.mean(hist**2))
-				sumsq = np.sum(hist**2)
-				#print(rms, sumsq)
-				#print(z1)
+		#plt.scatter(pixels[ind1], Pixels[ind1], marker='x', c='r')
+		#plt.show()
+		newpix  = pixels[ind1].flatten()
+		newCent = Centroids[ind1].flatten()
 
-				#at = AnchoredText('RMS = %0.4f'%(rms) + '\n' + 'Coeff: %0.3E %0.3E %0.3E %0.3E'%(z1[-1], z1[-2], z1[-3], z1[-4]),
-				#    prop=dict(size=8), frameon=False,
-				#    loc=2,
-				#    )
+		#print(len(Pixels) == len(newPix))
+		#print(unFitted)
+		if len(Centroids) == len(newCent): 
+			
+			if plot:
+				ax.plot(np.arange(image.shape[1]), p1(np.arange(image.shape[1])), 'r--')
+				ax.scatter(newpix, newCent, marker='x', c='b', s=3)
+
+			# Calc the RMS
+			rms   = np.sqrt(np.mean(hist**2))
+			sumsq = np.sum(hist**2)
+			#print(rms, sumsq)
+			#print(z1)
+			if plot:
+				ax.plot(np.arange(image.shape[1]), p1(np.arange(image.shape[1])), 'r--')
+				ax.scatter(newpix, newCent, marker='x', c='b', s=3)
 				"""
-				at = AnchoredText('Sum of Squared Errors =  %0.4f'%(sumsq) + \
-				              '\n' + 'Coeff =' + \
-				              '\n' + '%0.3E'%(z1[-1]) + \
-				              '\n' + '%0.3E'%(z1[-2]) + \
-				              '\n' + '%0.3E'%(z1[-3]) + \
-				              '\n' + '%0.3E'%(z1[-4]),
-				prop=dict(size=8), frameon=False,
-				loc=2,
-				)
-
+				at = AnchoredText('RMS = %0.4f'%(rms) + '\n' + 'Coeff: %0.3E %0.3E %0.3E %0.3E'%(z1[-1], z1[-2], z1[-3], z1[-4]),
+				    prop=dict(size=8), frameon=False,
+				    loc=2,
+				    )
+				"""
+				at = AnchoredText('RMS =  %0.4f'%(rms) + '\n' + \
+					              'Sum of Squared Errors =  %0.4f'%(sumsq) + \
+				                  '\n' + 'Coeff =' + \
+				                  '\n' + '%0.3E'%(z1[-1]) + \
+				                  '\n' + '%0.3E'%(z1[-2]) + \
+				                  '\n' + '%0.3E'%(z1[-3]) + \
+				                  '\n' + '%0.3E'%(z1[-4]),
+				                  prop=dict(size=8), frameon=False, loc=2)
 				ax.add_artist(at)
-				"""
-				unFitted = False
+				ax.set_ylim(np.min(p1(np.arange(image.shape[1])))-3, np.max(p1(np.arange(image.shape[1])))+3)
+			
+			unFitted = False
 
 
-			#print(unFitted)
-			pixels = pixels[ind1].flatten()
-			Pixels = Pixels[ind1].flatten()
+		#print(unFitted)
+		pixels    = pixels[ind1].flatten()
+		Centroids = Centroids[ind1].flatten()
 
-			count+=1
-		"""
-		plt.figure(1)
-		plt.imshow(image, origin='lower')
-
-		plt.figure(2)
-		plt.imshow(ffimage, origin='lower')
-
+		count+=1
+	
+	#plt.figure(1)
+	#plt.imshow(image, origin='lower')
+	if plot: 
 		plt.show()
-        """
-		return p1(np.arange(ffimage.shape[1]))
+	
 
-        
+	return p1(np.arange(image.shape[1]))
+
 
 
 def spectral_trace(calimage, linelist='apohenear.dat', interac=True,

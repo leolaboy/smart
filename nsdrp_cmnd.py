@@ -74,20 +74,12 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, override=Fal
         
         obj_B_header = fits.PrimaryHDU.readfrom(obj_B_fn, ignore_missing_end=True).header
         if create_raw_data_sets.is_valid_pair(obj_header, obj_B_header, override=override):
-            if eta is not None:
-                rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header, eta=eta, dark=dark)
-            else: 
-                #print('Reducing AB pair, A=' + obj_fn + ', B=' + obj_B_fn)
-                rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header)
-
+            rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header, eta=eta, dark=dark)
 
         else:
             raise DrpException.DrpException('frames A and B are not a valid pair')
     else:
-        if eta is not None:
-            rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header, eta=eta, dark=dark)
-        else:
-            rawDataSet = RawDataSet.RawDataSet(obj_fn, None, obj_header)
+        rawDataSet = RawDataSet.RawDataSet(obj_fn, None, obj_header, eta=eta, dark=dark)
 
     rawDataSet.flatFns.append(flat_fn)
      

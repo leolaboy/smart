@@ -28,32 +28,32 @@ class FlatOrder:
         self.topMeas            = None  # measured LHS top row of order
         self.botMeas            = None  # measured LHS bottom row of order
         
-        self.topEdgeTrace = None         # top edge trace
-        self.botEdgeTrace = None         # bot edge trace
-        self.avgEdgeTrace = None
+        self.topEdgeTrace       = None # top edge trace
+        self.botEdgeTrace       = None # bot edge trace
+        self.avgEdgeTrace       = None
 
         self.longSlitEdgeMargin = 0
         self.cutoutPadding      = 0
         
-        self.highestPoint = None
-        self.lowestPoint  = None
-        self.topTrim      = None
-        self.botTrim      = None
+        self.highestPoint       = None
+        self.lowestPoint        = None
+        self.topTrim            = None
+        self.botTrim            = None
                 
-        self.onOrderMask  = None
-        self.offOrderMask = None
+        self.onOrderMask        = None
+        self.offOrderMask       = None
         
-        self.mean   = None
-        self.median = None
+        self.mean               = None
+        self.median             = None
         
-        self.cutout      = None
+        self.cutout             = None
 #         self.flatImg = None
-        self.normFlatImg = None
-        self.rectFlatImg = None
+        self.normFlatImg        = None
+        self.rectFlatImg        = None
         
-        self.normalized        = False
-        self.spatialRectified  = False
-        self.spectralRectified = False
+        self.normalized         = False
+        self.spatialRectified   = False
+        self.spectralRectified  = False
 
         self.smoothedSpatialTrace    = None
         self.spatialTraceMask        = None
@@ -71,15 +71,31 @@ class FlatOrder:
         self.logger.info('flat normalized, flat median = ' + str(round(self.median, 1)))
         
         # spatially rectify flat
-        self.rectFlatImg = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTrace)
+        self.rectFlatImg  = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTrace)
+        """
+        self.rectFlatImgA = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTraceA)
+        self.rectFlatImgB = image_lib.rectify_spatial(self.normFlatImg, self.smoothedSpatialTraceB)
+        """
 
         self.spatialRectified = True
         
         # compute top and bottom trim points
         self.calcTrimPoints()
-
+        """
+        ### TESTING PLOT XXX
+        import matplotlib.pyplot as plt
+        from astropy.visualization import ZScaleInterval, ImageNormalize
+        norm = ImageNormalize(self.rectFlatImg, interval=ZScaleInterval())
+        plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
+        plt.axhline(self.botTrim, c='r')
+        plt.axhline(self.topTrim, c='b')
+        plt.title('Order: %s'%self.orderNum)
+        plt.show()
+        """
         # trim rectified flat order images
-        self.rectFlatImg = self.rectFlatImg[self.botTrim:self.topTrim, :]
+        self.rectFlatImg  = self.rectFlatImg[self.botTrim:self.topTrim, :]
+        #self.rectFlatImgA = self.rectFlatImgA[self.botTrimA:self.topTrimA, :]
+        #self.rectFlatImgB = self.rectFlatImgB[self.botTrimB:self.topTrimB, :]
         
         self.logger.debug('reduction of flat order {} complete'.format(self.orderNum))
         
@@ -96,6 +112,8 @@ class FlatOrder:
         self.topTrim = int(min(self.topTrim, 1023))
         
         return
+
+
         
         
         

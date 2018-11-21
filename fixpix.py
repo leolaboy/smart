@@ -161,22 +161,18 @@ def fixpix_rs(im, iternum=3, quiet=True):
                 hoti    = np.where(box == hotval)[0][0]
 
                 # coords in original image
-                hotx    = hoti % 5 + i-2 
-                hoty    = hoti / 5 + j-2
+                hotx    = int(hoti % 5 + i-2) 
+                hoty    = int(hoti / 5 + j-2)
 
                 coldval = np.min(box)
                 coldi   = np.where(box == coldval)[0][0]
 
                 # coords in original image
-                coldx   = coldi % 5 + i-2
-                coldy   = coldi / 5 + j-2
+                coldx   = int(coldi % 5 + i-2)
+                coldy   = int(coldi / 5 + j-2)
 
                                     # begin the decision process for the hottest pixel
-                hotx    = int(hotx)
-                hoty    = int(hoty)
-                coldx   = int(coldx)
-                coldy   = int(coldy)
-
+  
                 hot     = imnew[hotx-2:hotx+3, hoty-2:hoty+3]
 
                 med8    = np.median(np.append(hot[1:4,1], np.append(hot[1:4,3], [hot[1,2], hot[3,2]])))

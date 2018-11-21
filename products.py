@@ -53,6 +53,8 @@ subdirs = dict([
                 ('wavecal.txt',         'ascii/wavecal'     ),
                 ('order.fits',          'fits/order'        ),
                 ('order.png',           'previews/order'    ),
+                #('specorder.fits',      'fits/specorder'        ),
+                #('specorder.png',       'previews/specorder'    ),
                 ('sky.fits',            'fits/sky'          ),
                 ('sky.png',             'previews/sky'      ),
                 ('snr.fits',            'fits/snr'          ),
@@ -60,10 +62,12 @@ subdirs = dict([
                 ('trace.fits',          'fits/trace'        ),
                 ('trace.png',           'previews/trace'    ),
                 ('noise.fits',          'fits/noise'        ),
+                ('noiseorder.fits',     'fits/noiseorder'   ),
                 ('noise.png',           'previews/noise'    ),
+                ('noiseorder.png',      'previews/noiseorder'),
                 ('flux_vs_noise.fits',  'fits/flux_vs_noise'),
                 ('flux_vs_noise.png',   'previews/flux_vs_noise'), 
-                ('spectra.png',         'previews/spectra'  ),
+                #('spectra.png',         'previews/spectra'  ),
                 ('wave.fits',           'fits/wave'         ),
                 ('all.fits',            'fits/all'          ),  
                ])
@@ -132,13 +136,13 @@ def gen(reduced, out_dir, eta=None):
     
     # construct arrays for global wavelength cal table
     order_num = []
-    col = []
-    source = []
-    wave_exp = []
-    wave_fit = []
-    res = []
-    peak = []
-    slope = []
+    col       = []
+    source    = []
+    wave_exp  = []
+    wave_fit  = []
+    res       = []
+    peak      = []
+    slope     = []
     
     for order in reduced.orders:
         for line in order.lines:
@@ -206,13 +210,13 @@ def gen(reduced, out_dir, eta=None):
         # flux ASCII and FITS tables
         #
         if order.isPair:
-            obj_spec = order.objSpec['AB']
+            obj_spec   = order.objSpec['AB']
             noise_spec = order.noiseSpec['AB']
-            snr_spec = np.absolute(order.objSpec['AB'] / order.noiseSpec['AB'])
+            snr_spec   = np.absolute(order.objSpec['AB'] / order.noiseSpec['AB'])
         else:
-            obj_spec = order.objSpec['A']
+            obj_spec   = order.objSpec['A']
             noise_spec = order.noiseSpec['A']
-            snr_spec = np.absolute(order.objSpec['A'] / order.noiseSpec['A'])
+            snr_spec   = np.absolute(order.objSpec['A'] / order.noiseSpec['A'])
             
         fluxAsciiTable(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, order.waveScale, 
                 obj_spec, order.skySpec['A'], order.synthesizedSkySpec, snr_spec,
@@ -242,13 +246,13 @@ def gen(reduced, out_dir, eta=None):
             if frame == 'AB':
                 topSkyWindow = None
                 botSkyWindow = None
-                topBgMean = None
-                botBgMean = None
+                topBgMean    = None
+                botBgMean    = None
             else:
                 topSkyWindow = order.topSkyWindow[frame]
                 botSkyWindow = order.botSkyWindow[frame]
-                topBgMean = order.topBgMean[frame]
-                botBgMean = order.botBgMean[frame]
+                topBgMean    = order.topBgMean[frame]
+                botBgMean    = order.botBgMean[frame]
             
             profilePlot(out_dir, reduced.baseNames[frame], order.flatOrder.orderNum, 
                     order.spatialProfile[frame], order.peakLocation[frame], order.centroid[frame], 
@@ -344,7 +348,7 @@ def gen(reduced, out_dir, eta=None):
             multiSpectrumPlot(out_dir, reduced.baseNames[frame], order.flatOrder.orderNum, 'counts',
                 order.objSpec[frame], order.skySpec[frame], order.noiseSpec[frame], order.waveScale)
 
-"""
+        """
         #
         # rectified order plot 2-d image plot and FITS file
         #
@@ -353,6 +357,20 @@ def gen(reduced, out_dir, eta=None):
                 order.flatOrder.orderNum, order.ffObjImg[frame], order.waveScale, order.calMethod)
             twoDimOrderFits(out_dir, order.baseNames[frame], order.flatOrder.orderNum, 
                 order.ffObjImg[frame], header)
+        #
+        # spectrally rectified order plot 2-d image plot and FITS file
+        #
+        #for frame in order.frames:
+        #    twoDimOrderPlot(out_dir, order.baseNames[frame], 'spectral rectified order image', 'specorder.png', 
+        #        order.flatOrder.orderNum, order.ffObjImg[frame], order.waveScale, order.calMethod)
+        #    twoDimOrderFits(out_dir, order.baseNames[frame], order.flatOrder.orderNum, 
+        #        order.ffObjImg[frame], header)
+
+        for frame in order.frames:
+            twoDimNoiseOrderPlot(out_dir, order.baseNames[frame], 'noise order image', 'noiseorder.png', 
+                order.flatOrder.orderNum, order.noiseImg[frame], order.waveScale, order.calMethod)
+            twoDimNoiseOrderFits(out_dir, order.baseNames[frame], 
+                order.flatOrder.orderNum, order.noiseImg[frame], header)
         
         # end of for each order
 
@@ -398,9 +416,9 @@ def tracePlot(outpath, base_name, order_num, raw, fit, mask):
     return
 
 def traceFits(outpath, base_name, order_num, trace):
-    hdu = fits.PrimaryHDU(trace)
+    hdu     = fits.PrimaryHDU(trace)
     hdulist = fits.HDUList(hdu)
-    fn = constructFileName(outpath, base_name, order_num, 'trace.fits')     
+    fn      = constructFileName(outpath, base_name, order_num, 'trace.fits')     
     hdulist.writeto(fn, clobber=True)
     log_fn(fn)
     return
@@ -448,12 +466,12 @@ def traceFits(outpath, base_name, order_num, trace):
 
 def profileAsciiTable(outpath, base_name, order_num, profile):
     
-    names = ['row', 'mean_flux'] 
-    units = ['pixels', 'counts']
+    names   = ['row', 'mean_flux'] 
+    units   = ['pixels', 'counts']
     formats = ['.0f', '.0f']
-    widths = [6, 9] 
+    widths  = [6, 9] 
     
-    buff = []
+    buff    = []
     
     if config.params['pipes'] is True:
         p_char = '|'
@@ -530,8 +548,8 @@ def profilePlot(outpath, base_name, order_num, profile, peak, centroid,
 
     # set axes limits
     yrange = profile.max() - profile.min()
-    ymin = profile.min() - (0.1 * yrange)
-    ymax = profile.max() + (0.1 * yrange)
+    ymin   = profile.min() - (0.1 * yrange)
+    ymax   = profile.max() + (0.1 * yrange)
     pl.ylim(ymin, ymax)
     
     # set ticks and grid
@@ -546,7 +564,7 @@ def profilePlot(outpath, base_name, order_num, profile, peak, centroid,
    
     # draw extraction window
     wvlh = 0.01 * yrange;
-    ewh = 0.05 * yrange
+    ewh  = 0.05 * yrange
     
     pl.plot((ext_range[0], ext_range[-1]), (profile.max(), profile.max()), 
             'r', linewidth=0.5, label='extraction window')
@@ -621,14 +639,14 @@ def fluxAsciiTable(outpath, base_name, order_num, wave, flux, sky, synth_sky, sn
                      flat, trace_upper, trace_lower, trace_mean, trace_fit, fit_res):
      
     names = [   'col',         'wave',         'flux',         'sky', 
-                'synth_sky',   'snr',          'flat',        'trace_upper', 
+                'synth_sky',   'snr',          'flat',         'trace_upper', 
                 'trace_lower', 'trace_mean',   'trace_fit',    'fit_res']
     units = [   'pixels',      'Angstroms',    'counts',       'counts', 
                 '',            '',             '',             'pixel', 
                 'pixels',      'pixels',       'pixels',       'pixels']
-    formats = [ 'd',            '.6e',          '.3e',          '.3e',
-                '.3e',          '.3e',          '.3e',          '.3e',
-                '.3e',          '.3e',          '.3e',          '.3e']
+    formats = [ 'd',           '.6e',          '.3e',          '.3e',
+                '.3e',         '.3e',          '.3e',          '.3e',
+                '.3e',         '.3e',          '.3e',          '.3e']
     nominal_width = 10
     widths = []
     
@@ -713,7 +731,7 @@ def spectrumPlot(outpath, base_name, title, order_num, y_units, cont, wave,
     pl.figure(title, facecolor='white')
     pl.clf()
     pl.title(title + ', ' + base_name + ", order " + str(order_num), fontsize=12)
-    pl.xlabel('wavelength ($\AA$) (' + wave_note + ')')
+    pl.xlabel('Wavelength ($\AA$) (' + wave_note + ')')
     if len(y_units) > 0:
         pl.ylabel(title + '(' + y_units + ')')
     else:
@@ -851,7 +869,7 @@ def multiSpectrumPlot(outpath, base_name, order, y_units, cont, sky, noise, wave
     pl.figure(title, facecolor='white')
     pl.clf()
     pl.title(title + ', ' + base_name + ", order " + str(order), fontsize=12)
-    pl.xlabel('wavelength ($\AA$)')
+    pl.xlabel('Wavelength ($\AA$)')
     pl.ylabel(title + '(' + y_units + ')')
     pl.grid(True)
     
@@ -878,11 +896,11 @@ def multiSpectrumPlot(outpath, base_name, order, y_units, cont, sky, noise, wave
 def wavelengthCalAsciiTable(outpath, base_name, order, col, source, wave_exp, wave_fit, res, peak, 
         slope):
     
-    names = ['order', 'source', 'col', 'wave_exp', 'wave_fit', 'res', 'peak', 'disp'] 
-    units = ['', '', 'pixels', 'Angstroms', 'Angstroms',  'Angstroms', 'counts', 'Angstroms/pixel']
-    formats = [ 'd', '', '.3f', '.6e', '.6e', '.3f', 'd', '.3e']
+    names         = ['order', 'source', 'col', 'wave_exp', 'wave_fit', 'res', 'peak', 'disp'] 
+    units         = ['', '', 'pixels', 'Angstroms', 'Angstroms',  'Angstroms', 'counts', 'Angstroms/pixel']
+    formats       = [ 'd', '', '.3f', '.6e', '.6e', '.3f', 'd', '.3e']
     nominal_width = 10
-    widths = []
+    widths        = []
     
     if config.params['pipes'] is True:
         p_char = '|'
@@ -987,12 +1005,47 @@ def twoDimOrderPlot(outpath, base_name, title, base_filename, order_num, data, x
     pl.close()
         
     return
+
+def twoDimNoiseOrderPlot(outpath, base_name, title, base_filename, order_num, data, x_scale,
+            wave_note='unknown'):
+    """
+    Produces a generic 2-d image plot.
+    
+    Arguments:
+        output: Directory path of root products directory.
+        base_name: Base name of object frame.
+        title: Title of plot, e.g. rectified order image.
+        base_filename:
+        order_num:
+        data:
+        x_scale:
+    """
+    pl.figure('2d order image', facecolor='white', figsize=(8, 5))
+    pl.cla()
+    pl.title(title + ', ' + base_name + ", order " + str(order_num), fontsize=14)
+    pl.xlabel('wavelength($\AA$) (' + wave_note + ')', fontsize=12)
+    pl.ylabel('row (pixel)', fontsize=12)
+    
+    pl.imshow(exposure.equalize_hist(data), origin='lower', 
+                  extent=[x_scale[0], x_scale[-1], 0, data.shape[0]], aspect='auto')      
+       
+#    pl.colorbar()
+#    pl.set_cmap('jet')
+    pl.set_cmap('gray')
+#     pl.set_cmap('Blues_r')
+
+    fn = constructFileName(outpath, base_name, order_num, base_filename)
+    savePreviewPlot(fn)
+    log_fn(fn)
+    pl.close()
+        
+    return
     
 
 def twoDimOrderFits(outpath, base_name, order_num, data, header):     
-    hdu = fits.PrimaryHDU(data)
+    hdu     = fits.PrimaryHDU(data)
     hdulist = fits.HDUList(hdu)
-    hdr = hdulist[0].header
+    hdr     = hdulist[0].header
     for k, v in header.items():
         try:
             hdr[k] = v
@@ -1001,6 +1054,22 @@ def twoDimOrderFits(outpath, base_name, order_num, data, header):
             pass
             
     fn = constructFileName(outpath, base_name, order_num, 'order.fits')
+    hdulist.writeto(fn, clobber=True)
+    log_fn(fn)
+    return
+
+def twoDimNoiseOrderFits(outpath, base_name, order_num, data, header):     
+    hdu     = fits.PrimaryHDU(data)
+    hdulist = fits.HDUList(hdu)
+    hdr     = hdulist[0].header
+    for k, v in header.items():
+        try:
+            hdr[k] = v
+        except Exception as e:
+            #obj_logger.warning(e.message)
+            pass
+            
+    fn = constructFileName(outpath, base_name, order_num, 'noiseorder.fits')
     hdulist.writeto(fn, clobber=True)
     log_fn(fn)
     return
