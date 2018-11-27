@@ -90,7 +90,7 @@ class FlatCacher:
     def constructFlatName(self, baseFns):
         """
         """
-        for n in range(8):
+        for n in range(31):
             fn = sorted(baseFns)[0][:sorted(baseFns)[0].find('.fits')] + '_flat_' + str(n) + '.fits'
             if fn not in self.fnToRawFlatList:
                 return fn

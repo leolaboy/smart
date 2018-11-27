@@ -142,3 +142,5 @@ def write_summary(rds):
             logger.info('{:>34}'.format(val[0]) + ' = ' + str(val[1]).format(val[2]))
         except ValueError as e:
             logger.info('{:>27}'.format(val[0]) + ' = ')
+        except TypeError as e:
+            logger.info('{:>27}'.format(val[0]) + ' = ')
