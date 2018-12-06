@@ -3,7 +3,7 @@
 
 class Order:
     
-    def __init__(self, frames, baseNames, flatOrder, etaImg=None):
+    def __init__(self, frames, baseNames, flatOrder, etaImg=None, arcImg=None):
         
         """
         Attributes:
@@ -52,6 +52,11 @@ class Order:
             self.etaImg    = etaImg
             self.etaImgB   = etaImg
             self.etaCutout = []
+
+        if arcImg is not None:
+            self.arcImg    = arcImg
+            self.arcImgB   = arcImg
+            self.arcCutout = []
 
         
         self.onOrderMask = []
@@ -124,6 +129,7 @@ class Order:
         """
         self.srNormFlatImg = []
         self.srNormEtaImg  = []
+        self.srNormArcImg  = []
         
         self.srFfObjImg = {}
         for frame in self.frames:
@@ -146,6 +152,7 @@ class Order:
         
         """
         self.sprNormEtaImg  = []
+        self.sprNormArcImg  = []
         self.sprFfObjImg    = {}
         for frame in self.frames:
             self.sprFfObjImg[frame] = []
@@ -229,9 +236,10 @@ class Order:
         """
         
         """
-        self.flatSpec = []
-        self.etalonSpec = []
-        self.noiseSpec = {}
+        self.flatSpec    = []
+        self.etalonSpec  = []
+        self.arclampSpec = []
+        self.noiseSpec   = {}
         for frame in frames:
             self.noiseSpec[frame] = []
         self.synthesizedSkySpec = []

@@ -98,28 +98,30 @@ SKY_LINE_JUMP_LIMIT   = 10
         
 
 
-def trace_sky_line(data, start, eta=None):
+def trace_sky_line(data, start, eta=None, arc=None):
 
     # updated params based on trial and error
     SKY_LINE_SEARCH_WIDTH = 5
     #print('ETA1', eta)
     if eta is not None: # Make a specific modification for etalon lamps
         SKY_LINE_SEARCH_WIDTH = 11
+    if arc is not None: # Make a specific modification for arc lamps
+        SKY_LINE_SEARCH_WIDTH = 11
     SKY_LINE_BG_WIDTH     = 0
     SKY_LINE_JUMP_THRESH  = 1
     SKY_LINE_JUMP_LIMIT   = 12
 
     trace, nJumps =  tracer.trace_edge_line(
-            data, start, SKY_LINE_SEARCH_WIDTH, SKY_LINE_BG_WIDTH, SKY_LINE_JUMP_THRESH, eta=eta)
+            data, start, SKY_LINE_SEARCH_WIDTH, SKY_LINE_BG_WIDTH, SKY_LINE_JUMP_THRESH, eta=eta, arc=arc)
     
     if trace is None:
-        logger.warning('sky/etalon line trace failed')
+        logger.warning('sky/etalon/arc line trace failed')
         return None
     if nJumps > SKY_LINE_JUMP_LIMIT:
-        logger.debug('sky/etalon line trace jump limit exceeded: n jumps=' + 
+        logger.debug('sky/etalon/arc line trace jump limit exceeded: n jumps=' + 
                 str(nJumps) + ' limit=' + str(SKY_LINE_JUMP_LIMIT))        
         return None
-    logger.debug('sky/etalon line accepted')  
+    logger.debug('sky/etalon/arc line accepted')  
     return trace
 
 
@@ -158,7 +160,7 @@ SKY_SIGMA           = 1.1
 EXTRA_PADDING       = 5
 MIN_LINE_SEPARATION = 5
 
-def find_spectral_trace(data, numrows=5, eta=None, plot=False):
+def find_spectral_trace(data, numrows=5, eta=None, arc=None, plot=False):
     """
     Locates sky/etalon lines in the bottom 5 rows (is this really optimal?) of the order image data. 
     I fixed the above lines to check the bottom 5 rows and top 5 rows for which has more sky. - CAT
@@ -201,6 +203,8 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=False):
     # finds column indices of maxima
     if eta is not None:
         maxima_c = argrelextrema(s, np.greater, order=3) 
+    elif arc is not None:
+        maxima_c = argrelextrema(s, np.greater, order=3) 
     else:
         maxima_c = argrelextrema(s, np.greater)    
     
@@ -212,7 +216,7 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=False):
     # indices in s or peaks
     maxes = np.array(maxima_c[0][locmaxes[0]])
 
-    logger.debug('n sky/etalon line peaks with intensity > {:.0f} = {}'.format(
+    logger.debug('n sky/etalon/arc line peaks with intensity > {:.0f} = {}'.format(
                 sky_thres, len(maxes)))
 
     deletelist = []
@@ -240,7 +244,7 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=False):
             # indices in s or peaks
             maxes = np.array(maxima_c[0][locmaxes[0]])
             
-            logger.debug('n sky/etalon line peaks with intensity > {:.0f} = {}'.format(
+            logger.debug('n sky/etalon/arc line peaks with intensity > {:.0f} = {}'.format(
                     sky_thres, len(maxes)))
 
             deletelist = []
@@ -258,10 +262,10 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=False):
             maxes = maxes[sortorder]
             maxes = maxes[::-1]
 
-            if len(maxes) >= 5: # We have enough sky/etalon lines
+            if len(maxes) >= 5: # We have enough sky/etalon/arc lines
                 break
 
-    logger.info('n unblended sky/etalon line peaks with intensity > {:.0f} = {}'.format(
+    logger.info('n unblended sky/etalon/arc line peaks with intensity > {:.0f} = {}'.format(
                     sky_thres, len(maxes)))
     
     if plot:
@@ -284,7 +288,7 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=False):
     for maxskyloc in maxes:
         if 10 < maxskyloc < 1010:
             
-            centroid_sky = trace_sky_line(data_t, maxskyloc, eta=eta)
+            centroid_sky = trace_sky_line(data_t, maxskyloc, eta=eta, arc=arc)
            
             if centroid_sky is None:
                 continue
@@ -300,15 +304,15 @@ def find_spectral_trace(data, numrows=5, eta=None, plot=False):
 
 
     if fitnumber > 0:
-        logger.info(str(fitnumber) + ' sky/etalon lines used for spectral rectification')
+        logger.info(str(fitnumber) + ' sky/etalon/arc lines used for spectral rectification')
         return centroids
         #return centroid_sky_sum / fitnumber
     
-    logger.warning('failed to find sky/etalon line trace')
-    raise StandardError('failed to find sky/etalon line trace')
+    logger.warning('failed to find sky/etalon/arc line trace')
+    raise StandardError('failed to find sky/etalon/arc line trace')
     
     
-def smooth_spectral_trace(data, l, eta=None, version2=True, plot=False):
+def smooth_spectral_trace(data, l, eta=None, arc=None, version2=True, plot=False):
     
     if version2 == True:
         AllPix   = []

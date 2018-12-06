@@ -21,7 +21,7 @@ import nsdrp_koa
 #from DrpException import DrpException
 #import FlatCacher
 
-VERSION = '0.9.17.3'
+VERSION = '0.9.17.4'
 
 warnings.filterwarnings('ignore', category=UserWarning, append=True)
 
@@ -69,6 +69,10 @@ def main():
         config.params['eta_filename']          = args.eta_filename
         config.params['etalon_filename']       = args.etalon_filename
         config.params['etalon_envar_override'] = True
+    if args.arc_filename is not None:
+        config.params['arc_filename']           = args.arc_filename
+        config.params['arclamp_filename']       = args.arclamp_filename
+        config.params['arclamp_envar_override'] = True
     config.params['dark_file']                 = args.dark_filename
     config.params['int_c']                     = args.int_c
     config.params['lla']                       = args.lla
@@ -88,7 +92,8 @@ def main():
 #     try:
     if config.params['cmnd_line_mode'] is True:
         init(config.params['out_dir'])
-        nsdrp_cmnd.process_frame(args.arg1, args.arg2, args.b, config.params['out_dir'], eta=args.eta_filename, override=args.override_ab, dark=args.dark_filename)
+        nsdrp_cmnd.process_frame(args.arg1, args.arg2, args.b, config.params['out_dir'], eta=args.eta_filename, 
+                                 arc=args.arc_filename, override=args.override_ab, dark=args.dark_filename)
     else:
         init(args.arg2, args.arg1)
         nsdrp_koa.process_dir(args.arg1, args.arg2)
@@ -245,6 +250,8 @@ def parse_cmnd_line_args():
     parser.add_argument('-oh_filename', help='path and filename of OH emission line catalog file')
     parser.add_argument('-eta_filename', help='path and filename of Etalon lamp fits file')
     parser.add_argument('-etalon_filename', help='path and filename of Etalon line catalog file')
+    parser.add_argument('-arc_filename', help='path and filename of arc lamp fits file')
+    parser.add_argument('-arclamp_filename', help='path and filename of arc line catalog file')
     parser.add_argument('-dark_filename', help='path and filename of the master dark file')
     parser.add_argument('-int_c', help='user integer column values rather than fractional values \
             determined by centroiding in wavelength fit',

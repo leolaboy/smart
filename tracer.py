@@ -96,7 +96,7 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, plot=False):
     return trace, nJumps
 
 
-def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, plotvid=False):
+def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, arc=None, plotvid=False):
 
     # initialize trace array
     trace = np.zeros(data.shape[1])
@@ -107,6 +107,8 @@ def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, plo
     # find centroids for the rest of the columns in data
     stepcount = 3
     if eta is not None: # Need some extra signal for etalon lamps
+        stepcount = 7 
+    if arc is not None: # Need some extra signal for arc lamps
         stepcount = 7 
 
 

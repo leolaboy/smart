@@ -37,7 +37,7 @@ subdirs = dict([
                 ('wavelength_scale.png','wavelength')
                 ])
 
-def gen(reduced, out_dir, eta=None):
+def gen(reduced, out_dir, eta=None, arc=None):
     
 
     logger.info('generating diagnostic data products for {}...'.format(reduced.getBaseName()))
@@ -142,6 +142,10 @@ def gen(reduced, out_dir, eta=None):
             img  = order.srNormEtaImg
             img2 = order.ffEtaImg
             specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, img, img2)
+        elif arc is not None:
+            img  = order.srNormArcImg
+            img2 = order.ffArcImg
+            specrect_plot(out_dir, reduced.getBaseName(), order.flatOrder.orderNum, img, img2)
         else:
             if order.isPair:
                 img2 = order.ffObjImg['AB']
@@ -160,7 +164,7 @@ def gen(reduced, out_dir, eta=None):
         #
         # sky lines plot and table
         #
-        skyLinesPlot(out_dir, order, eta=eta)
+        skyLinesPlot(out_dir, order, eta=eta, arc=arc)
         skyLinesAsciiTable(out_dir, reduced.baseNames['A'], order)
         
         wavelengthScalePlot(out_dir, reduced.baseNames['A'], order)
@@ -432,7 +436,7 @@ def specrect_plot(outpath, base_name, order_num, before, after):
     pl.close()
     
 
-def specrect_plot2(outpath, base_name, order_num, before, after, eta=None):
+def specrect_plot2(outpath, base_name, order_num, before, after, eta=None, arc=None):
     
     pl.figure('spectral rectify', facecolor='white')
     pl.cla()
@@ -518,19 +522,20 @@ def perOrderWavelengthCalAsciiTable(outpath, base_name, order, col, centroid, so
     return
 
     
-def skyLinesPlot(outpath, order, eta=None):
+def skyLinesPlot(outpath, order, eta=None, arc=None):
     """
     Always uses frame A.
     """
     
-    pl.figure('sky/etalon lines', facecolor='white', figsize=(8, 6))
+    pl.figure('sky/etalon/arc lines', facecolor='white', figsize=(8, 6))
     pl.cla()
-    pl.suptitle("sky/etalon lines" + ', ' + order.baseNames['A'] + ", order " + 
+    pl.suptitle("sky/etalon/arc lines" + ', ' + order.baseNames['A'] + ", order " + 
             str(order.flatOrder.orderNum), fontsize=14)
 #     pl.rcParams['ytick.labelsize'] = 8
 
     syn_plot = pl.subplot(2, 1, 1)
     if eta is not None: syn_plot.set_title('synthesized etalon')
+    elif arc is not None: syn_plot.set_title('synthesized arc lamps')
     else: syn_plot.set_title('synthesized sky')
     syn_plot.set_xlim([0, 1024])
     ymin = np.amin(order.synthesizedSkySpec) - ((np.amax(order.synthesizedSkySpec) - np.amin(order.synthesizedSkySpec)) * 0.1)
@@ -548,6 +553,13 @@ def skyLinesPlot(outpath, order, eta=None):
         ymax = np.amax(order.etalonSpec) + ((np.amax(order.etalonSpec) - np.amin(order.etalonSpec)) * 0.1)
         sky_plot.set_ylim([ymin, ymax])
         sky_plot.plot(order.etalonSpec, 'b-', linewidth=1)
+    elif arc is not None:
+        sky_plot.set_title('arc lamp')
+        sky_plot.set_xlim([0, 1024])
+        ymin = np.amin(order.arclampSpec) - ((np.amax(order.arclampSpec) - np.amin(order.arclampSpec)) * 0.1)
+        ymax = np.amax(order.arclampSpec) + ((np.amax(order.arclampSpec) - np.amin(order.arclampSpec)) * 0.1)
+        sky_plot.set_ylim([ymin, ymax])
+        sky_plot.plot(order.arclampSpec, 'b-', linewidth=1)
     else:
         sky_plot.set_title('sky')
         sky_plot.set_xlim([0, 1024])

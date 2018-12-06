@@ -10,7 +10,7 @@ import products
 import dgn
 import DrpException
 
-def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, override=False):
+def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, arc=None, override=False):
     
     flat_fn    = None
     obj_fn     = None
@@ -23,6 +23,13 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, override=Fal
         eta_header = fits.PrimaryHDU.readfrom(eta, ignore_missing_end=True).header
         if eta_header['etalon'] == 1 and eta_header['calmpos'] == 1:
             eta_fn = eta
+
+    # Do the case for the arc lamp
+    if arc is not None:
+        arc_header = fits.PrimaryHDU.readfrom(arc, ignore_missing_end=True).header
+        if (arc_header['neon'] == 1 or arc_header['argon'] == 1 or arc_header['krypton'] == 1 or \
+            arc_header['xenon'] == 1) and arc_header['calmpos'] == 1:
+            arc_fn = arc
 
     # Get the master dark frame if given
     if dark is not None:
@@ -74,12 +81,12 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, override=Fal
         
         obj_B_header = fits.PrimaryHDU.readfrom(obj_B_fn, ignore_missing_end=True).header
         if create_raw_data_sets.is_valid_pair(obj_header, obj_B_header, override=override):
-            rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header, eta=eta, dark=dark)
+            rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header, eta=eta, arc=arc, dark=dark)
 
         else:
             raise DrpException.DrpException('frames A and B are not a valid pair')
     else:
-        rawDataSet = RawDataSet.RawDataSet(obj_fn, None, obj_header, eta=eta, dark=dark)
+        rawDataSet = RawDataSet.RawDataSet(obj_fn, None, obj_header, eta=eta, arc=arc, dark=dark)
 
     rawDataSet.flatFns.append(flat_fn)
      
@@ -93,7 +100,7 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, override=Fal
     logger = logging.getLogger('main')
 
     # generate reduced data set by reducing raw data set
-    reducedDataSet = reduce_frame.reduce_frame(rawDataSet, out_dir, eta=eta, dark=dark)
+    reducedDataSet = reduce_frame.reduce_frame(rawDataSet, out_dir, eta=eta, arc=arc, dark=dark)
     
     # write reduction summary to log file
     write_summary(reducedDataSet)
@@ -102,12 +109,12 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, override=Fal
     if config.params['no_products'] is True:
         logger.info('data product generation inhibited by command line switch')
     else:
-        products.gen(reducedDataSet, out_dir, eta=eta)
+        products.gen(reducedDataSet, out_dir, eta=eta, arc=arc)
 
     # if diagnostics mode is enabled, then produce diagnostic data products
     if config.params['dgn'] is True:
         logger.info('diagnostic mode enabled, generating diagnostic data products')
-        dgn.gen(reducedDataSet, out_dir, eta=eta)
+        dgn.gen(reducedDataSet, out_dir, eta=eta, arc=arc)
         
     return    
 
@@ -133,8 +140,8 @@ def write_summary(rds):
     v.append(('SNR min',                            '{:.1f}',   rds.snrMin))
     v.append(('spatial peak width mean (pixels)',   '{:.1f}',   rds.wMean))
     v.append(('spatial peak width max (pixels)',    '{:.1f}',   rds.wMax))
-    v.append(('n sky/etalon lines found',           '{:d}',     rds.nLinesFound))
-    v.append(('n sky/etalon lines used',            '{:d}',     rds.nLinesUsed))
+    v.append(('n sky/etalon/arc lines found',           '{:d}',     rds.nLinesFound))
+    v.append(('n sky/etalon/arc lines used',            '{:d}',     rds.nLinesUsed))
     v.append(('RMS fit residual (Angstroms)',       '{:.3f}',   rds.frameCalRmsRes))
     
     for val in v:
