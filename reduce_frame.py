@@ -442,7 +442,7 @@ def apply_wavelength_soln(reduced):
             # wavelength scale is monotonic
             order.waveScale = order.frameCalWaveScale
             #print('TEST1', order.waveScale)
-            np.save('wave_%s.npy'%order.flatOrder.orderNum, order.waveScale) 
+            #np.save('wave_%s.npy'%order.flatOrder.orderNum, order.waveScale) 
             order.calMethod = 'frame sky line cal'
         else:
             logger.warning('wavelength scale not monotonic for order {}'.format(
