@@ -83,8 +83,11 @@ def create(in_dir):
                         rawDataSet.darkFns.append(filename)
             elif (header['ETALON'] == 1):
                 if len(rawDataSet.etaFns) < config.params['max_n_etas']:
-                    if eta_criteria_met(rawDataSet.objHeader, header):
-                        rawDataSet.etaFns.append(filename)
+                    try:
+                        if eta_criteria_met(rawDataSet.objHeader, header):
+                            rawDataSet.etaFns.append(filename)
+                    except NameError:
+                        pass
         rawDataSet.flatFns.sort()
         rawDataSet.darkFns.sort()
         rawDataSet.etaFns.sort()
