@@ -21,7 +21,7 @@ class RawDataSet:
 
     """
     
-    def __init__(self, objAFn, objBFn, objHeader, eta=None, dark=None):
+    def __init__(self, objAFn, objBFn, objHeader, eta=None, arc=None, dark=None):
 
         if objAFn is None:
             raise DrpException('objAFn cannot be None')
@@ -52,9 +52,13 @@ class RawDataSet:
         self.flatFns = []
         self.darkFns = []
         self.etaFns  = []
+        self.arcFns  = []
 
         if eta is not None:
             self.etaFns = eta
+
+        if arc is not None:
+            self.arcFns = arc
 
         if dark is not None:
             self.darkFns = [dark]
@@ -156,7 +160,21 @@ class RawDataSet:
         if len(self.eatFns) == 1:
             return(fits.getdata(self.etaFns[0], ignore_missing_end=True))
         if len(self.eatFns) > 1:
-            eatData = []
-            for fn in self.eatFns:
-                eatData.append(fits.getdata(fn, ignore_missing_end=True))   
+            etaData = []
+            for fn in self.etaFns:
+                etaData.append(fits.getdata(fn, ignore_missing_end=True))   
             return np.median(etaData, axis=0)
+
+    def combineArcs(self):   # XXX This is not working yet    
+        """Median combines Arc lamps and returns resulting image array
+        """
+        if len(self.arcFns) == 0:
+            return None
+        if len(self.arcFns) == 1:
+            return(fits.getdata(self.arcFns[0], ignore_missing_end=True))
+        if len(self.arcFns) > 1:
+            arcData = []
+            for fn in self.arcFns:
+                arcData.append(fits.getdata(fn, ignore_missing_end=True))   
+            return np.median(arcData, axis=0)
+            

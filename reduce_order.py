@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 logger = logging.getLogger('obj')
 
-def reduce_order(order, eta=None):
+def reduce_order(order, eta=None, arc=None):
         
     #print('ETA BEGINNING', eta)
     #print(order.flatOrder.orderNum)
@@ -27,7 +27,7 @@ def reduce_order(order, eta=None):
     #sys.exit()
 
     # flatten object images for this order
-    __flatten(order, eta=eta)
+    __flatten(order, eta=eta, arc=arc)
 
     """
     from astropy.visualization import ZScaleInterval, ImageNormalize
@@ -54,6 +54,11 @@ def reduce_order(order, eta=None):
             logger.info('bad pixel cleaning etalon frame')
             order.ffEtaImg = fixpix.fixpix_rs(order.ffEtaImg)
             logger.debug('bad pixel cleaning etalon frame complete')
+
+        if arc is not None:
+            logger.info('bad pixel cleaning arc lamp frame')
+            order.ffArcImg = fixpix.fixpix_rs(order.ffArcImg)
+            logger.debug('bad pixel cleaning arc lamp frame complete')
     
     ### XXX TESTING AREA
 
@@ -75,10 +80,10 @@ def reduce_order(order, eta=None):
     """
  
     # rectify obj and flattened obj in spatial dimension
-    __rectify_spatial(order, eta=eta)
+    __rectify_spatial(order, eta=eta, arc=arc)
  
     # trim rectified order
-    __trim(order, eta=eta)
+    __trim(order, eta=eta, arc=arc)
 
     """
     plt.figure(4)
@@ -113,6 +118,12 @@ def reduce_order(order, eta=None):
                 order.srNormEtaImgB = order.ffEtaImgB
             else:
                 order.srNormEtaImg  = order.ffEtaImg
+
+        if arc is not None:
+            if frame == 'B':
+                order.srNormArcImgB = order.ffArcImgB
+            else:
+                order.srNormArcImg  = order.ffArcImg
     
     # find spatial profile and peak
     __find_spatial_profile_and_peak(order)
@@ -123,7 +134,8 @@ def reduce_order(order, eta=None):
     # Try to find the spectral trace using etalon lamps if provided
     for frame in order.frames:
         #print('FRAME', frame)
-        if frame == 'AB': continue # Build the AB frame using A and B later
+        if frame == 'AB': 
+            continue # Build the AB frame using A and B later
         if frame in ['A']:
             if eta is not None: # Do spectral rectification using the etalon lamps
                 try:           
@@ -134,6 +146,17 @@ def reduce_order(order, eta=None):
                                                  order.ffObjImg['A'].shape[0])
                 except Exception as e:
                     logger.warning('not rectifying frame {} order {} in spectral dimension (etalon)'.format(
+                                   frame, order.flatOrder.orderNum))
+
+            elif arc is not None: # Do spectral rectification using the arc lamps
+                try:           
+                    logger.info('attempting rectification of frame {} order {} in spectral dimension (arc lamp)'.format(
+                                frame, order.flatOrder.orderNum))
+                    order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
+                                                 nirspec_lib.find_spectral_trace(order.ffArcImg, arc=arc), 
+                                                 order.ffObjImg['A'].shape[0])
+                except Exception as e:
+                    logger.warning('not rectifying frame {} order {} in spectral dimension (arc lamp)'.format(
                                    frame, order.flatOrder.orderNum))
 
             else: # no etalons
@@ -158,6 +181,18 @@ def reduce_order(order, eta=None):
                 except Exception as e:
                     logger.warning('not rectifying frame {} order {} in spectral dimension (etalon)'.format(
                                    frame, order.flatOrder.orderNum))
+
+            elif arc is not None: # Do spectral rectification using the arc lamps
+                try:           
+                    logger.info('attempting rectification of frame {} order {} in spectral dimension (arc lamps)'.format(
+                                frame, order.flatOrder.orderNum))
+                    order.spectralTrace[frame] = nirspec_lib.smooth_spectral_trace(
+                                                 nirspec_lib.find_spectral_trace(order.ffArcImgB, arc=arc), 
+                                                 order.ffObjImg['B'].shape[0])
+                except Exception as e:
+                    logger.warning('not rectifying frame {} order {} in spectral dimension (arc lamps)'.format(
+                                   frame, order.flatOrder.orderNum))
+
             else: # no etalons
                 try:
                     logger.info('attempting rectification of frame {} order {} in spectral dimension'.format(
@@ -169,7 +204,7 @@ def reduce_order(order, eta=None):
                     logger.warning('not rectifying frame {} order {} in spectral dimension'.format(
                                    frame, order.flatOrder.orderNum))
     try: 
-        __rectify_spectral(order, eta=eta)
+        __rectify_spectral(order, eta=eta, arc=arc)
     except:
         logger.warning('not able to rectify all of order {} in spectral dimension'.format(
                                    order.flatOrder.orderNum))
@@ -195,31 +230,41 @@ def reduce_order(order, eta=None):
                 order.objImg[frame], order.flatOrder.rectFlatImg, order.integrationTime)
 
     # extract spectra
-    __extract_spectra(order, eta=eta)
+    __extract_spectra(order, eta=eta, arc=arc)
             
     # calculate approximate SNR
     __calc_approximate_snr(order)
             
-    # find and identify sky/etalon lines   
+    # find and identify sky/etalon/arc lines   
     line_pairs = None # line_pairs are (column number, accepted wavelength)
     try:
         if eta is not None:
             etalon_wavelengths, etalon_intensities = wavelength_utils.get_etalon_lines()
+        elif arc is not None:
+            arclamp_wavelengths, arclamp_intensities = wavelength_utils.get_arclamp_lines()
         else:
             oh_wavelengths, oh_intensities = wavelength_utils.get_oh_lines()
     except IOError as e:
-        logger.critical('cannot read OH/Etalon line file: ' + str(e))
+        logger.critical('cannot read OH/Etalon/Arc line file: ' + str(e))
         raise
         
 
     try:
-        # synthesize sky/etalon spectrum and store in order object
+        # synthesize sky/etalon/arc spectrum and store in order object
         if eta is not None:
             order.synthesizedSkySpec = wavelength_utils.synthesize_sky(
                     etalon_wavelengths, etalon_intensities, order.flatOrder.gratingEqWaveScale, eta=eta)
          
             # identify lines and return list of (column number, accepted wavelength) tuples
             line_pairs = wavelength_utils.line_id(order, etalon_wavelengths, etalon_intensities, eta=eta)
+
+
+        elif arc is not None:
+            order.synthesizedSkySpec = wavelength_utils.synthesize_sky(
+                    arclamp_wavelengths, arclamp_intensities, order.flatOrder.gratingEqWaveScale, arc=arc)
+         
+            # identify lines and return list of (column number, accepted wavelength) tuples
+            line_pairs = wavelength_utils.line_id(order, arclamp_wavelengths, arclamp_intensities, arc=arc)
 
         else:
             order.synthesizedSkySpec = wavelength_utils.synthesize_sky(
@@ -229,11 +274,11 @@ def reduce_order(order, eta=None):
             line_pairs = wavelength_utils.line_id(order, oh_wavelengths, oh_intensities)
         
     except (IOError, ValueError) as e:
-        logger.warning('sky/etalon line matching failed: ' + str(e))
+        logger.warning('sky/etalon/arc line matching failed: ' + str(e))
         
     if line_pairs is not None:
         
-        logger.info(str(len(line_pairs)) + ' matched sky/etalon lines found in order')
+        logger.info(str(len(line_pairs)) + ' matched sky/etalon/arc lines found in order')
 
         # add line pairs to Order object as Line objects
         for line_pair in line_pairs:
@@ -244,7 +289,10 @@ def reduce_order(order, eta=None):
                     waveAccepted, col, cent, peak)
             order.lines.append(line)
             
-        if len(order.lines) >= 3:
+        nlinelimit = 3
+        if arc is not None: nlinelimit = 2 # Some orders have very few lines
+
+        if len(order.lines) >= nlinelimit:
             # do local wavelength fit
             measured = []
             accepted = []
@@ -266,7 +314,7 @@ def reduce_order(order, eta=None):
                         (order.flatOrder.gratingEqWaveScale[1023] - 
                          order.flatOrder.gratingEqWaveScale[0]))/1024.0
     else:
-        logger.warning('no matched sky/etalon lines in order ' + str(order.flatOrder.orderNum))
+        logger.warning('not enough matched sky/etalon/arc lines in order ' + str(order.flatOrder.orderNum))
         order.orderCal = False 
 
     #plt.show()
@@ -275,7 +323,7 @@ def reduce_order(order, eta=None):
 
 
 
-def __flatten(order, eta=None):
+def __flatten(order, eta=None, arc=None):
     """Flat field object image[s] but keep originals for noise calculation.
     """
     
@@ -296,6 +344,14 @@ def __flatten(order, eta=None):
                 order.etaImg   = np.array(order.etaCutout) 
                 order.ffEtaImg = np.array(order.etaCutout / order.flatOrder.normFlatImg)
 
+        if arc is not None:
+            if frame == 'B':
+                order.arcImgB   = np.array(order.arcCutout) 
+                order.ffArcImgB = np.array(order.arcCutout / order.flatOrder.normFlatImg)
+            else:
+                order.arcImg   = np.array(order.arcCutout) 
+                order.ffArcImg = np.array(order.arcCutout / order.flatOrder.normFlatImg)
+
     
     order.flattened = True
     logger.info('order has been flat fielded')
@@ -303,7 +359,7 @@ def __flatten(order, eta=None):
 
 
 
-def __rectify_spatial(order, eta=None):
+def __rectify_spatial(order, eta=None, arc=None):
     """
     """     
     
@@ -336,6 +392,19 @@ def __rectify_spatial(order, eta=None):
                     else:
                         order.etaImg      = image_lib.rectify_spatial(order.etaImg, polyVals1)
                         order.ffEtaImg    = image_lib.rectify_spatial(order.ffEtaImg, polyVals2)
+
+                if arc is not None:
+                    if frame == 'B':
+                        if config.params['onoff'] == True:
+                            order.arcImgB     = order.arcImg
+                            order.ffArcImgB   = order.ffArcImg
+                        else:
+                            order.arcImgB     = image_lib.rectify_spatial(order.arcImgB, polyVals1)
+                            order.ffArcImgB   = image_lib.rectify_spatial(order.ffArcImgB, polyVals2)
+
+                    else:
+                        order.arcImg      = image_lib.rectify_spatial(order.arcImg, polyVals1)
+                        order.ffArcImg    = image_lib.rectify_spatial(order.ffArcImg, polyVals2)
             else:
                 order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
                 order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
@@ -346,17 +415,29 @@ def __rectify_spatial(order, eta=None):
             order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], 
                                                               order.flatOrder.smoothedSpatialTrace)
             if eta is not None:
-                    if frame == 'B':
-                        order.etaImgB     = image_lib.rectify_spatial(order.etaImgB, 
-                                                                      order.flatOrder.smoothedSpatialTrace)
-                        order.ffEtaImgB   = image_lib.rectify_spatial(order.ffEtaImgB, 
-                                                                      order.flatOrder.smoothedSpatialTrace)
+                if frame == 'B':
+                    order.etaImgB     = image_lib.rectify_spatial(order.etaImgB, 
+                                                                  order.flatOrder.smoothedSpatialTrace)
+                    order.ffEtaImgB   = image_lib.rectify_spatial(order.ffEtaImgB, 
+                                                                  order.flatOrder.smoothedSpatialTrace)
 
-                    else:
-                        order.etaImg      = image_lib.rectify_spatial(order.etaImg, 
-                                                                      order.flatOrder.smoothedSpatialTrace)
-                        order.ffEtaImg    = image_lib.rectify_spatial(order.ffEtaImg, 
-                                                                      order.flatOrder.smoothedSpatialTrace)
+                else:
+                    order.etaImg      = image_lib.rectify_spatial(order.etaImg, 
+                                                                  order.flatOrder.smoothedSpatialTrace)
+                    order.ffEtaImg    = image_lib.rectify_spatial(order.ffEtaImg, 
+                                                                  order.flatOrder.smoothedSpatialTrace)
+            if arc is not None:
+                if frame == 'B':
+                    order.arcImgB     = image_lib.rectify_spatial(order.arcImgB, 
+                                                                  order.flatOrder.smoothedSpatialTrace)
+                    order.ffArcImgB   = image_lib.rectify_spatial(order.ffArcImgB, 
+                                                                  order.flatOrder.smoothedSpatialTrace)
+
+                else:
+                    order.arcImg      = image_lib.rectify_spatial(order.arcImg, 
+                                                                  order.flatOrder.smoothedSpatialTrace)
+                    order.ffArcImg    = image_lib.rectify_spatial(order.ffArcImg, 
+                                                                  order.flatOrder.smoothedSpatialTrace)
 
 
     order.spatialRectified = True
@@ -366,7 +447,7 @@ def __rectify_spatial(order, eta=None):
  
 
     
-def __trim(order, eta=None):
+def __trim(order, eta=None, arc=None):
     """
     """
     for frame in order.frames:
@@ -381,12 +462,20 @@ def __trim(order, eta=None):
             else:
                 order.etaImg    = order.etaImg[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
                 order.ffEtaImg  = order.ffEtaImg[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+
+        if arc is not None:
+            if frame == 'B':
+                order.arcImgB   = order.arcImgB[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+                order.ffArcImgB = order.ffArcImgB[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+            else:
+                order.arcImg    = order.arcImg[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
+                order.ffArcImg  = order.ffArcImg[order.flatOrder.botTrim:order.flatOrder.topTrim, :]
         
     return
 
 
 
-def __rectify_spectral(order, eta=None):
+def __rectify_spectral(order, eta=None, arc=None):
     """
     """   
     for frame in order.frames:
@@ -413,12 +502,24 @@ def __rectify_spectral(order, eta=None):
             else:
                 order.etaImg    = image_lib.rectify_spectral(order.etaImg, order.spectralTrace[frame], peak1)
                 order.ffEtaImg  = image_lib.rectify_spectral(order.ffEtaImg, order.spectralTrace[frame], peak2)
+
+        if arc is not None:
+            if frame == 'B':
+                if config.params['onoff'] == True:
+                    order.arcImgB   = order.arcImg
+                    order.ffArcImgB = iorder.ffArcImg
+                else:
+                    order.arcImgB   = image_lib.rectify_spectral(order.arcImgB, order.spectralTrace[frame], peak1)
+                    order.ffArcImgB = image_lib.rectify_spectral(order.ffArcImgB, order.spectralTrace[frame], peak2)
+            else:
+                order.arcImg    = image_lib.rectify_spectral(order.arcImg, order.spectralTrace[frame], peak1)
+                order.ffArcImg  = image_lib.rectify_spectral(order.ffArcImg, order.spectralTrace[frame], peak2)
     
     return     
 
 
               
-def __extract_spectra(order, eta=None):
+def __extract_spectra(order, eta=None, arc=None):
     
     if order.isPair:        
         # get object extraction range for AB
@@ -471,6 +572,22 @@ def __extract_spectra(order, eta=None):
                                 order.ffObjImg[frame], order.flatOrder.rectFlatImg, order.noiseImg[frame], 
                                 order.objWindow[frame], order.topSkyWindow[frame], 
                                 order.botSkyWindow[frame], eta=order.ffEtaImg) 
+        
+        elif arc is not None:
+            if frame == 'B':
+                # extract object, sky, arc, and noise spectra for A and B and flat spectrum
+                order.objSpec[frame], order.flatSpec, order.arclampSpec, order.skySpec[frame], order.noiseSpec[frame], \
+                        order.topBgMean[frame], order.botBgMean[frame] = image_lib.extract_spectra(
+                                order.ffObjImg[frame], order.flatOrder.rectFlatImg, order.noiseImg[frame], 
+                                order.objWindow[frame], order.topSkyWindow[frame], 
+                                order.botSkyWindow[frame], arc=order.ffArcImgB) 
+            else:
+                # extract object, sky, arc, and noise spectra for A and B and flat spectrum
+                order.objSpec[frame], order.flatSpec, order.arclampSpec, order.skySpec[frame], order.noiseSpec[frame], \
+                        order.topBgMean[frame], order.botBgMean[frame] = image_lib.extract_spectra(
+                                order.ffObjImg[frame], order.flatOrder.rectFlatImg, order.noiseImg[frame], 
+                                order.objWindow[frame], order.topSkyWindow[frame], 
+                                order.botSkyWindow[frame], arc=order.ffArcImg)
 
         else:
             # extract object, sky, and noise spectra for A and B and flat spectrum

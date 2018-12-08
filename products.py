@@ -94,7 +94,7 @@ def log_fn(fn):
         file_count[0] += 1 
         return
 
-def gen(reduced, out_dir, eta=None):
+def gen(reduced, out_dir, eta=None, arc=None):
     """
     Given a ReducedDataSet object and a root output directory, generate all
     data products and store results in output directory and subdirectories.

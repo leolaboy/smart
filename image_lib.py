@@ -49,7 +49,7 @@ def rectify_spatial(data, curve):
 
 
 
-def rectify_spectral(data, curve, peak=None, eta=None, returnpeak=None):
+def rectify_spectral(data, curve, peak=None, returnpeak=None):
     """
     Shift data, row by row, along x-axis according to curve.
     
@@ -200,7 +200,7 @@ def get_extraction_ranges(image_width, peak_location, obj_w, sky_w, sky_dist):
 
 
    
-def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, eta=None):
+def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, eta=None, arc=None):
     
     """
     """
@@ -290,6 +290,16 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
         etalon_sp   = etalon_norm + 0.9 # Add to the continuum for comparison to synthesized etalon
         
         return obj_sp, flat_sp, etalon_sp, sky_sp, noise_sp, top_bg_mean, bot_bg_mean
+
+    if arc is not None:
+        #arclamp_sum  = np.sum(eta[i, :] for i in obj_range) 
+        arclamp_sum  = np.sum(arc[10:-10, :], axis=0)
+        arclamp_sub  = arclamp_sum - np.median(arclamp_sum) # put the floor at ~0
+        arclamp_norm = arclamp_sub / np.max(arclamp_sub) * 0.9 # normalize for comparison to synthesized arc lamp
+        arclamp_sp   = arclamp_norm + 0.9 # Add to the continuum for comparison to synthesized arc lamp
+        
+        return obj_sp, flat_sp, arclamp_sp, sky_sp, noise_sp, top_bg_mean, bot_bg_mean
+
     else:
         return obj_sp, flat_sp, sky_sp, noise_sp, top_bg_mean, bot_bg_mean
 

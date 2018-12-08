@@ -31,18 +31,22 @@ DISP_UPPER_LIMIT  = 1.05
 GAUSSIAN_VARIANCE = 0.2
 
 
-def synthesize_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc, eta=None):
+def synthesize_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc, eta=None, arc=None):
     
     x = np.array(oh_wavelengths)
     y = np.array(oh_intensities)
+
+    limit = 0.01
+    if arc is not None: 
+        limit = 0
     
     if y.any():
         synthesized_sky = y[0]
     else:
-        raise ValueError('no reference OH/Etalon line data')
+        raise ValueError('no reference OH/Etalon/Arc line data')
 
     for i in np.arange(0, x.size):
-        if y[i] > 0.01:
+        if y[i] > limit:
             if eta is not None:
                 g = y[i] * np.exp(-(wavelength_scale_calc - x[i]) ** 2.0 / (2.0 * (2*GAUSSIAN_VARIANCE) ** 2.0))
             else:
@@ -54,7 +58,7 @@ def synthesize_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc, eta=No
         
 
 
-def line_id(order, oh_wavelengths, oh_intensities, eta=None):
+def line_id(order, oh_wavelengths, oh_intensities, eta=None, arc=None):
     """
     Given real sky spectrum, synthesized sky spectrum, estimated wavelength scale based on 
     evaluation of grating equation, and accepted OH emission line wavelengths and relative
@@ -75,10 +79,12 @@ def line_id(order, oh_wavelengths, oh_intensities, eta=None):
     #plt.scatter(oh_wavelengths, oh_intensities, c='r', alpha=0.5)
 
     if eta is not None:
-        #print(order.flatOrder.gratingEqWaveScale)
-        #sys.exit()
         order.waveShift = find_wavelength_shift(order.etalonSpec, order.synthesizedSkySpec,
                 order.flatOrder.gratingEqWaveScale, eta=eta)
+
+    elif arc is not None:
+        order.waveShift = find_wavelength_shift(order.arclampSpec, order.synthesizedSkySpec,
+                order.flatOrder.gratingEqWaveScale, arc=arc)
 
     else:
         order.waveShift = find_wavelength_shift(order.skySpec['A'], order.synthesizedSkySpec,
@@ -93,21 +99,28 @@ def line_id(order, oh_wavelengths, oh_intensities, eta=None):
     logger.info('wavelength scale shift = ' + str(round(order.waveShift, 3)) + ' angstroms')   
     wavelength_scale_shifted = order.flatOrder.gratingEqWaveScale + order.waveShift   
 
-    
-    #plt.figure(1011)
-    #print(wavelength_scale_shifted)
-    #print(oh_wavelengths)
-    #print(oh_intensities)
+    ### TESTING
+    '''
+    print(wavelength_scale_shifted)
+    print(oh_wavelengths)
+    print(oh_intensities)
+    print(order.arclampSpec)
+    plt.figure(1011)
     #plt.plot(wavelength_scale_shifted, order.etalonSpec, c='b', alpha=0.5)
-    #plt.scatter(oh_wavelengths, oh_intensities, c='r', alpha=0.5)
-    #plt.show(block=False)
-    #sys.exit()
+    plt.plot(wavelength_scale_shifted, order.arclampSpec, c='b', alpha=0.5)
+    plt.scatter(oh_wavelengths, oh_intensities, c='r', alpha=0.5)
+    plt.show()
+    '''
+    ### TESTING
     
 
     # match sky lines
     if eta is not None:
         id_tuple = identify(
                 order.etalonSpec, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=eta)
+    elif arc is not None:
+        id_tuple = identify(
+                order.arclampSpec, wavelength_scale_shifted, oh_wavelengths, oh_intensities, arc=arc)
     else:
         id_tuple = identify(
                 order.skySpec['A'], wavelength_scale_shifted, oh_wavelengths, oh_intensities)
@@ -117,11 +130,16 @@ def line_id(order, oh_wavelengths, oh_intensities, eta=None):
     else:
         matchesdx, matchesohx, matchesidx = np.array([]), np.array([]), np.array([])
 
-    #plt.figure(1011)
+    ### TESTING
+    '''
+    plt.figure(1012)
     #plt.plot(wavelength_scale_shifted, order.etalonSpec, c='b', alpha=0.5)
-    #plt.scatter(oh_wavelengths, oh_intensities, c='r', alpha=0.5)
-    #plt.show()
-    #sys.exit()
+    plt.plot(wavelength_scale_shifted, order.arclampSpec, c='b', alpha=0.5)
+    plt.scatter(oh_wavelengths, oh_intensities, c='r', alpha=0.5)
+    plt.show()
+    sys.exit()
+    '''
+    ### TESTING
     
 #     if order.isPair:
 #         id_tuple = identify(
@@ -280,8 +298,51 @@ def get_etalon_lines():
         return get_etalon_lines.etalon_wavelengths, get_etalon_lines.etalon_intensities
 
  
+def get_arclamp_lines():
+    """
+    Reads Etalon line wavelengths and intensities from data file.
+    Once the data is read, it is saved in static-like variables 
+    so the file is read only once.  
+    
+    Returns two parallel arrays, one containing wavelengths and
+    the other containing the corresponding intensities, as a tuple.
+    
+    Raises IOError if data file cannot be opened or read
+    """
+    
+    try:
+        return get_arclamp_lines.arclamp_wavelengths, get_arclamp_lines.arclamp_intensities
+    
+    except AttributeError:
+        
+        if config.params['arclamp_envar_override']:
+            arclamp_filename = config.params['arclamp_filename']
+        else:
+            arclamp_filename = os.environ.get(config.params['arclamp_envar_name'])
+            if arclamp_filename is None:
+                arclamp_filename = config.params['arclamp_filename']
+             
+        logger.info('reading arc lamp line data from ' + arclamp_filename)
+        
+        try:
+            lines = open(arclamp_filename).readlines()
+        except:
+            logger.error('failed to open arc lamp emission line file: ' + arclamp_filename)
+            raise
+    
+        get_arclamp_lines.arclamp_wavelengths = []
+        get_arclamp_lines.arclamp_intensities = []
+    
+        for line in lines:
+            tokens = line.split(" ")
+            if float(tokens[1]) > 0:
+                get_arclamp_lines.arclamp_wavelengths.append(float(tokens[0]))
+                get_arclamp_lines.arclamp_intensities.append(float(tokens[1]))
+    
+        return get_arclamp_lines.arclamp_wavelengths, get_arclamp_lines.arclamp_intensities
 
-def gen_synthesized_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc, eta=None):
+
+def gen_synthesized_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc, eta=None, arc=None):
     """
     """
     x = np.array(oh_wavelengths)
@@ -289,12 +350,14 @@ def gen_synthesized_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc, e
     if y.any():
         all_g = y[0]
     else:
-        logger.warning('no OH/Etalon lines in wavelength range')
+        logger.warning('no OH/Etalon/Arc lines in wavelength range')
         return None
 
     for i in np.arange(0, x.size):
         if y[i] > 0.01:
             if eta is not None:
+                g = y[i] * np.exp(-(wavelength_scale_calc - x[i]) ** 2.0 / (2.0 * (2*GAUSSIAN_VARIANCE) ** 2.0))
+            elif arc is not None:
                 g = y[i] * np.exp(-(wavelength_scale_calc - x[i]) ** 2.0 / (2.0 * (2*GAUSSIAN_VARIANCE) ** 2.0))
             else:
                 g = y[i] * np.exp(-(wavelength_scale_calc - x[i]) ** 2.0 / (2.0 * GAUSSIAN_VARIANCE ** 2.0))
@@ -304,21 +367,31 @@ def gen_synthesized_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc, e
 
 
 
-def find_wavelength_shift(sky, gauss_sky, grating_eq_wave_scale, eta=None):
+def find_wavelength_shift(sky, gauss_sky, grating_eq_wave_scale, eta=None, arc=None):
     
     if len(sky) > 0:
         if eta is not None:
             sky_n = sky
+        elif arc is not None:
+            sky_n = sky
         else:
             sky_n = sky - sky.mean()
     else:
-        logger.error('sky/etalon spectrum length is zero')
+        logger.error('sky/etalon/arc spectrum length is zero')
         return None
  
     ohg = np.array([grating_eq_wave_scale, gauss_sky])  # ohg is a synthetic spectrum of gaussians
+
+    ### TESTING
+    #plt.figure(102)
+    #plt.plot(sky, alpha=0.5, label='data')
+    #plt.plot(gauss_sky, alpha=0.5, label='synthesized')
+    #plt.legend()
+    #plt.show()
+    ### TESTING
  
     if not ohg.any():
-        logger.error('no synthetic sky/etalon lines in wavelength range')
+        logger.error('no synthetic sky/etalon/arc lines in wavelength range')
         return None
  
     xcorrshift = max_corr(ohg[1], sky_n)
@@ -328,18 +401,25 @@ def find_wavelength_shift(sky, gauss_sky, grating_eq_wave_scale, eta=None):
  
     delta_x = (ohg[0][-1] - ohg[0][0]) / float(ohg[0].size)
 
-    if eta is not None:
+    if eta is not None or arc is not None:
 
         sky_n -= np.amin(sky_n)
         coeffs = np.polyfit(np.arange(len(sky_n)), sky_n, 9)
         s_fit  = np.polyval(coeffs, np.arange(len(sky_n)))
         sky_n  = sky_n - s_fit + 0.9
+        if arc is not None:
+            sky_n += -0.9 # remove the baseline
+            ohg[1] += -np.median(ohg[1]) # set the floor to zero
+            ohg[1] = ohg[1] / np.max(ohg[1]) * np.max(sky_n) # scale to the sky
         
-        #plt.figure(111)
-        #plt.plot(ohg[0], ohg[1], c='m', alpha=0.5)
-        #plt.plot(ohg[0], sky_n, c='b', alpha=0.5)
-        #plt.show(block=False)
+        ### TESTING
+        #plt.figure(111, figsize=(12,6))
+        #plt.plot(ohg[0], ohg[1], c='m', alpha=0.5, label='synthesized')
+        #plt.plot(ohg[0], sky_n, c='b', alpha=0.5, label='data')
+        #plt.legend()
+        #plt.show(block=True)
         #sys.exit()
+        ### TESTING
         
         import scipy.interpolate as sci
         length = len(ohg[1])
@@ -357,14 +437,18 @@ def find_wavelength_shift(sky, gauss_sky, grating_eq_wave_scale, eta=None):
         maxind   = np.argmax(cc)
         pixShift = drvs[maxind]
         
-        #plt.figure(191)
-        #plt.plot(ohg[1], c='b', label='calib')
-        #plt.plot(sky_n, c='r', alpha=0.5, label='before')
-        #plt.plot(np.arange(len(sky_n))+pixShift, sky_n, c='m', alpha=0.5, label='pos')
-        #plt.plot(np.arange(len(sky_n))-pixShift, sky_n, c='c', alpha=0.5, label='neg')
-        #plt.legend()
-        #plt.show(block=False)
+        ### TESTING
+        '''
+        plt.figure(191, figsize=(12,6))
+        plt.plot(ohg[1], c='b', alpha=0.5, label='calib')
+        plt.plot(sky_n, c='r', alpha=0.5, label='before')
+        plt.plot(np.arange(len(sky_n))+pixShift, sky_n, c='m', alpha=0.5, label='pos')
+        plt.plot(np.arange(len(sky_n))-pixShift, sky_n, c='c', alpha=0.5, label='neg')
+        plt.legend()
+        plt.show(block=True)
         #sys.exit()
+        '''
+        ### TESTING
         
         return -pixShift * delta_x
 
@@ -376,7 +460,7 @@ SKY_THRESHOLD = 3.0
 
    
 
-def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=None):
+def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=None, arc=None):
     """
     """
     debug    = False
@@ -384,18 +468,20 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=
          
     # if theory_x.min() < 20500:
     dy       = sky
-    """
+    '''
     import pylab as pl
     pl.figure(facecolor="white")
     pl.cla()
-    pl.xlabel('wavelength (Angstroms')
-    pl.ylabel('relative intensity')
-    pl.plot(oh_wavelengths, oh_intensities, 'kx', mfc="none", ms=4.0)
+    pl.xlabel('Wavelength (Angstroms)')
+    pl.ylabel('Relative Intensity')
+    pl.plot(wavelength_scale_shifted, dy, 'b-', alpha=0.5, label='data')
+    pl.scatter(oh_wavelengths, oh_intensities, color='r', alpha=0.5, label='lines')
+    pl.legend()
     pl.show()
-    """
+    '''
     # ## Open, narrow down, and clean up line list ###
     # only look at the part of sky line list that is around the theory locations
-    if eta is not None:
+    if eta is not None or arc is not None:
         #print(theory_x[-1] + 100, theory_x[0] - 100)
         #print(np.where( (oh_wavelengths < theory_x[-1] + 100) & (oh_wavelengths > theory_x[0] - 100)))
         #print(np.where( (oh_wavelengths < theory_x[-1] + 100) & (oh_wavelengths > theory_x[0] - 100))[0])
@@ -414,10 +500,25 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=
     if eta is not None:
         bigohy = ohysized[np.where(ohysized > 0.5)]
         bigohx = ohxsized[np.where(ohysized > 0.5)]
+    elif arc is not None:
+        bigohy = ohysized[np.where(ohysized > 0)]
+        bigohx = ohxsized[np.where(ohysized > 0)]
     else:
         bigohy = ohysized[np.where(ohysized > SKY_LINE_MIN)]
         bigohx = ohxsized[np.where(ohysized > SKY_LINE_MIN)]
-        
+
+    '''
+    import pylab as pl
+    pl.figure(facecolor="white")
+    pl.cla()
+    pl.xlabel('Wavelength (Angstroms)')
+    pl.ylabel('Relative Intensity')
+    pl.plot(wavelength_scale_shifted, dy, 'b-', alpha=0.5, label='data')
+    pl.scatter(oh_wavelengths, oh_intensities, color='r', alpha=0.5, label='lines')
+    pl.scatter(bigohx, bigohy, color='m', marker='x', alpha=0.5, label='lines (in range)')
+    pl.legend()
+    pl.show()
+    '''
     # bigohx, y are lines from the data file, in the expected wavelength range
     # with intensity greater than  SKY_LINE_MIN
 
@@ -432,7 +533,7 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=
         bigohx = np.delete(bigohx, deletelist, None)
     else:
         # there were no sky lines in the table that match theoretical wavelength range
-        logger.info('could not find known sky/etalon lines in expected wavelength range')
+        logger.info('could not find known sky/etalon/arc lines in expected wavelength range')
         return []
  
         
@@ -456,9 +557,10 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=
     if config.params['lla'] == 1:
         bigidx = find_peaks_1(dy)
     else:
-        bigidx = find_peaks_2(dy, eta=eta)
+        bigidx = find_peaks_2(dy, eta=eta, arc=arc)
+
     bigdx = theory_x[bigidx]
-    logger.debug('n sky line peaks = {}'.format(len(bigidx)))
+    logger.debug('n sky/etalon/arc line peaks = {}'.format(len(bigidx)))
     
     deletelist = []
 
@@ -498,7 +600,7 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=
         happened = 0
  
         for i in range(0, len(bigdx) - 1):
-            if eta is not None: 
+            if eta is not None or arc is not None: 
                 waveLimit = 10
             else:
                 waveLimit = 2
@@ -599,7 +701,7 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=
         for j in range(0, len(bigohx)):
             minimum = min((abs(bigohx[j] - i), i) for i in bigdx)
  
-            if eta is not None:
+            if eta is not None or arc is not None:
                 Minimum = 10.0
             else: 
                 Minimum = 4.0
@@ -988,7 +1090,7 @@ def find_peaks_1(s):
     
 
 
-def find_peaks_2(s, eta=None):
+def find_peaks_2(s, eta=None, arc=None):
     """ 
     """
     logger.info('using calibration line location algorithm 2')
@@ -997,16 +1099,16 @@ def find_peaks_2(s, eta=None):
     coeffs    = np.polyfit(np.arange(len(s)), s, 10)
     s_fit     = np.polyval(coeffs, np.arange(len(s)))
     sp        = s - s_fit
-    if eta is not None:
+    if eta is not None or arc is not None:
         sp[0:20] = 0. # Set the first few pixels to zero since we don't want false lines
     sp       -= np.amin(sp)
     sp       -= np.median(sp)
     #print(np.median(sp), 1.1*np.median(sp))
-    if eta is not None:
+    if eta is not None or arc is not None:
         #peaks_i   = argrelextrema(sp, np.greater, order=2)
         #print(peaks_i)
         peaks_i   = find_peaks_cwt(sp, [4,5,6,7,8])#, min_length=20)#, min_snr=3)
-        #print(peaks_i)
+        #print('PEAKS', peaks_i)
     else:
         peaks_i   = argrelextrema(sp, np.greater)
     peaks_y   = sp[peaks_i]
@@ -1018,17 +1120,23 @@ def find_peaks_2(s, eta=None):
         #big_peaks = peaks_i[np.where(peaks_y > 1.1 * np.median(sp))]
         big_peaks = peaks_i[np.where(peaks_y >= 0.15)] # XXX We could change this to use percentiles to estimate the cutoff
         #print(big_peaks)
+    elif arc is not None:
+        s         = s - np.median(s)
+        peaks_y   = s[peaks_i]
+        big_peaks = peaks_i[np.where(peaks_y >= 0.005)] # XXX We could change this to use percentiles to estimate the cutoff
     else:
         big_peaks = peaks_i[0][np.where(peaks_y > 1.4 * peaks_y.mean())]
-    """
+    
+    ### TESTING
+    '''
     import pylab as pl
-    pl.figure(figsize=(20, 5))
+    pl.figure(figsize=(15, 5))
     pl.cla()
-    if eta is not None: offsetPlot = 0
+    if eta is not None or arc is not None: offsetPlot = 0
     else: offsetPlot = 20
     pl.plot(s + offsetPlot, 'r-')
     pl.plot(sp, 'k-')
-    pl.plot(s_fit + offsetPlot, 'r-')
+    pl.plot(s_fit + offsetPlot, 'm-', alpha=0.5)
     for peak in peaks_i:
         if peak == peaks_i[0]: pl.axvline(peak, color='r', ls=':', lw=1.5, label='peaks')
         else: pl.axvline(peak, color='r', ls=':', lw=1.5)
@@ -1039,7 +1147,9 @@ def find_peaks_2(s, eta=None):
     pl.legend()
     pl.show()
     #sys.exit()
-    """
+    '''
+    ### TESTING
+    
     
     return(big_peaks)
     

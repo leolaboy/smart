@@ -20,7 +20,7 @@ logger = logging.getLogger('obj')
 # main_logger = logging.getLogger('main')
 # main_logger = logging.getLogger('main')
 
-def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
+def reduce_frame(raw, out_dir, flatCacher=None, eta=None, arc=None, dark=None):
     """
     
     Arguments:
@@ -52,6 +52,9 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
     if eta is not None:
         reduced.etaImg = fits.getdata(raw.etaFns, ignore_missing_end=True)
 
+    if arc is not None:
+        reduced.arcImg = fits.getdata(raw.arcFns, ignore_missing_end=True)
+
     if dark is not None:
         reduced.hasDark = True
     #    reduced.darkImg = fits.getdata(raw.darkFns, ignore_missing_end=True)
@@ -79,6 +82,10 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
             logger.info('cosmic ray cleaning etalon frame')
             reduced.etaImg = image_lib.cosmic_clean(reduced.etaImg)
             logger.debug('cosmic ray cleaning etalon frame complete')
+        if arc is not None:
+            logger.info('cosmic ray cleaning arc lamp frame')
+            reduced.arcImg = image_lib.cosmic_clean(reduced.arcImg)
+            logger.debug('cosmic ray cleaning arc lamp frame complete')
 
         reduced.cosmicCleaned = True 
 
@@ -114,7 +121,7 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, dark=None):
 
     # reduce orders
     try:
-        reduce_orders(reduced, eta=eta)
+        reduce_orders(reduced, eta=eta, arc=arc)
     except IOError as e:
         # might want to do something else here
         raise
@@ -219,7 +226,7 @@ def getFlat(raw, flatCacher):
      
  
 
-def reduce_orders(reduced, eta=None):
+def reduce_orders(reduced, eta=None, arc=None):
     """Reduces each order in the frame.  
     
     Starting order is determined from a lookup table indexed by filter name.
@@ -262,13 +269,17 @@ def reduce_orders(reduced, eta=None):
         if eta is not None:
             order.etaCutout = np.array(image_lib.cut_out(reduced.etaImg, 
                     flatOrder.highestPoint, flatOrder.lowestPoint, flatOrder.cutoutPadding))  
+
+        if arc is not None:
+            order.arcCutout = np.array(image_lib.cut_out(reduced.arcImg, 
+                    flatOrder.highestPoint, flatOrder.lowestPoint, flatOrder.cutoutPadding))  
         
         order.integrationTime = reduced.getIntegrationTime() # used in noise calc
         
         try:
             
             # reduce order, i.e. rectify, extract spectra, identify sky lines
-            reduce_order.reduce_order(order, eta=eta)
+            reduce_order.reduce_order(order, eta=eta, arc=arc)
     
             # add reduced order to list of reduced orders in Reduced object
             reduced.orders.append(order)                      
@@ -353,7 +364,7 @@ def find_global_wavelength_soln(reduced):
             
     reduced.nLinesFound = len(col)
     for l in loggers:
-        logging.getLogger(l).log(INFO, 'n sky/etalon lines identified = {:d}'.format(reduced.nLinesFound))
+        logging.getLogger(l).log(INFO, 'n sky/etalon/arc lines identified = {:d}'.format(reduced.nLinesFound))
     
     if config.params['int_c'] is True:
         logger.warning('using integer column numbers in wavelength fit')
@@ -431,7 +442,7 @@ def apply_wavelength_soln(reduced):
             # wavelength scale is monotonic
             order.waveScale = order.frameCalWaveScale
             #print('TEST1', order.waveScale)
-            np.save('wave_%s.npy'%order.flatOrder.orderNum, order.waveScale) 
+            #np.save('wave_%s.npy'%order.flatOrder.orderNum, order.waveScale) 
             order.calMethod = 'frame sky line cal'
         else:
             logger.warning('wavelength scale not monotonic for order {}'.format(

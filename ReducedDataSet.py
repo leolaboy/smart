@@ -74,11 +74,13 @@ class ReducedDataSet:
         self.cosmicCleaned  = False
         self.pixelCleaned   = False
         self.hasEta         = False
+        self.hasArc         = False
         
 
         self.flatImg = np.zeros(self.getShape())
         self.darkImg = np.zeros(self.getShape())
         self.etaImg  = np.zeros(self.getShape())
+        self.arcImg  = np.zeros(self.getShape())
         
         self.nOrders        = 0
         self.nOrdersReduced = 0
@@ -100,6 +102,7 @@ class ReducedDataSet:
         
         self.Flat = None
         self.Eta  = None
+        self.Arc  = None
         
     def getBaseName(self):
         if self.isPair:
