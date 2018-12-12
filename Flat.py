@@ -131,11 +131,12 @@ class Flat:
                 ### TESTING TO PLOT ORDER CUTOUTS XXX
                 '''
                 print(flatOrder.botEdgeTrace)
+                plt.figure()
                 plt.imshow(self.flatImg, origin='lower', aspect='auto')
                 plt.plot(flatOrder.topEdgeTrace, c='r', ls='--')
                 plt.plot(flatOrder.botEdgeTrace, c='b', ls='--')
                 plt.title('TEST021')
-                plt.show()
+                #plt.show()
                 #sys.exit()
                 '''
                 ### TESTING TO PLOT ORDER CUTOUTS XXX
