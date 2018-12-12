@@ -38,7 +38,7 @@ params['max_spatial_trace_res'] = 1.0
 
 
 params['long_slit_edge_margin']    = 6         # cut out margin in pixels
-params['K-AO_edge_margin']         = 8
+params['K-AO_edge_margin']         = 1
 params['large_tilt_threshold']     = 20
 params['large_tilt_extra_padding'] = 10
 params['overscan_width']           = 10
@@ -92,7 +92,7 @@ long_slit_cutout_padding = {
         'NIRSPEC-5': 0, 
         'NIRSPEC-6': 15, 
         'NIRSPEC-7': 30,
-        'K-AO': 20          
+        'K-AO': 0        
 }
 short_slit_cutout_padding = {
         'NIRSPEC-1': 0, 
@@ -102,7 +102,7 @@ short_slit_cutout_padding = {
         'NIRSPEC-5': 15, 
         'NIRSPEC-6': 15, 
         'NIRSPEC-7': 30,
-        'K-AO': 20          
+        'K-AO': 0          
 }
 
 def get_cutout_padding(filtername, slit):

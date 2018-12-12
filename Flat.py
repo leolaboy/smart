@@ -127,15 +127,19 @@ class Flat:
                     self.logger.info('failed to find spatial trace: {}'.format(e.message))
                     flatOrder.valid = False
                     continue
-                """
-                # TESTING TO PLOT ORDER CUTOUTS XXX
+                
+                ### TESTING TO PLOT ORDER CUTOUTS XXX
+                '''
                 print(flatOrder.botEdgeTrace)
                 plt.imshow(self.flatImg, origin='lower', aspect='auto')
                 plt.plot(flatOrder.topEdgeTrace, c='r', ls='--')
                 plt.plot(flatOrder.botEdgeTrace, c='b', ls='--')
+                plt.title('TEST021')
                 plt.show()
                 #sys.exit()
-                """
+                '''
+                ### TESTING TO PLOT ORDER CUTOUTS XXX
+                
                 if flatOrder.spatialTraceFitResidual > config.params['max_spatial_trace_res']:
                     self.logger.info('spatial trace fit residual too large, limit = {}'.format(
                             config.params['max_spatial_trace_res']))

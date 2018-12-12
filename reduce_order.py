@@ -23,7 +23,7 @@ def reduce_order(order, eta=None, arc=None):
         
     #print('ETA BEGINNING', eta)
     #print(order.flatOrder.orderNum)
-    #if order.flatOrder.orderNum != 33: continue
+    #if order.flatOrder.orderNum != 33: return 0
     #sys.exit()
 
     # flatten object images for this order

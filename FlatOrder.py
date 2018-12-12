@@ -81,17 +81,24 @@ class FlatOrder:
         
         # compute top and bottom trim points
         self.calcTrimPoints()
-        """
+        
         ### TESTING PLOT XXX
+        '''
         import matplotlib.pyplot as plt
         from astropy.visualization import ZScaleInterval, ImageNormalize
         norm = ImageNormalize(self.rectFlatImg, interval=ZScaleInterval())
         plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
-        plt.axhline(self.botTrim, c='r')
-        plt.axhline(self.topTrim, c='b')
+        plt.axhline(self.botTrim, c='r', ls=':')
+        plt.axhline(self.topTrim, c='b', ls=':')
+        #plt.axhline(self.lowestPoint, c='r', ls='--')
+        #plt.axhline(self.highestPoint, c='b', ls='--')
         plt.title('Order: %s'%self.orderNum)
+        print(self.cutoutPadding)
         plt.show()
-        """
+        #sys.exit()
+        '''
+        ### TESTING PLOT XXX
+
         # trim rectified flat order images
         self.rectFlatImg  = self.rectFlatImg[self.botTrim:self.topTrim, :]
         #self.rectFlatImgA = self.rectFlatImgA[self.botTrimA:self.topTrimA, :]
