@@ -263,6 +263,20 @@ def reduce_orders(reduced, eta=None, arc=None):
         order.isPair = reduced.isPair
         
         for frame in order.frames:
+            ### TESTING
+            '''
+            import matplotlib.pyplot as plt
+            plt.figure()
+            plt.imshow(reduced.objImg[frame], origin='lower')
+            plt.axhline(flatOrder.highestPoint, c='r', ls='--')
+            plt.axhline(flatOrder.lowestPoint, c='r', ls='--')
+            plt.figure()
+            plt.imshow(reduced.Flat.flatImg, origin='lower')
+            plt.axhline(flatOrder.highestPoint, c='r', ls='--')
+            plt.axhline(flatOrder.lowestPoint, c='r', ls='--')
+            plt.show()
+            '''
+            ### TESTING
             order.objCutout[frame] = np.array(image_lib.cut_out(reduced.objImg[frame], 
                     flatOrder.highestPoint, flatOrder.lowestPoint, flatOrder.cutoutPadding))  
 

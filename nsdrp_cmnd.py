@@ -147,5 +147,5 @@ def write_summary(rds):
     for val in v:
         try:
             logger.info('{:>34}'.format(val[0]) + ' = ' + str(val[1]).format(val[2]))
-        except:
+        except ValueError as e:
             logger.info('{:>27}'.format(val[0]) + ' = ')

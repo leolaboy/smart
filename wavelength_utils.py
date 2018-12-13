@@ -463,7 +463,7 @@ SKY_THRESHOLD = 3.0
 def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=None, arc=None):
     """
     """
-    debug    = False
+    debug    = True
     theory_x = np.array(wavelength_scale_shifted)
          
     # if theory_x.min() < 20500:

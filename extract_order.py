@@ -93,8 +93,8 @@ def cut_out_order(obj, flat, order):
         
     order.lowestPoint = np.amin(order.botTrace[0:-OVERSCAN_WIDTH])
          
-    order.objCutout = np.array(cut_out(obj, order.highestPoint, order.lowestPoint, order.padding))
-    order.flatCutout = np.array(cut_out(flat, order.highestPoint, order.lowestPoint, order.padding))
+    order.objCutout   = np.array(cut_out(obj, order.highestPoint, order.lowestPoint, order.padding))
+    order.flatCutout  = np.array(cut_out(flat, order.highestPoint, order.lowestPoint, order.padding))
     order.shiftOffset = order.padding + order.botMeas
     
     if float(order.lowestPoint) > float(order.padding):
