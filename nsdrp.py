@@ -21,7 +21,7 @@ import nsdrp_koa
 #from DrpException import DrpException
 #import FlatCacher
 
-VERSION = '0.9.17.4'
+VERSION = '0.9.17.5'
 
 warnings.filterwarnings('ignore', category=UserWarning, append=True)
 
@@ -96,7 +96,8 @@ def main():
                                  arc=args.arc_filename, override=args.override_ab, dark=args.dark_filename)
     else:
         init(args.arg2, args.arg1)
-        nsdrp_koa.process_dir(args.arg1, args.arg2)
+        nsdrp_koa.process_dir(args.arg1, args.arg2, eta=args.eta_filename, 
+                              arc=args.arc_filename, override=args.override_ab, dark=args.dark_filename)
 #     except Exception as e:
 #         print('ERROR: ' + e.message)
 #         if config.params['debug'] is True:
