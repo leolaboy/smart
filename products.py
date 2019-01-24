@@ -275,7 +275,6 @@ def gen(reduced, out_dir, eta=None, arc=None):
         #   
         for frame in reduced.frames:
             
-            print(len(order.waveScale))
             spectrumPlot(out_dir, reduced.baseNames[frame], 'flux', order.flatOrder.orderNum, 
                 'counts/s', order.objSpec[frame]/order.integrationTime, order.waveScale, order.calMethod)
              
