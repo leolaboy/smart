@@ -17,6 +17,7 @@ import pylab as pl
 from statsmodels.formula.api import ols
 import config
 import matplotlib.pyplot as plt
+import nirspec_constants
 
 import logging
 from scipy.signal._peak_finding import argrelextrema, find_peaks_cwt
@@ -1064,7 +1065,11 @@ def twodfit(dataX, dataY, dataZ):
 
 def applySolution(order_object, p1):
     if len(p1) > 0:
-        newdx = np.arange(1024)
+
+        if nirspec_constants: endPix = 2048
+        else: endPix = 1024
+        
+        newdx = np.arange(endPix)
         newy = 1. / order_object.sciorder.order_num
         newoh = np.ravel(
             p1[0] + p1[1] * newdx + p1[2] * newdx ** 2 + p1[3] * newy + p1[4] * newdx * newy + p1[5] * (

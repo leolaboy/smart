@@ -3,6 +3,7 @@ import numpy as np
 import image_lib
 import matplotlib.pyplot as plt
 from astropy.visualization import ZScaleInterval, ImageNormalize
+import nirspec_constants
 
 #logger = logging.getLogger('obj')
 
@@ -86,13 +87,13 @@ class FlatOrder:
         ### TESTING PLOT XXX
         '''
         norm = ImageNormalize(self.rectFlatImg, interval=ZScaleInterval())
-        plt.figure()
+        fig = plt.figure()
         plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
         plt.axhline(self.botTrim, c='r', ls=':')
         plt.axhline(self.topTrim, c='b', ls=':')
         #plt.axhline(self.lowestPoint, c='r', ls='--')
         #plt.axhline(self.highestPoint, c='b', ls='--')
-        plt.title('Order: %s'%self.orderNum)
+        fig.suptitle('Order: %s'%self.orderNum)
         print(self.cutoutPadding)
         print(self.highestPoint, self.lowestPoint, self.topEdgeTrace - self.botEdgeTrace)
         plt.show()
@@ -120,9 +121,15 @@ class FlatOrder:
         plt.figure()
         plt.hist(self.topEdgeTrace - self.botEdgeTrace, bins=int(np.sqrt(len(self.botEdgeTrace))))
         '''
+
+        if nirspec_constants.upgrade:
+            endPix = 2048
+        else:
+            endPix = 1024
+
         self.botTrim = self.topTrim - h + 3
         self.botTrim = int(max(0, self.botTrim))
-        self.topTrim = int(min(self.topTrim, 1023))
+        self.topTrim = int(min(self.topTrim, endPix-1))
         
         return
 

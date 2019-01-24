@@ -15,6 +15,7 @@ import Order
 import image_lib
 import imp
 import fixpix
+import nirspec_constants
 
 logger = logging.getLogger('obj')
 # main_logger = logging.getLogger('main')
@@ -45,15 +46,32 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, arc=None, dark=None):
     
     # read raw object image data into reduced data set object
     reduced.objImg['A'] = fits.getdata(raw.objAFn, ignore_missing_end=True)
+    #print('TEST', nirspec_constants.upgrade)
+    if nirspec_constants.upgrade:
+        reduced.objImg['A'] = np.rot90(reduced.objImg['A'], k=3)
+        """
+        import matplotlib.pyplot as plt
+        from astropy.visualization import ImageNormalize, ZScaleInterval
+        norm = ImageNormalize(reduced.objImg['A'], interval=ZScaleInterval())
+        plt.imshow(reduced.objImg['A'], norm=norm, origin='lower', aspect='auto')
+        plt.show()
+        sys.exit()
+        """
     
     if raw.isPair:
         reduced.objImg['B'] = fits.getdata(raw.objBFn, ignore_missing_end = True)
+        if nirspec_constants.upgrade:
+            reduced.objImg['B'] = np.rot90(reduced.objImg['B'], k=3)
 
     if eta is not None:
         reduced.etaImg = fits.getdata(raw.etaFns, ignore_missing_end=True)
+        if nirspec_constants.upgrade:
+            reduced.etaImg = np.rot90(reduced.etaImg, k=3)
 
     if arc is not None:
         reduced.arcImg = fits.getdata(raw.arcFns, ignore_missing_end=True)
+        if nirspec_constants.upgrade:
+            reduced.arcImg = np.rot90(reduced.arcImg, k=3)
 
     if dark is not None:
         reduced.hasDark = True
@@ -441,7 +459,12 @@ def apply_wavelength_soln(reduced):
         return
     
     for order in reduced.orders:
-        x = np.arange(1024)
+        
+        if nirspec_constants.upgrade:
+            x = np.arange(2048)
+        else:
+            x = np.arange(1024)
+
         y = 1.0 / order.flatOrder.orderNum
         order.frameCalWaveScale = np.ravel(
                 reduced.frameCalCoeffs[0] +

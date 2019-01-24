@@ -9,6 +9,7 @@ import errno
 import numpy as np
 from skimage import exposure
 import config
+import nirspec_constants as const
 
 import scipy.misc
 from scipy.misc.pilutil import imresize
@@ -185,6 +186,11 @@ def constructFileName(outpath, base_name, order, fn_suffix):
 
 def edges_plot(outpath, base_name, top_profile, bot_profile, top_peaks, bot_peaks):
     
+    if const.upgrade:
+        endPix = 2048
+    else:
+        endPix = 1024
+
     pl.figure('order edge profiles', facecolor='white', figsize=(6, 8))
     pl.cla()
     pl.suptitle('order edge profiles, {}'.format(base_name), fontsize=14)
@@ -194,14 +200,14 @@ def edges_plot(outpath, base_name, top_profile, bot_profile, top_peaks, bot_peak
     tops_plot.plot(top_profile, 'k-', linewidth=1.0)
     for peak in top_peaks:
         pl.annotate(str(peak), (peak, top_profile[peak]), size=8)
-    tops_plot.set_xlim([0, 1023])
+    tops_plot.set_xlim([0, endPix-1])
 
     bots_plot = pl.subplot(2, 1, 2)
     bots_plot.set_title('bottoms')
     bots_plot.plot(bot_profile, 'k-', linewidth=1.0)
     for peak in bot_peaks:
         pl.annotate(str(peak), (peak, bot_profile[peak]), size=8)
-    bots_plot.set_xlim([0, 1023])
+    bots_plot.set_xlim([0, endPix-1])
 
     pl.savefig(constructFileName(outpath, base_name, None, 'edges.png'))
     pl.close()    
@@ -210,6 +216,11 @@ def edges_plot(outpath, base_name, top_profile, bot_profile, top_peaks, bot_peak
     
 def tops_bots_plot(outpath, base_name, tops, bots):
     
+    if const.upgrade:
+        endPix = 2048
+    else:
+        endPix = 1024  
+
     pl.figure('edges', facecolor='white', figsize=(8, 5))
     pl.cla()
     pl.suptitle('top and bottom order edges, {}'.format(base_name), fontsize=14)
@@ -223,8 +234,8 @@ def tops_bots_plot(outpath, base_name, tops, bots):
         obj_plot.imshow(tops)
 
     obj_plot.set_title('top edges')
-    obj_plot.set_ylim([1023, 0])
-    obj_plot.set_xlim([0, 1023])
+    obj_plot.set_ylim([endPix-1, 0])
+    obj_plot.set_xlim([0, endPix-1])
 
     
     flat_plot = pl.subplot(1, 2, 2)
@@ -233,8 +244,8 @@ def tops_bots_plot(outpath, base_name, tops, bots):
     except:
         flat_plot.imshow(bots)
     flat_plot.set_title('bottom edges')
-    flat_plot.set_ylim([1023, 0])
-    flat_plot.set_xlim([0, 1023])
+    flat_plot.set_ylim([endPix-1, 0])
+    flat_plot.set_xlim([0, endPix-1])
  
     pl.tight_layout()
     pl.savefig(constructFileName(outpath, base_name, None, 'top_bot_edges.png'))
@@ -245,6 +256,11 @@ def tops_bots_plot(outpath, base_name, tops, bots):
 def traces_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, flat_img, top_trace, 
             bot_trace):
     
+    if const.upgrade:
+        endPix = 2048
+    else:
+        endPix = 1024
+
     pl.figure('traces', facecolor='white', figsize=(9, 5))
     pl.cla()
     pl.suptitle('order edge traces, {}, order {}'.format(obj_base_name, order_num), fontsize=14)
@@ -256,12 +272,12 @@ def traces_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, flat
         obj_plot.imshow(exposure.equalize_hist(obj_img))
     except:
         obj_plot.imshow(obj_img)
-    obj_plot.plot(np.arange(1024), top_trace, 'y-', linewidth=1.5)
-    obj_plot.plot(np.arange(1024), bot_trace, 'y-', linewidth=1.5)
+    obj_plot.plot(np.arange(endPix), top_trace, 'y-', linewidth=1.5)
+    obj_plot.plot(np.arange(endPix), bot_trace, 'y-', linewidth=1.5)
 
     obj_plot.set_title('object ' + obj_base_name)
-    obj_plot.set_ylim([1023, 0])
-    obj_plot.set_xlim([0, 1023])
+    obj_plot.set_ylim([endPix-1, 0])
+    obj_plot.set_xlim([0, endPix-1])
 
     
     flat_plot = pl.subplot(1, 2, 2)
@@ -269,11 +285,11 @@ def traces_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, flat
         flat_plot.imshow(exposure.equalize_hist(flat_img))
     except:
         flat_plot.imshow(flat_img)
-    flat_plot.plot(np.arange(1024), top_trace, 'y-', linewidth=1.5)
-    flat_plot.plot(np.arange(1024), bot_trace, 'y-', linewidth=1.5)    
+    flat_plot.plot(np.arange(endPix), top_trace, 'y-', linewidth=1.5)
+    flat_plot.plot(np.arange(endPix), bot_trace, 'y-', linewidth=1.5)    
     flat_plot.set_title('flat ' + flat_base_name)
-    flat_plot.set_ylim([1023, 0])
-    flat_plot.set_xlim([0, 1023])
+    flat_plot.set_ylim([endPix-1, 0])
+    flat_plot.set_xlim([0, endPix-1])
  
     pl.tight_layout()
     pl.savefig(constructFileName(outpath, obj_base_name, order_num, 'traces.png'))
@@ -283,6 +299,11 @@ def traces_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, flat
 
 def order_location_plot(outpath, obj_base_name, flat_base_name, flat_img, obj_img, orders):
     
+    if const.upgrade:
+        endPix = 2048
+    else:
+        endPix = 1024
+
     pl.figure('orders', facecolor='white', figsize=(8, 5))
     pl.cla()
     pl.suptitle('order location and identification', fontsize=14)
@@ -295,8 +316,8 @@ def order_location_plot(outpath, obj_base_name, flat_base_name, flat_img, obj_im
     except:
         obj_plot.imshow(obj_img)
     obj_plot.set_title('object ' + obj_base_name)
-    obj_plot.set_ylim([1023, 0])
-    obj_plot.set_xlim([0, 1023])
+    obj_plot.set_ylim([endPix-1, 0])
+    obj_plot.set_xlim([0, endPix-1])
 
     
     flat_plot = pl.subplot(1, 2, 2)
@@ -305,19 +326,19 @@ def order_location_plot(outpath, obj_base_name, flat_base_name, flat_img, obj_im
     except:
         flat_plot.imshow(flat_img)
     flat_plot.set_title('flat ' + flat_base_name)
-    flat_plot.set_ylim([1023, 0])
-    flat_plot.set_xlim([0, 1023])
+    flat_plot.set_ylim([endPix-1, 0])
+    flat_plot.set_xlim([0, endPix-1])
     
     for order in orders:
-        obj_plot.plot(np.arange(1024), order.flatOrder.topEdgeTrace, 'k-', linewidth=1.0)
-        obj_plot.plot(np.arange(1024), order.flatOrder.botEdgeTrace, 'k-', linewidth=1.0)
-        obj_plot.plot(np.arange(1024), order.flatOrder.smoothedSpatialTrace, 'y-', linewidth=1.0)
+        obj_plot.plot(np.arange(endPix), order.flatOrder.topEdgeTrace, 'k-', linewidth=1.0)
+        obj_plot.plot(np.arange(endPix), order.flatOrder.botEdgeTrace, 'k-', linewidth=1.0)
+        obj_plot.plot(np.arange(endPix), order.flatOrder.smoothedSpatialTrace, 'y-', linewidth=1.0)
         obj_plot.text(10, order.flatOrder.topEdgeTrace[0] - 10, str(order.flatOrder.orderNum), 
                 fontsize=10)
         
-        flat_plot.plot(np.arange(1024), order.flatOrder.topEdgeTrace, 'k-', linewidth=1.0)
-        flat_plot.plot(np.arange(1024), order.flatOrder.botEdgeTrace, 'k-', linewidth=1.0)  
-        flat_plot.plot(np.arange(1024), order.flatOrder.smoothedSpatialTrace, 'y-', linewidth=1.0)  
+        flat_plot.plot(np.arange(endPix), order.flatOrder.topEdgeTrace, 'k-', linewidth=1.0)
+        flat_plot.plot(np.arange(endPix), order.flatOrder.botEdgeTrace, 'k-', linewidth=1.0)  
+        flat_plot.plot(np.arange(endPix), order.flatOrder.smoothedSpatialTrace, 'y-', linewidth=1.0)  
         flat_plot.text(10, order.flatOrder.topEdgeTrace[0] - 10, str(order.flatOrder.orderNum), 
                 fontsize=10)
 
@@ -330,6 +351,11 @@ def order_location_plot(outpath, obj_base_name, flat_base_name, flat_img, obj_im
 def cutouts_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, flat_img, 
             top_trace, bot_trace, trace):
     
+    if const.upgrade:
+        endPix = 2048
+    else:
+        endPix = 1024
+
     pl.figure('traces', facecolor='white', figsize=(8, 5))
     pl.cla()
     pl.suptitle('order cutouts, {}, order {}'.format(obj_base_name, order_num), fontsize=14)
@@ -340,22 +366,22 @@ def cutouts_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, fla
         obj_plot.imshow(exposure.equalize_hist(obj_img))
     except:
         obj_plot.imshow(obj_img)
-    obj_plot.plot(np.arange(1024), top_trace, 'y-', linewidth=1.5)
-    obj_plot.plot(np.arange(1024), bot_trace, 'y-', linewidth=1.5)
-    obj_plot.plot(np.arange(1024), trace, 'y-', linewidth=1.5)
+    obj_plot.plot(np.arange(endPix), top_trace, 'y-', linewidth=1.5)
+    obj_plot.plot(np.arange(endPix), bot_trace, 'y-', linewidth=1.5)
+    obj_plot.plot(np.arange(endPix), trace, 'y-', linewidth=1.5)
     obj_plot.set_title('object ' + obj_base_name)
-    obj_plot.set_xlim([0, 1023])
+    obj_plot.set_xlim([0, endPix-1])
     
     flat_plot = pl.subplot(2, 1, 2)
     try:
         flat_plot.imshow(exposure.equalize_hist(flat_img))
     except:
         flat_plot.imshow(flat_img)
-    flat_plot.plot(np.arange(1024), top_trace, 'y-', linewidth=1.5)
-    flat_plot.plot(np.arange(1024), bot_trace, 'y-', linewidth=1.5)    
-    flat_plot.plot(np.arange(1024), trace, 'y-', linewidth=1.5)    
+    flat_plot.plot(np.arange(endPix), top_trace, 'y-', linewidth=1.5)
+    flat_plot.plot(np.arange(endPix), bot_trace, 'y-', linewidth=1.5)    
+    flat_plot.plot(np.arange(endPix), trace, 'y-', linewidth=1.5)    
     flat_plot.set_title('flat ' + flat_base_name)
-    flat_plot.set_xlim([0, 1023])
+    flat_plot.set_xlim([0, endPix-1])
  
     pl.tight_layout()
     pl.savefig(constructFileName(outpath, obj_base_name, order_num, 'cutouts.png'))
@@ -364,6 +390,11 @@ def cutouts_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, fla
 
 
 def spatrect_plot(outpath, base_name, order_num, obj, flat):
+
+    if const.upgrade:
+        endPix = 2048
+    else:
+        endPix = 1024
 
     pl.figure('spatially rectified', facecolor='white', figsize=(8, 10))
     pl.cla()
@@ -377,7 +408,7 @@ def spatrect_plot(outpath, base_name, order_num, obj, flat):
         obj_plot.imshow(obj, aspect='auto')
     obj_plot.set_title('object')
 #     obj_plot.set_ylim([1023, 0])
-    obj_plot.set_xlim([0, 1023])
+    obj_plot.set_xlim([0, endPix-1])
     
     flat_plot = pl.subplot(2, 1, 2)
     try:
@@ -386,7 +417,7 @@ def spatrect_plot(outpath, base_name, order_num, obj, flat):
         flat_plot.imshow(flat, aspect='auto')
     flat_plot.set_title('flat')
 #     flat_plot.set_ylim([1023, 0])
-    flat_plot.set_xlim([0, 1023])
+    flat_plot.set_xlim([0, endPix-1])
  
     pl.tight_layout()
     pl.savefig(constructFileName(outpath, base_name, order_num, 'spatrect.png'))
@@ -394,6 +425,11 @@ def spatrect_plot(outpath, base_name, order_num, obj, flat):
 
 
 def specrect_plot(outpath, base_name, order_num, before, after):
+
+    if const.upgrade:
+        endPix = 2048
+    else:
+        endPix = 1024
 
     pl.figure('before, after spectral rectify', facecolor='white', figsize=(8, 10))
     pl.cla()
@@ -403,7 +439,7 @@ def specrect_plot(outpath, base_name, order_num, before, after):
 
     before_plot = pl.subplot(2, 1, 1)
     
-    before = imresize(before, (500, 1024), interp='bilinear')
+    before = imresize(before, (500, endPix), interp='bilinear')
     
     try:
         before[np.where(before < 0)] = np.median(before)
@@ -414,11 +450,11 @@ def specrect_plot(outpath, base_name, order_num, before, after):
         before_plot.imshow(before, aspect='auto')
     before_plot.set_title('before')
 #     obj_plot.set_ylim([1023, 0])
-    before_plot.set_xlim([0, 1023])
+    before_plot.set_xlim([0, endPix-1])
     
     after_plot = pl.subplot(2, 1, 2)
     
-    after = imresize(after, (500, 1024), interp='bilinear')
+    after = imresize(after, (500, endPix), interp='bilinear')
     
     try:
         after[np.where(after < 0)] = np.median(after)
@@ -429,7 +465,7 @@ def specrect_plot(outpath, base_name, order_num, before, after):
         after_plot.imshow(after, aspect='auto')
     after_plot.set_title('after')
 #     flat_plot.set_ylim([1023, 0])
-    after_plot.set_xlim([0, 1023])
+    after_plot.set_xlim([0, endPix-1])
  
     pl.tight_layout()
     pl.savefig(constructFileName(outpath, base_name, order_num, 'specrect.png'))
@@ -438,6 +474,11 @@ def specrect_plot(outpath, base_name, order_num, before, after):
 
 def specrect_plot2(outpath, base_name, order_num, before, after, eta=None, arc=None):
     
+    if const.upgrade:
+        endPix = 2048
+    else:
+        endPix = 1024
+
     pl.figure('spectral rectify', facecolor='white')
     pl.cla()
     pl.title('spectral rectify, ' + base_name + ', order ' + str(order_num), fontsize=14)
@@ -448,7 +489,7 @@ def specrect_plot2(outpath, base_name, order_num, before, after, eta=None, arc=N
     pl.minorticks_on()
     pl.grid(True)
     
-    pl.xlim(0, 1023)
+    pl.xlim(0, endPix-1)
     
     pl.plot(before[10, :], "k-", mfc='none', ms=3.0, linewidth=1, 
             label='before', alpha=0.5)
@@ -527,6 +568,11 @@ def skyLinesPlot(outpath, order, eta=None, arc=None):
     Always uses frame A.
     """
     
+    if const.upgrade:
+        endPix = 2048
+    else:
+        endPix = 1024
+
     pl.figure('sky/etalon/arc lines', facecolor='white', figsize=(8, 6))
     pl.cla()
     pl.suptitle("sky/etalon/arc lines" + ', ' + order.baseNames['A'] + ", order " + 
@@ -537,7 +583,7 @@ def skyLinesPlot(outpath, order, eta=None, arc=None):
     if eta is not None: syn_plot.set_title('synthesized etalon')
     elif arc is not None: syn_plot.set_title('synthesized arc lamps')
     else: syn_plot.set_title('synthesized sky')
-    syn_plot.set_xlim([0, 1024])
+    syn_plot.set_xlim([0, endPix])
     ymin = np.amin(order.synthesizedSkySpec) - ((np.amax(order.synthesizedSkySpec) - np.amin(order.synthesizedSkySpec)) * 0.1)
     ymax = np.amax(order.synthesizedSkySpec) + ((np.amax(order.synthesizedSkySpec) - np.amin(order.synthesizedSkySpec)) * 0.1)
     syn_plot.set_ylim(ymin, ymax)
@@ -548,21 +594,21 @@ def skyLinesPlot(outpath, order, eta=None, arc=None):
     sky_plot = pl.subplot(2, 1, 2)
     if eta is not None:
         sky_plot.set_title('etalon')
-        sky_plot.set_xlim([0, 1024])
+        sky_plot.set_xlim([0, endPix])
         ymin = np.amin(order.etalonSpec) - ((np.amax(order.etalonSpec) - np.amin(order.etalonSpec)) * 0.1)
         ymax = np.amax(order.etalonSpec) + ((np.amax(order.etalonSpec) - np.amin(order.etalonSpec)) * 0.1)
         sky_plot.set_ylim([ymin, ymax])
         sky_plot.plot(order.etalonSpec, 'b-', linewidth=1)
     elif arc is not None:
         sky_plot.set_title('arc lamp')
-        sky_plot.set_xlim([0, 1024])
+        sky_plot.set_xlim([0, endPix])
         ymin = np.amin(order.arclampSpec) - ((np.amax(order.arclampSpec) - np.amin(order.arclampSpec)) * 0.1)
         ymax = np.amax(order.arclampSpec) + ((np.amax(order.arclampSpec) - np.amin(order.arclampSpec)) * 0.1)
         sky_plot.set_ylim([ymin, ymax])
         sky_plot.plot(order.arclampSpec, 'b-', linewidth=1)
     else:
         sky_plot.set_title('sky')
-        sky_plot.set_xlim([0, 1024])
+        sky_plot.set_xlim([0, endPix])
         ymin = np.amin(order.skySpec['A']) - ((np.amax(order.skySpec['A']) - np.amin(order.skySpec['A'])) * 0.1)
         ymax = np.amax(order.skySpec['A']) + ((np.amax(order.skySpec['A']) - np.amin(order.skySpec['A'])) * 0.1)
         sky_plot.set_ylim([ymin, ymax])
@@ -634,6 +680,11 @@ def skyLinesAsciiTable(outpath, base_name, order):
 
 def wavelengthScalePlot(out_dir, base_name, order):
 
+    if const.upgrade:
+        endPix = 2048
+    else:
+        endPix = 1024
+
     pl.figure('wavelength scale', facecolor='white')
     pl.cla()
     pl.title('wavelength scale, ' + base_name + ', order ' + 
@@ -645,7 +696,7 @@ def wavelengthScalePlot(out_dir, base_name, order):
     pl.minorticks_on()
     pl.grid(True)
     
-    pl.xlim(0, 1023)
+    pl.xlim(0, endPix-1)
     
     pl.plot(order.flatOrder.gratingEqWaveScale, "k-", mfc='none', ms=3.0, linewidth=1, 
             label='grating equation')

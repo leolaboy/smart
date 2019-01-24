@@ -19,12 +19,13 @@ from skimage import exposure
 import image_lib
 import config
 import nsdrp
+import nirspec_constants as const
 
 warnings.filterwarnings('ignore')
 
 main_logger = logging.getLogger('main')
-obj_logger = logging.getLogger('obj')
-file_count = [0]
+obj_logger  = logging.getLogger('obj')
+file_count  = [0]
 
 #import ReducedDataSet
 #from statsmodels.sandbox.regression.ols_anova_original import products
@@ -32,11 +33,11 @@ file_count = [0]
 #def produceProfileFitsTable(name, order,profile):
 #    continue
 
-saveFitsTables = True
+saveFitsTables  = True
 saveAsciiTables = True
-savePlots = True
-showPlots = False
-saveJpgs = False
+savePlots       = True
+showPlots       = False
+saveJpgs        = False
 
 # This dictionary maps data product filename suffix (e.g. flux_tbl.fits)
 # to output subdirectory (e.g. fitstbl/flux).
@@ -274,6 +275,7 @@ def gen(reduced, out_dir, eta=None, arc=None):
         #   
         for frame in reduced.frames:
             
+            print(len(order.waveScale))
             spectrumPlot(out_dir, reduced.baseNames[frame], 'flux', order.flatOrder.orderNum, 
                 'counts/s', order.objSpec[frame]/order.integrationTime, order.waveScale, order.calMethod)
              
@@ -656,9 +658,15 @@ def fluxAsciiTable(outpath, base_name, order_num, wave, flux, sky, synth_sky, sn
         p_char = ' '
         
     if trace_lower is None:
-        trace_lower = np.zeros(1024, dtype=float)
+        if const.upgrade:
+            trace_lower = np.zeros(2048, dtype=float)
+        else:
+            trace_lower = np.zeros(1024, dtype=float)
     if trace_mean is None:
-        trace_mean = np.zeros(1024, dtype=float)
+        if const.upgrade:
+            trace_lower = np.zeros(2048, dtype=float)
+        else:
+            trace_lower = np.zeros(1024, dtype=float)
         
     for name in names:
         widths.append(max(len(name), nominal_width))
@@ -706,8 +714,13 @@ def fluxFitsTable(outpath, base_name, order_num, wave, flux, sky, synth_sky, err
 
     prihdu = fits.PrimaryHDU(header=prihdr)
 
+    if const.upgrade:
+        length1 = 2048
+    else:
+        length1 = 1024
+
     tbhdu = fits.BinTableHDU.from_columns([
-                fits.Column(name='col', format='1I', array=np.arange(1024, dtype=int)),
+                fits.Column(name='col', format='1I', array=np.arange(length1, dtype=int)),
                 fits.Column(name='wave (A)', format='1D', array=wave),
                 fits.Column(name='flux (cnts)', format='1D', array=flux),
                 fits.Column(name='noise (cnts)', format='1D', array=error),
@@ -727,7 +740,12 @@ def fluxFitsTable(outpath, base_name, order_num, wave, flux, sky, synth_sky, err
 
 def spectrumPlot(outpath, base_name, title, order_num, y_units, cont, wave, 
                  wave_note='unknown'):
-    
+
+    if const.upgrade:
+        endPix = 2048 - 40
+    else:
+        endPix = 1024 - 20
+
     pl.figure(title, facecolor='white')
     pl.clf()
     pl.title(title + ', ' + base_name + ", order " + str(order_num), fontsize=12)
@@ -737,7 +755,7 @@ def spectrumPlot(outpath, base_name, title, order_num, y_units, cont, wave,
     else:
         pl.ylabel(title)
     pl.grid(True)
-    pl.plot(wave[:1004], cont[:1004], "k-", mfc="none", ms=3.0, linewidth=1)
+    pl.plot(wave[:endPix], cont[:endPix], "k-", mfc="none", ms=3.0, linewidth=1)
     
     ymin, ymax = pl.ylim()
     pl.plot(wave, cont, "k-", mfc="none", ms=3.0, linewidth=1)
@@ -820,6 +838,12 @@ def spectrumPlot2(outpath, base_name, title, order_num, y_units, cont1, cont2, w
     """
     Borrow from the code in NSDRP: products.py: to compare flux and noise
     """
+
+    if const.upgrade:
+        endPix = 2048 - 40
+    else:
+        endPix = 1024 - 20
+
     pl.figure(title, facecolor='white')
     pl.clf()
     pl.title(title + ', ' + base_name + ", order " + str(order_num), fontsize=12)
@@ -829,7 +853,7 @@ def spectrumPlot2(outpath, base_name, title, order_num, y_units, cont1, cont2, w
     else:
         pl.ylabel(title)
     pl.grid(True)
-    pl.plot(wave[:1004], cont1[:1004], "k-", wave[:1004], cont2[:1004], "r-", mfc="none", ms=3.0, linewidth=1)
+    pl.plot(wave[:endPix], cont1[:endPix], "k-", wave[:endPix], cont2[:endPix], "r-", mfc="none", ms=3.0, linewidth=1)
     
     ymin, ymax = pl.ylim()
     pl.plot(wave, cont1, "k-", wave, cont2, "r-", mfc="none", ms=3.0, linewidth=1)
@@ -865,6 +889,11 @@ def fitsSpectrum2(outpath, base_name, title, order_num, y_units, cont, wave1, wa
     
 def multiSpectrumPlot(outpath, base_name, order, y_units, cont, sky, noise, wave):
     
+    if const.upgrade:
+        endPix = 2048 - 40
+    else:
+        endPix = 1024 - 20
+
     title = 'spectrum'
     pl.figure(title, facecolor='white')
     pl.clf()
@@ -873,9 +902,9 @@ def multiSpectrumPlot(outpath, base_name, order, y_units, cont, sky, noise, wave
     pl.ylabel(title + '(' + y_units + ')')
     pl.grid(True)
     
-    pl.plot(wave[:1004], cont[:1004], "k-", mfc="none", ms=3.0, linewidth=1, label='object')
-    pl.plot(wave[:1004], sky[:1004], "b-", mfc="none", ms=3.0, linewidth=1, label='sky')
-    pl.plot(wave[:1004], noise[:1004], "r-", mfc="none", ms=3.0, linewidth=1, label='noise (1 sigma)')
+    pl.plot(wave[:endPix], cont[:endPix], "k-", mfc="none", ms=3.0, linewidth=1, label='object')
+    pl.plot(wave[:endPix], sky[:endPix], "b-", mfc="none", ms=3.0, linewidth=1, label='sky')
+    pl.plot(wave[:endPix], noise[:endPix], "r-", mfc="none", ms=3.0, linewidth=1, label='noise (1 sigma)')
 
     pl.legend(loc='best', prop={'size': 8})
 

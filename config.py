@@ -8,6 +8,7 @@ params['no_products']           = False     # data product generation inhibited 
 params['obj_window']            = 9         # comment
 params['sky_window']            = 8         # comment
 params['sky_separation']        = 2         # comment
+params['upgrade']               = False     # New version of NIRSPEC (after Oct 2018)
 
 params['oh_filename']           = './ir_ohlines.dat'
 params['oh_envar_name']         = 'NSDRP_OH_FILENAME'

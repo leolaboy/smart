@@ -1,4 +1,5 @@
 import numpy as np
+import nirspec_constants
 # import image_lib
 
 # import Flat
@@ -121,12 +122,24 @@ class ReducedDataSet:
         return self.header['NAXIS1'], self.header['NAXIS2']
         
     def getFilter(self):
-        if self.header['filname'].startswith('NIRSPEC') and len(self.header['filname']) > 9:
-            return self.header['filname'][:9]
+        if nirspec_constants.upgrade: 
+            filtername1, filtername2 = self.header['SCIFILT2'], ''
+            if self.header['SCIFILT1'] == 'AO-stop': 
+                filtername2 = '-AO'
+            self.filterName = filtername1.upper()+filtername2.upper()
+            return self.filterName
         else:
-            return self.header['filname']
+            if self.header['filname'].startswith('NIRSPEC') and len(self.header['filname']) > 9:
+                return self.header['filname'][:9]
+            else:
+                return self.header['filname']
         
     def getFullFilterName(self):
+        if nirspec_constants.upgrade: 
+            filtername1, filtername2 = self.header['SCIFILT2'], ''
+            if self.header['SCIFILT1'] == 'AO-stop': 
+                filtername2 = '-AO'
+            return filtername1.upper()+filtername2.upper()
         return self.header['filname']
         
     def getEchPos(self):
@@ -139,6 +152,8 @@ class ReducedDataSet:
         return self.header['slitname']
     
     def getITime(self):
+        if nirspec_constants.upgrade: 
+            return self.header['itime']/1000.
         return self.header['itime']
     
     def getNCoadds(self):
@@ -148,6 +163,7 @@ class ReducedDataSet:
         return self.header['DATE-OBS']
     
     def getTime(self):
+        if nirspec_constants.upgrade: return self.header['UT']
         return self.header['UTC']
     
     def getIntegrationTime(self):

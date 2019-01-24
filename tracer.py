@@ -4,6 +4,7 @@ import scipy.ndimage
 import CAT_Functions as cat
 import scipy.optimize as op
 import matplotlib.pyplot as plt
+import nirspec_constants
 
 def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, plot=False):
 
@@ -19,6 +20,11 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, plot=False):
     # find centroids for the rest of the columns in data
 
     for i in range(1, data.shape[1]):
+
+        if nirspec_constants.upgrade:
+            if i < 5: 
+                trace[i] = start
+                continue
         
         # define search window
         ymin = int(trace[i - 1] - searchWidth)

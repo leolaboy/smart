@@ -54,10 +54,10 @@ def create(in_dir):
             logger.info('Failed to reduced {} files because of low dispersion mode'.format(
                     failed2reduce.get('dispmode')))
         elif failed2reduce.get('n1') is not None:
-            logger.info('Failed to reduced {} files because NAXIS1 != 1024'.format(
+            logger.info('Failed to reduced {} files because NAXIS1 != 1024 or 2048'.format(
                     failed2reduce.get('n1')))
         elif failed2reduce.get('n2') is not None:
-            logger.info('Failed to reduced {} files because NAXIS2 != 1024'.format(
+            logger.info('Failed to reduced {} files because NAXIS2 != 1024 or 2048'.format(
                     failed2reduce.get('n2')))
         elif failed2reduce.get('fil') is not None:
             logger.info('Failed to reduce {} files because of unsupported filter'.format(
@@ -171,9 +171,16 @@ def obj_criteria_met(header, failed2reduce):
     if header['NAXIS2'] != nirspec_constants.N_ROWS:
         failed2reduce['n2'] += 1
         return False
-    if header['FILNAME'].upper() not in nirspec_constants.filter_names:
-        failed2reduce['fil'] += 1
-        return False
+    if nirspec_constants.upgrade:
+        filtername1, filtername2 = header['SCIFILT2'], ''
+        if header['SCIFILT1'] == 'AO-stop': filtername2 = '-AO'
+        if filtername1.upper()+filtername2.upper()  not in nirspec_constants.filter_names:
+            failed2reduce['fil'] += 1
+            return False
+    else:
+        if header['FILNAME'].upper() not in nirspec_constants.filter_names:
+            failed2reduce['fil'] += 1
+            return False
     return True
     
 
@@ -190,7 +197,10 @@ def flat_criteria_met(obj_header, flat_header, ignore_dispers=False):
         True if the flat corresponds to the object frame, False otherwise.
         
     """
-    eq_kwds = ['disppos', 'echlpos', 'filname', 'slitname']
+    if nirspec_constants.upgrade:
+        eq_kwds = ['disppos', 'echlpos', 'scifilt2', 'slitname']
+    else:
+        eq_kwds = ['disppos', 'echlpos', 'filname', 'slitname']
     if ignore_dispers is not True:
         eq_kwds.append('dispers')
     for kwd in eq_kwds:
@@ -219,7 +229,10 @@ def is_valid_pair(obj_A_header, obj_B_header, override=False):
         return True
 
     # Run this function
-    kwds = ['disppos', 'echlpos', 'filname', 'slitname', 'itime']
+    if nirspec_constants.upgrade:
+        kwds = ['disppos', 'echlpos', 'scifilt2', 'slitname', 'itime']
+    else:
+        kwds = ['disppos', 'echlpos', 'scifilt2', 'slitname', 'itime']
     for kwd in kwds:
         if obj_A_header[kwd] != obj_B_header[kwd]:
             return False

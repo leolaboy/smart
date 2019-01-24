@@ -4,6 +4,7 @@ from scipy.signal import argrelextrema
 #from astropy.io import fits
 import logging
 #import traceback
+import nirspec_constants
 
 import config
 import GratingEq
@@ -36,9 +37,17 @@ class Flat:
         names = ', '.join(str(x) for x in self.baseFns)
         self.logger.info('creating {} from {}'.format(self.fn, names))
 
-        self.flatImg        = data
+        if nirspec_constants.upgrade: 
+            self.flatImg = np.rot90(data, k=3)
+        else: 
+            self.flatImg        = data
 
-        self.filterName     = self.header['filname']
+        if nirspec_constants.upgrade: 
+            filtername1, filtername2 = self.header['SCIFILT2'], ''
+            if self.header['SCIFILT1'] == 'AO-stop': filtername2 = '-AO'
+            self.filterName = filtername1.upper()+filtername2.upper()
+        else:
+            self.filterName = self.header['filname']
         self.slit           = self.header['slitname']
         self.echelleAngle   = self.header['echlpos']
         self.disperserAngle = self.header['disppos']
@@ -51,7 +60,7 @@ class Flat:
         self.botEdgePeaks   = None      # filtered bottom edge profile peaks
         
         self.nOrdersExpected = 0
-        self.nOrdersFound = 0
+        self.nOrdersFound    = 0
         
         
         self.flatOrders = []
@@ -86,15 +95,17 @@ class Flat:
             flatOrder.topCalc, flatOrder.botCalc, flatOrder.gratingEqWaveScale = self.gratingEq.evaluate(
                     orderNum, self.filterName, self.slit, self.echelleAngle, self.disperserAngle)
 
-            """
+            
             # TESTING TO PLOT ORDER CUTOUTS XXX
+            '''
             print(flatOrder.topCalc, flatOrder.botCalc)
             plt.imshow(self.flatImg, origin='lower', aspect='auto')
             plt.axhline(flatOrder.topCalc, c='r', ls='--')
             plt.axhline(flatOrder.botCalc, c='b', ls='--')
             plt.show()
+            '''
             #sys.exit()
-            """
+            
             
             self.logger.info('predicted top edge location = {:.0f} pixels'.format(flatOrder.topCalc))
             self.logger.info('predicted bot edge location = {:.0f} pixels'.format(flatOrder.botCalc))
@@ -131,12 +142,15 @@ class Flat:
                 ### TESTING TO PLOT ORDER CUTOUTS XXX
                 '''
                 print(flatOrder.botEdgeTrace)
-                plt.figure()
+                fig = plt.figure()
+                print('YESYESYES')
                 plt.imshow(self.flatImg, origin='lower', aspect='auto')
                 plt.plot(flatOrder.topEdgeTrace, c='r', ls='--')
                 plt.plot(flatOrder.botEdgeTrace, c='b', ls='--')
-                plt.title('TEST021')
-                #plt.show()
+                plt.minorticks_on()
+                fig.suptitle('TEST021')
+                plt.show()
+                print("NONONO")
                 #sys.exit()
                 '''
                 ### TESTING TO PLOT ORDER CUTOUTS XXX

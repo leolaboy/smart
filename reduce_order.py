@@ -16,13 +16,14 @@ import fixpix
 
 import CAT_Functions as cat
 import matplotlib.pyplot as plt 
+import nirspec_constants
 
 logger = logging.getLogger('obj')
 
 def reduce_order(order, eta=None, arc=None):
         
     #print('ETA BEGINNING', eta)
-    print(order.flatOrder.orderNum)
+    #print(order.flatOrder.orderNum)
     #if order.flatOrder.orderNum != 33: return 0
     #sys.exit()
 
@@ -281,10 +282,15 @@ def reduce_order(order, eta=None, arc=None):
         logger.info(str(len(line_pairs)) + ' matched sky/etalon/arc lines found in order')
 
         # add line pairs to Order object as Line objects
+        if nirspec_constants.upgrade:
+            endPix = 2048
+        else:
+            endPix = 1024
+
         for line_pair in line_pairs:
             col, waveAccepted = line_pair
             peak = order.skySpec['A'][col]
-            cent = image_lib.centroid(order.skySpec['A'], 1024, 5, col)
+            cent = image_lib.centroid(order.skySpec['A'], endPix, 5, col)
             line = Line.Line(order.baseNames['A'], order.flatOrder.orderNum, 
                     waveAccepted, col, cent, peak)
             order.lines.append(line)
@@ -311,8 +317,8 @@ def reduce_order(order, eta=None, arc=None):
                     (order.orderCalSlope * order.flatOrder.gratingEqWaveScale[line.col])    
                 line.orderFitRes = abs(line.orderWaveFit - line.waveAccepted)  
                 line.orderFitSlope = (order.orderCalSlope * 
-                        (order.flatOrder.gratingEqWaveScale[1023] - 
-                         order.flatOrder.gratingEqWaveScale[0]))/1024.0
+                        (order.flatOrder.gratingEqWaveScale[endPix-1] - 
+                         order.flatOrder.gratingEqWaveScale[0]))/float(endPix)
     else:
         logger.warning('not enough matched sky/etalon/arc lines in order ' + str(order.flatOrder.orderNum))
         order.orderCal = False 
