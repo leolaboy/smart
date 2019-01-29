@@ -170,7 +170,10 @@ class ReducedDataSet:
         try:
             return self.header['ELAPTIME']
         except KeyError:
-            return(self.header['itime'])
+            if nirspec_constants.upgrade: 
+                return self.header['itime']/1000.
+            else:
+                return(self.header['itime'])
             
     
     def getObjectName(self):
