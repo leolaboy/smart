@@ -227,6 +227,7 @@ class GratingEq:
             wavelength_shift = 50.0
         elif order < 38:
             wavelength_shift = 70.0
+            if const.upgrade: wavelength_shift = 50.0
         elif order < 40:
             wavelength_shift = 70.0
         elif order < 45:
