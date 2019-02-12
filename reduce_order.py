@@ -23,21 +23,23 @@ logger = logging.getLogger('obj')
 def reduce_order(order, eta=None, arc=None):
         
     #print('ETA BEGINNING', eta)
-    #print(order.flatOrder.orderNum)
+    #print('REDUCE ORDER BEGINNING', order.flatOrder.orderNum)
     #if order.flatOrder.orderNum != 33: return 0
     #sys.exit()
 
     # flatten object images for this order
     __flatten(order, eta=eta, arc=arc)
 
-    """
+    ### TEST PLOT XXX
+    '''
     from astropy.visualization import ZScaleInterval, ImageNormalize
-    plt.figure(1)
+    plt.figure(198)
     norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
     plt.imshow(order.ffEtaImg, origin='lower')
     plt.show()
-    sys.exit()
-    """
+    #sys.exit()
+    '''
+    ### TEST PLOT XXX
 
     ### XXX TESTING AREA
     
@@ -323,7 +325,14 @@ def reduce_order(order, eta=None, arc=None):
         logger.warning('not enough matched sky/etalon/arc lines in order ' + str(order.flatOrder.orderNum))
         order.orderCal = False 
 
-    #plt.show()
+    # TEST PLOT FLAT XXX
+    '''
+    from skimage import exposure
+    plt.figure(figsize=(10,6))
+    plt.imshow(exposure.equalize_hist(order.flatOrder.cutout), aspect='auto')
+    plt.show()
+    '''
+    # TEST PLOT FLAT XXX
                         
     return
 

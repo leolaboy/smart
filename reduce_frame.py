@@ -49,14 +49,18 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, arc=None, dark=None):
     #print('TEST', nirspec_constants.upgrade)
     if nirspec_constants.upgrade:
         reduced.objImg['A'] = np.rot90(reduced.objImg['A'], k=3)
-        """
+        
+        ### TEST PLOT XXX
+        '''
         import matplotlib.pyplot as plt
         from astropy.visualization import ImageNormalize, ZScaleInterval
         norm = ImageNormalize(reduced.objImg['A'], interval=ZScaleInterval())
         plt.imshow(reduced.objImg['A'], norm=norm, origin='lower', aspect='auto')
         plt.show()
-        sys.exit()
-        """
+        #sys.exit()
+        '''
+        ### TEST PLOT XXX
+        
     
     if raw.isPair:
         reduced.objImg['B'] = fits.getdata(raw.objBFn, ignore_missing_end = True)

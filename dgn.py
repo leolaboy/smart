@@ -229,9 +229,9 @@ def tops_bots_plot(outpath, base_name, tops, bots):
 
     obj_plot = pl.subplot(1, 2, 1)
     try:
-        obj_plot.imshow(exposure.equalize_hist(tops))
+        obj_plot.imshow(exposure.equalize_hist(tops), aspect='auto')
     except:
-        obj_plot.imshow(tops)
+        obj_plot.imshow(tops, aspect='auto')
 
     obj_plot.set_title('top edges')
     obj_plot.set_ylim([endPix-1, 0])
@@ -240,9 +240,9 @@ def tops_bots_plot(outpath, base_name, tops, bots):
     
     flat_plot = pl.subplot(1, 2, 2)
     try:
-        flat_plot.imshow(exposure.equalize_hist(bots))
+        flat_plot.imshow(exposure.equalize_hist(bots), aspect='auto')
     except:
-        flat_plot.imshow(bots)
+        flat_plot.imshow(bots, aspect='auto')
     flat_plot.set_title('bottom edges')
     flat_plot.set_ylim([endPix-1, 0])
     flat_plot.set_xlim([0, endPix-1])
@@ -269,9 +269,9 @@ def traces_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, flat
 
     obj_plot = pl.subplot(1, 2, 1)
     try:
-        obj_plot.imshow(exposure.equalize_hist(obj_img))
+        obj_plot.imshow(exposure.equalize_hist(obj_img), aspect='auto')
     except:
-        obj_plot.imshow(obj_img)
+        obj_plot.imshow(obj_img, aspect='auto')
     obj_plot.plot(np.arange(endPix), top_trace, 'y-', linewidth=1.5)
     obj_plot.plot(np.arange(endPix), bot_trace, 'y-', linewidth=1.5)
 
@@ -282,9 +282,9 @@ def traces_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, flat
     
     flat_plot = pl.subplot(1, 2, 2)
     try:
-        flat_plot.imshow(exposure.equalize_hist(flat_img))
+        flat_plot.imshow(exposure.equalize_hist(flat_img), aspect='auto')
     except:
-        flat_plot.imshow(flat_img)
+        flat_plot.imshow(flat_img, aspect='auto')
     flat_plot.plot(np.arange(endPix), top_trace, 'y-', linewidth=1.5)
     flat_plot.plot(np.arange(endPix), bot_trace, 'y-', linewidth=1.5)    
     flat_plot.set_title('flat ' + flat_base_name)
@@ -363,9 +363,9 @@ def cutouts_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, fla
 
     obj_plot = pl.subplot(2, 1, 1)
     try:
-        obj_plot.imshow(exposure.equalize_hist(obj_img))
+        obj_plot.imshow(exposure.equalize_hist(obj_img), aspect='auto')
     except:
-        obj_plot.imshow(obj_img)
+        obj_plot.imshow(obj_img, aspect='auto')
     obj_plot.plot(np.arange(endPix), top_trace, 'y-', linewidth=1.5)
     obj_plot.plot(np.arange(endPix), bot_trace, 'y-', linewidth=1.5)
     obj_plot.plot(np.arange(endPix), trace, 'y-', linewidth=1.5)
@@ -374,9 +374,9 @@ def cutouts_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, fla
     
     flat_plot = pl.subplot(2, 1, 2)
     try:
-        flat_plot.imshow(exposure.equalize_hist(flat_img))
+        flat_plot.imshow(exposure.equalize_hist(flat_img), aspect='auto')
     except:
-        flat_plot.imshow(flat_img)
+        flat_plot.imshow(flat_img, aspect='auto')
     flat_plot.plot(np.arange(endPix), top_trace, 'y-', linewidth=1.5)
     flat_plot.plot(np.arange(endPix), bot_trace, 'y-', linewidth=1.5)    
     flat_plot.plot(np.arange(endPix), trace, 'y-', linewidth=1.5)    

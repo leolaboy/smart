@@ -99,12 +99,14 @@ class Flat:
             # TESTING TO PLOT ORDER CUTOUTS XXX
             '''
             print(flatOrder.topCalc, flatOrder.botCalc)
+            plt.figure(7362)
             plt.imshow(self.flatImg, origin='lower', aspect='auto')
             plt.axhline(flatOrder.topCalc, c='r', ls='--')
             plt.axhline(flatOrder.botCalc, c='b', ls='--')
             plt.show()
-            '''
             #sys.exit()
+            '''
+            # TESTING TO PLOT ORDER CUTOUTS XXX
             
             
             self.logger.info('predicted top edge location = {:.0f} pixels'.format(flatOrder.topCalc))

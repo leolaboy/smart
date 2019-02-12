@@ -86,9 +86,30 @@ class FlatOrder:
         
         ### TESTING PLOT XXX
         '''
-        norm = ImageNormalize(self.rectFlatImg, interval=ZScaleInterval())
-        fig = plt.figure()
-        plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
+        from skimage import exposure
+        #norm = ImageNormalize(self.rectFlatImg, interval=ZScaleInterval())
+
+        fig = plt.figure(1985)
+        #plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
+        plt.imshow(self.cutout, origin='lower', aspect='auto')#, norm=norm)
+        plt.axhline(self.botTrim, c='r', ls=':')
+        plt.axhline(self.topTrim, c='b', ls=':')
+        #plt.axhline(self.lowestPoint, c='r', ls='--')
+        #plt.axhline(self.highestPoint, c='b', ls='--')
+        fig.suptitle('Order: %s'%self.orderNum)
+
+        fig = plt.figure(1986)
+        #plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
+        plt.imshow(self.normFlatImg, origin='lower', aspect='auto')#, norm=norm)
+        plt.axhline(self.botTrim, c='r', ls=':')
+        plt.axhline(self.topTrim, c='b', ls=':')
+        #plt.axhline(self.lowestPoint, c='r', ls='--')
+        #plt.axhline(self.highestPoint, c='b', ls='--')
+        fig.suptitle('Order: %s'%self.orderNum)
+
+        fig = plt.figure(1987)
+        #plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
+        plt.imshow(exposure.equalize_hist(self.rectFlatImg), origin='lower', aspect='auto')#, norm=norm)
         plt.axhline(self.botTrim, c='r', ls=':')
         plt.axhline(self.topTrim, c='b', ls=':')
         #plt.axhline(self.lowestPoint, c='r', ls='--')
