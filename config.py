@@ -64,7 +64,7 @@ def get_starting_order(filtername):
 
 # order edge location error threshold
 max_edge_location_error = {
-        'NIRSPEC-1': 30, 
+        'NIRSPEC-1': 40, 
         'NIRSPEC-2': 50, 
         'NIRSPEC-3': 50, 
         'NIRSPEC-4': 20, 

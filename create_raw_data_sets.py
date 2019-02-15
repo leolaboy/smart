@@ -232,7 +232,7 @@ def is_valid_pair(obj_A_header, obj_B_header, override=False):
     if nirspec_constants.upgrade:
         kwds = ['disppos', 'echlpos', 'scifilt2', 'slitname', 'itime']
     else:
-        kwds = ['disppos', 'echlpos', 'scifilt2', 'slitname', 'itime']
+        kwds = ['disppos', 'echlpos', 'filname', 'slitname', 'itime']
     for kwd in kwds:
         if obj_A_header[kwd] != obj_B_header[kwd]:
             return False

@@ -102,6 +102,7 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, plot=False):
     return trace, nJumps
 
 
+
 def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, arc=None, plotvid=False):
 
     # initialize trace array
@@ -162,8 +163,8 @@ def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, arc
 
 
         if i < stepcount:
-            Xs = np.arange(len(np.sum(data[int(ymin):int(ymax)+1, i:i+stepcount+1], axis=1))) + ymin
-            Ys = np.sum(data[int(ymin):int(ymax)+1, i:i+stepcount+1], axis=1)
+            Xs     = np.arange(len(np.sum(data[int(ymin):int(ymax)+1, i:i+stepcount+1], axis=1))) + ymin
+            Ys     = np.sum(data[int(ymin):int(ymax)+1, i:i+stepcount+1], axis=1)
             guess1 = Xs[int(len(Xs)/2)]
             try:
                 popt, pcov = op.curve_fit(cat.NormDist, Xs, Ys, 
@@ -181,10 +182,10 @@ def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, arc
                 ax2 = fig0.add_subplot(122)
                 ax1.imshow(data[int(ymin):int(ymax) + 1, i:i+stepcount+1], origin='lower', aspect='auto')
                 ax1.axhline(popt[0]-ymin, c='r', ls=':')
-                ax2.plot(Xs, Ys)
+                ax2.plot(Ys, Xs)
                 Xs2 = np.linspace(np.min(Xs), np.max(Xs))
-                ax2.plot(Xs2, cat.NormDist(Xs2, *popt), 'r--')
-                ax2.axvline(popt[0], c='r', ls=':')
+                ax2.plot(cat.NormDist(Xs2, *popt), Xs2, 'r--')
+                ax2.axhline(popt[0], c='r', ls=':')
                 ax1.minorticks_on()
                 ax2.minorticks_on()
                 plt.draw()
@@ -214,9 +215,9 @@ def trace_edge_line(data, start, searchWidth, bgWidth, jumpThresh, eta=None, arc
                 ax2 = fig0.add_subplot(122)
                 ax1.imshow(data[int(ymin):int(ymax) + 1, i-stepcount:i+stepcount+1], origin='lower', aspect='auto')
                 ax1.axhline(popt[0]-ymin, c='r', ls=':')
-                ax2.plot(Xs, Ys)
+                ax2.plot(Ys, Xs)
                 Xs2 = np.linspace(np.min(Xs), np.max(Xs))
-                ax2.plot(Xs2, cat.NormDist(Xs2, *popt), 'r--')
+                ax2.plot(cat.NormDist(Xs2, *popt), Xs2, 'r--')
                 ax2.axvline(popt[0], c='r', ls=':')
                 ax1.minorticks_on()
                 ax2.minorticks_on()

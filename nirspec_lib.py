@@ -3,6 +3,7 @@ from scipy.signal._peak_finding import argrelextrema
 
 import logging
 import config
+import nirspec_constants
 
 import tracer
 import matplotlib.pyplot as plt
@@ -175,7 +176,8 @@ def find_spectral_trace(data, numrows=5, eta=None, arc=None, plot=False):
     data_t0  = data.transpose()
 
 #     data_t = data_t[:, padding + 5:data_t.shape[1] - 5 - padding]
-    data_t   = data_t0[:, 5:data_t0.shape[1] - 5]
+    data_t   = data_t0[:, 5:data_t0.shape[1] - 5]    
+
     crit_val = np.median(data_t) # Get a value for the background
     #print('Crit', crit_val, 2*crit_val)
 
@@ -193,7 +195,7 @@ def find_spectral_trace(data, numrows=5, eta=None, arc=None, plot=False):
         pl.plot(s, 'k-')
         pl.axhline(SKY_SIGMA * np.median(s), c='r', ls=':')
         pl.axhline(2.25 * np.median(s), c='b', ls=':')
-        pl.xlim(0, 1024)
+        pl.xlim(0, data_t.shape[0])
         pl.xlabel('column (pixels)')
         pl.ylabel('intensity summed over 5 rows (DN)')
         ymin, ymax = pl.ylim()
@@ -215,6 +217,7 @@ def find_spectral_trace(data, numrows=5, eta=None, arc=None, plot=False):
 
     # indices in s or peaks
     maxes = np.array(maxima_c[0][locmaxes[0]])
+    print('MAXES0', maxes)
 
     logger.debug('n sky/etalon/arc line peaks with intensity > {:.0f} = {}'.format(
                 sky_thres, len(maxes)))
@@ -235,7 +238,7 @@ def find_spectral_trace(data, numrows=5, eta=None, arc=None, plot=False):
     maxes = maxes[::-1]
 
     # Try to find some fainter lines if the threshold was too large
-    #print('MAXES', maxes, len(maxes), SKY_SIGMA)
+    print('MAXES', maxes, len(maxes), SKY_SIGMA)
     if len(maxes) < 5:
         for SKY_SIGMA in [1.5, 1.2]: 
             sky_thres = SKY_SIGMA * np.median(s)
@@ -274,7 +277,7 @@ def find_spectral_trace(data, numrows=5, eta=None, arc=None, plot=False):
         pl.cla()
         pl.plot(s, 'k-')
         pl.axhline(sky_thres, c='r', ls=':')
-        pl.xlim(0, 1024)
+        pl.xlim(0, data_t.shape[0])
         pl.xlabel('column (pixels)')
         pl.ylabel('intensity summed over 5 rows (DN)')
         ymin, ymax = pl.ylim()
@@ -285,8 +288,13 @@ def find_spectral_trace(data, numrows=5, eta=None, arc=None, plot=False):
     fitnumber        = 0
 
     centroids = []
+
+    lowlim, uplim = 10, 1024-14
+    if nirspec_constants.upgrade:
+        lowlim, uplim = 20, 2048-48
+
     for maxskyloc in maxes:
-        if 10 < maxskyloc < 1010:
+        if lowlim < maxskyloc < uplim:
             
             centroid_sky = trace_sky_line(data_t, maxskyloc, eta=eta, arc=arc)
            
@@ -304,7 +312,7 @@ def find_spectral_trace(data, numrows=5, eta=None, arc=None, plot=False):
 
 
     if fitnumber > 0:
-        logger.info(str(fitnumber) + ' sky/etalon/arc lines used for spectral rectification')
+        logger.info(str(fitnumber) + ' sky/etalon/arc lines selected for spectral rectification')
         return centroids
         #return centroid_sky_sum / fitnumber
     
@@ -312,6 +320,7 @@ def find_spectral_trace(data, numrows=5, eta=None, arc=None, plot=False):
     raise StandardError('failed to find sky/etalon/arc line trace')
     
     
+
 def smooth_spectral_trace(data, l, eta=None, arc=None, version2=True, plot=False):
     
     if version2 == True:
@@ -433,11 +442,13 @@ def smooth_spectral_trace(data, l, eta=None, arc=None, version2=True, plot=False
         PlotCent2   = []
         PlotSlopes2 = []
 
+        linecount=0
         for i in range(len(mask)):
             if mask[i] == 0:
                 PlotPix2.append(PlotPix[i])
                 PlotCent2.append(PlotCent[i])
                 PlotSlopes2.append(PlotSlopes[i])
+                linecount+=1
                 
                 if plot:
                     ax333.scatter(PlotPix[i], PlotCent[i])
@@ -451,6 +462,10 @@ def smooth_spectral_trace(data, l, eta=None, arc=None, version2=True, plot=False
 
         p0 = np.polyfit(np.concatenate(PlotPix2).ravel(), np.concatenate(PlotCent2).ravel(), deg=1)
         z0 = np.poly1d(p0)
+
+        # Log the number of lines used
+        logger.info(str(linecount) + ' sky/etalon/arc lines used for spectral rectification')
+
         if plot:
             ax333.plot(np.linspace(0,45), z0(np.linspace(0,45)), 'k-', alpha=0.5, lw=1.5)
             ax444.hist(PlotSlopes2, bins = int(np.sqrt(len(PlotSlopes2))))
