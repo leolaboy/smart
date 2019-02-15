@@ -25,6 +25,7 @@ def reduce_order(order, eta=None, arc=None):
     #print('ETA BEGINNING', eta)
     #print('REDUCE ORDER BEGINNING', order.flatOrder.orderNum)
     #if order.flatOrder.orderNum != 33: return 0
+    #if order.flatOrder.orderNum != 77: return 0
     #sys.exit()
 
     # flatten object images for this order
@@ -81,7 +82,7 @@ def reduce_order(order, eta=None, arc=None):
     plt.imshow(order.ffObjImg['B'], origin='lower', aspect='auto', norm=norm)
     plt.show(block=True)
     """
- 
+
     # rectify obj and flattened obj in spatial dimension
     __rectify_spatial(order, eta=eta, arc=arc)
  
@@ -112,6 +113,7 @@ def reduce_order(order, eta=None, arc=None):
         order.ffObjImg['AB'] = np.subtract(order.ffObjImg['A'], order.ffObjImg['B'])
         # reFlatten
         if np.amin(order.ffObjImg['AB']) < 0: order.ffObjImg['AB'] -= np.amin(order.ffObjImg['AB'])
+        
     order.srNormFlatImg = order.flatOrder.rectFlatImg
     for frame in order.frames:
         order.srFfObjImg[frame] = order.ffObjImg[frame]
@@ -220,11 +222,18 @@ def reduce_order(order, eta=None, arc=None):
         if np.amin(order.ffObjImg['AB']) < 0: order.ffObjImg['AB'] -= np.amin(order.ffObjImg['AB'])
     
 
-    #plt.figure(666) #XXX
+    # TEST PLOT XXX
+    '''
+    from skimage import exposure
+    plt.figure(666, figsize=(10,6))
     #plt.imshow(order.ffEtaImg, origin='lower')
+    plt.imshow(exposure.equalize_hist(order.ffArcImg), origin='lower', aspect='auto')
     #np.save('rect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
     #plt.savefig('%s_rect.png'%order.flatOrder.orderNum, dpi=600, bbox_inches='tight')
-    #plt.show()
+    plt.show()
+    #sys.exit()
+    '''
+    # TEST PLOT XXX
     
 
     # compute noise image
@@ -388,12 +397,14 @@ def __rectify_spatial(order, eta=None, arc=None):
                 if config.params['onoff'] == True and frame == 'B': 
                     order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
                     order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+                    logger.info('frame %s rectified using object trace'%frame)
 
                 else:
                     polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
                     order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
                     polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
                     order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+                    logger.info('frame %s rectified using object trace'%frame)
 
                 if eta is not None:
                     if frame == 'B':
@@ -423,6 +434,7 @@ def __rectify_spatial(order, eta=None, arc=None):
             else:
                 order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
                 order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+
         except:
             logger.warning('could not rectify using object trace, falling back to edge trace')
             order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], 
@@ -558,6 +570,29 @@ def __extract_spectra(order, eta=None, arc=None):
                 image_lib.get_extraction_ranges(order.objImg[frame].shape[0], 
                 order.peakLocation[frame], config.params['obj_window'], 
                 config.params['sky_window'], config.params['sky_separation'])
+
+
+        
+        ### TEST PLOT SKY EXTRACTION REGION XXX
+        '''
+        from skimage import exposure
+        fig = plt.figure(3285)
+        #plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
+        plt.imshow(exposure.equalize_hist(order.objImg[frame]), origin='lower', aspect='auto')#, norm=norm)
+        plt.axhline(np.min(order.objWindow[frame]), c='b', ls='-')
+        plt.axhline(np.max(order.objWindow[frame]), c='b', ls='-')
+        plt.axhline(np.min(order.topSkyWindow[frame]), c='r', ls='-')
+        plt.axhline(np.max(order.topSkyWindow[frame]), c='r', ls='-')
+        plt.axhline(np.min(order.botSkyWindow[frame]), c='r', ls=':')
+        plt.axhline(np.max(order.botSkyWindow[frame]), c='r', ls=':')
+        #plt.axhline(self.lowestPoint, c='r', ls='--')
+        #plt.axhline(self.highestPoint, c='b', ls='--')
+        fig.suptitle('Extraction Regions')
+        plt.show()
+        #sys.exit()
+        '''
+        ### TEST PLOT SKY EXTRACTION REGION XXX
+        
                 
         logger.info('frame {} extraction window width = {}'.format(
                 frame, str(len(order.objWindow[frame]))))

@@ -94,8 +94,11 @@ class Flat:
             # get expected location of order on detector
             flatOrder.topCalc, flatOrder.botCalc, flatOrder.gratingEqWaveScale = self.gratingEq.evaluate(
                     orderNum, self.filterName, self.slit, self.echelleAngle, self.disperserAngle)
-
             
+            self.logger.info('predicted top edge location = {:.0f} pixels'.format(flatOrder.topCalc))
+            self.logger.info('predicted bot edge location = {:.0f} pixels'.format(flatOrder.botCalc))
+
+
             # TESTING TO PLOT ORDER CUTOUTS XXX
             '''
             print(flatOrder.topCalc, flatOrder.botCalc)
@@ -103,14 +106,10 @@ class Flat:
             plt.imshow(self.flatImg, origin='lower', aspect='auto')
             plt.axhline(flatOrder.topCalc, c='r', ls='--')
             plt.axhline(flatOrder.botCalc, c='b', ls='--')
-            plt.show()
+            #plt.show()
             #sys.exit()
             '''
             # TESTING TO PLOT ORDER CUTOUTS XXX
-            
-            
-            self.logger.info('predicted top edge location = {:.0f} pixels'.format(flatOrder.topCalc))
-            self.logger.info('predicted bot edge location = {:.0f} pixels'.format(flatOrder.botCalc))
             
             # determine if order is expected to be on the detector
             # if this order is off but previous order(s) was/were on then no more orders
@@ -134,17 +133,40 @@ class Flat:
                     continue
                 
                 # find spatial trace from edge traces
+                #if orderNum != 76: continue
                 try:
                     self.findSpatialTrace(flatOrder)
                 except DrpException as e:
                     self.logger.info('failed to find spatial trace: {}'.format(e.message))
                     flatOrder.valid = False
                     continue
+
+                # TESTING TO PLOT ORDER CUTOUTS XXX
+                '''
+                print(flatOrder.topCalc, flatOrder.botCalc)
+                plt.figure(7363)
+                plt.imshow(self.flatImg, origin='lower', aspect='auto')
+                plt.axhline(flatOrder.topCalc, c='r', ls='--')
+                plt.axhline(flatOrder.botCalc, c='b', ls='--')
+                try:
+                    plt.axhline(flatOrder.topMeas, c='r', ls=':')
+                    plt.plot(flatOrder.topEdgeTrace)
+                except:
+                    print('Cannot plot measured top')
+                try:
+                    plt.axhline(flatOrder.botMeas, c='b', ls=':')
+                    plt.plot(flatOrder.botEdgeTrace)
+                except:
+                    print('Cannot plot measured bot')
+                plt.show()
+                sys.exit()
+                '''
+                # TESTING TO PLOT ORDER CUTOUTS XXX
                 
                 ### TESTING TO PLOT ORDER CUTOUTS XXX
                 '''
                 print(flatOrder.botEdgeTrace)
-                fig = plt.figure()
+                fig = plt.figure(3898)
                 print('YESYESYES')
                 plt.imshow(self.flatImg, origin='lower', aspect='auto')
                 plt.plot(flatOrder.topEdgeTrace, c='r', ls='--')
@@ -201,14 +223,37 @@ class Flat:
         self.topEdgeImg = rolled - self.flatImg
         self.botEdgeImg = self.flatImg - rolled
         
-        self.topEdgeProfile = np.median(self.topEdgeImg[:, 40:50], axis=1)
-        self.botEdgeProfile = np.median(self.botEdgeImg[:, 40:50], axis=1)
+        self.topEdgeProfile = np.median(self.topEdgeImg[:, 40:60], axis=1)
+        self.botEdgeProfile = np.median(self.botEdgeImg[:, 40:60], axis=1)
 
         self.topEdgePeaks = self.findPeaks(self.topEdgeProfile)
         self.botEdgePeaks = self.findPeaks(self.botEdgeProfile)
-        
+
+        ### TEST PLOT ORDER EDGE PEAKS XXX
+        '''
+        print(rolled)
+        print(self.topEdgeImg)
+        print(self.topEdgeProfile)
+        print(self.topEdgePeaks)
+        print(self.botEdgeImg)
+        print(self.botEdgeProfile)
+        print(self.botEdgePeaks)
+
+        fig1 = plt.figure(2647, figsize=(10,6))
+        ax1 = fig1.add_subplot(121)
+        ax2 = fig1.add_subplot(122)
+        ax1.plot(self.topEdgeProfile)
+        for i in self.topEdgePeaks: ax1.axvline(i, color='r', ls='--')
+        ax2.plot(self.botEdgeProfile)
+        for i in self.botEdgePeaks: ax2.axvline(i, color='r', ls='--')
+        plt.show()
+        sys.exit()
+        '''
+        ### TEST PLOT ORDER EDGE PEAKS XXX
+
         return
         
+
 
     def findPeaks(self, edgeProfile):
         
@@ -218,6 +263,7 @@ class Flat:
         
         return(peak_rows[tall_peaks_i[0]])
         
+
 
     def findOrderSowc(self, flatOrder):
         

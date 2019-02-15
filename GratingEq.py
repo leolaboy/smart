@@ -44,7 +44,7 @@ class GratingEq:
             coeffs['NIRSPEC-2'] = { 'c1': 0.49449345, 'c2': -35965.39,  'y0': 15987.1423,
                                     'r1': 0.46779492, 'r2': -31416.355, 'z0': 13601.3478};                                    
         
-            coeffs['NIRSPEC-1'] = { 'c1': 0.49777509, 'c2': -38653.878, 'y0': 17488.344,
+            coeffs['NIRSPEC-1'] = { 'c1': 0.754348427, 'c2': -1.34342463e6, 'y0': 7.62950418e5,
                                     'r1': 0.4713783,  'r2': -38876.842, 'z0': 17880.5877}; 
         else:
             coeffs['K-AO']      = { 'c1': 0.24792775, 'c2': -35906.947, 'y0': 15955.4515,
@@ -126,6 +126,9 @@ class GratingEq:
             if const.upgrade: 
                 k3 = -3.91408142e6 # Found these coeffs empirically using the new format simulator
                 k4 = -1.09796060e5
+                if 'NIRSPEC-1' in filtername:
+                    k3 = 5.23052614e6
+                    k4 = 1.49654716e5
             else:
                 k3 = 9.9488e1
                 k4 = 1.0517e0
@@ -143,6 +146,7 @@ class GratingEq:
             filter_4_5_6_y_corr = 30
             filter_3_y_corr     = 50
             filter_1_y_corr     = 50
+            if const.upgrade: filter_1_y_corr     = 20
             filter_K_y_corr     = 70
         
             if '24' in slit:
@@ -225,6 +229,7 @@ class GratingEq:
         
         if order > 55:
             wavelength_shift = 50.0
+            if const.upgrade: wavelength_shift = 20.0
         elif order < 38:
             wavelength_shift = 70.0
             if const.upgrade: wavelength_shift = 50.0

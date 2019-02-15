@@ -111,6 +111,7 @@ def reduce_frame(raw, out_dir, flatCacher=None, eta=None, arc=None, dark=None):
 
         reduced.cosmicCleaned = True 
 
+
     ### XXX TESTING AREA 
     """ moved this to reduce order
     if config.params['no_clean']:
