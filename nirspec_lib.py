@@ -74,22 +74,30 @@ def trace_order_edge(data, start):
     if nJumps > ORDER_EDGE_JUMP_LIMIT:
         
             logger.debug('order edge trace jump limit exceeded')
-            logger.debug('reducing search width to {:.1f}'.format(ORDER_EDGE_SEARCH_WIDTH / 1.5))
+            logger.debug('reducing search width to {:.1f}'.format(ORDER_EDGE_SEARCH_WIDTH / 2))
             trace, nJumps =  tracer.trace_edge(
             data, start, ORDER_EDGE_SEARCH_WIDTH / 2, ORDER_EDGE_BG_WIDTH, ORDER_EDGE_JUMP_THRESH)
             
-            if trace is None:
-                logger.warning('trace failed')
-                return None
-            
             if nJumps > ORDER_EDGE_JUMP_LIMIT:
-                logger.info('order edge trace jump limit exceeded: n jumps=' + 
-                        str(nJumps) + ' limit=' + str(ORDER_EDGE_JUMP_LIMIT))
-                if config.params['spatial_jump_override'] is True:
-                    logger.warning('spatial jump override enabled, edge not rejected')
-                else:
-                    logger.info('edge rejected')
+                ORDER_EDGE_SEARCH_WIDTH = 3
+        
+                logger.debug('order edge trace jump limit exceeded')
+                logger.debug('reducing search width to {:.1f}'.format(ORDER_EDGE_SEARCH_WIDTH))
+                trace, nJumps =  tracer.trace_edge(
+                data, start, ORDER_EDGE_SEARCH_WIDTH, ORDER_EDGE_BG_WIDTH, ORDER_EDGE_JUMP_THRESH)
+
+                if trace is None:
+                    logger.warning('trace failed')
                     return None
+                
+                if nJumps > ORDER_EDGE_JUMP_LIMIT:
+                    logger.info('order edge trace jump limit exceeded: n jumps=' + 
+                            str(nJumps) + ' limit=' + str(ORDER_EDGE_JUMP_LIMIT))
+                    if config.params['spatial_jump_override'] is True:
+                        logger.warning('spatial jump override enabled, edge not rejected')
+                    else:
+                        logger.info('edge rejected')
+                        return None
     return trace
     
 SKY_LINE_SEARCH_WIDTH = 3
@@ -111,6 +119,8 @@ def trace_sky_line(data, start, eta=None, arc=None):
     SKY_LINE_BG_WIDTH     = 0
     SKY_LINE_JUMP_THRESH  = 1
     SKY_LINE_JUMP_LIMIT   = 12
+    if nirspec_constants.upgrade:
+        SKY_LINE_JUMP_LIMIT   = 24 # Double this although the order width shouldn't be different
 
     trace, nJumps =  tracer.trace_edge_line(
             data, start, SKY_LINE_SEARCH_WIDTH, SKY_LINE_BG_WIDTH, SKY_LINE_JUMP_THRESH, eta=eta, arc=arc)
@@ -217,7 +227,7 @@ def find_spectral_trace(data, numrows=5, eta=None, arc=None, plot=False):
 
     # indices in s or peaks
     maxes = np.array(maxima_c[0][locmaxes[0]])
-    print('MAXES0', maxes)
+    #print('MAXES0', maxes)
 
     logger.debug('n sky/etalon/arc line peaks with intensity > {:.0f} = {}'.format(
                 sky_thres, len(maxes)))
@@ -238,7 +248,7 @@ def find_spectral_trace(data, numrows=5, eta=None, arc=None, plot=False):
     maxes = maxes[::-1]
 
     # Try to find some fainter lines if the threshold was too large
-    print('MAXES', maxes, len(maxes), SKY_SIGMA)
+    #print('MAXES', maxes, len(maxes), SKY_SIGMA)
     if len(maxes) < 5:
         for SKY_SIGMA in [1.5, 1.2]: 
             sky_thres = SKY_SIGMA * np.median(s)
@@ -405,11 +415,11 @@ def smooth_spectral_trace(data, l, eta=None, arc=None, version2=True, plot=False
                 Xs = np.linspace(np.min(Pixels), np.max(Pixels))
                 ax111.plot(Xs, z0(Xs), 'k:', lw=1, alpha=0.5)
             
-            # Get the RMS of the line for later filtering (> 0.1 pixels)
+            # Get the RMS of the line for later filtering (> 0.15 pixels)
             # This is a sign that we did not resolve doublets or lines got noisy at ends
             rmse = np.sqrt(np.mean((centroids - z0(Pixels))**2))
             logger.debug('RMSE of the line is {:.3f} pixels'.format(rmse))
-            if rmse > 0.1: continue
+            if rmse > 0.15: continue
 
             PlotPix.append(Pixels)
             PlotCent.append(centroids)

@@ -133,6 +133,7 @@ class Flat:
                     continue
                 
                 # find spatial trace from edge traces
+                #if orderNum != 76: continue
                 try:
                     self.findSpatialTrace(flatOrder)
                 except DrpException as e:
@@ -149,14 +150,16 @@ class Flat:
                 plt.axhline(flatOrder.botCalc, c='b', ls='--')
                 try:
                     plt.axhline(flatOrder.topMeas, c='r', ls=':')
+                    plt.plot(flatOrder.topEdgeTrace)
                 except:
                     print('Cannot plot measured top')
                 try:
                     plt.axhline(flatOrder.botMeas, c='b', ls=':')
+                    plt.plot(flatOrder.botEdgeTrace)
                 except:
                     print('Cannot plot measured bot')
                 plt.show()
-                #sys.exit()
+                sys.exit()
                 '''
                 # TESTING TO PLOT ORDER CUTOUTS XXX
                 
