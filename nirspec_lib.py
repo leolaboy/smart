@@ -19,6 +19,10 @@ def calc_noise_img(obj, flat, integration_time):
     G  = 5.8  # e-/ADU    
     RN = 23.0 # e-/pixel
     DC = 0.8  # e-/second/pixel
+    if nirspec_constants.upgrade:
+        G  = 5.8  # e-/ADU    
+        RN = 15.0 # e-/pixel
+        DC = 0.05 # e-/second/pixel
     
     # calculate photon noise
     #noise = obj / G # What is this?
