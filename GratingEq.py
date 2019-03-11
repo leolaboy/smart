@@ -23,7 +23,7 @@ class GratingEq:
     
         coeffs = dict()
         if const.upgrade:
-            coeffs['K-AO']      = { 'c1': 0.24792775, 'c2': -35906.947, 'y0': 15955.4515,
+            coeffs['K-AO']      = { 'c1': 0.376787803, 'c2': 5.35337265e6, 'y0': -3.12732704e6,
                                     'r1': 0.23482994, 'r2': -33591.707, 'z0': 14891.3158}; 
                                 
             coeffs['NIRSPEC-7'] = { 'c1': 0.376655776, 'c2': -4.22366351e6, 'y0': 2.45448586e6,
@@ -129,12 +129,17 @@ class GratingEq:
                 if 'NIRSPEC-1' in filtername:
                     k3 = 5.23052614e6
                     k4 = 1.49654716e5
+                if 'K-' in filtername:
+                    k3 = -3.75106282e6
+                    k4 = -1.05224419e5
             else:
                 k3 = 9.9488e1
                 k4 = 1.0517e0
             
             left_top_row = left_mid_row + ((k3 - (k4 * disppos)) / 2.0)
             left_bot_row = left_mid_row - ((k3 - (k4 * disppos)) / 2.0)
+            #print('left top:', left_top_row)
+            #print('left bot:', left_bot_row)
                 
             # apply empirical corrections
             
@@ -146,7 +151,8 @@ class GratingEq:
             filter_4_5_6_y_corr = 30
             filter_3_y_corr     = 50
             filter_1_y_corr     = 50
-            if const.upgrade: filter_1_y_corr     = 20
+            if const.upgrade: 
+            	filter_1_y_corr     = 20
             filter_K_y_corr     = 70
         
             if '24' in slit:

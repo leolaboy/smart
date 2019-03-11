@@ -5,6 +5,7 @@ import image_lib
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 from scipy import signal
+import nirspec_constants
 
 
 def NormDist(x, mean, sigma, baseline, amplitude):
@@ -15,8 +16,12 @@ def NormDist(x, mean, sigma, baseline, amplitude):
 
 
 
-def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutoff=10):
+def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, plotfinal=True, cutoff=10):
 
+	# Make some changes for the upgraded version of NIRSPEC
+	if nirspec_constants.upgrade: 
+		numrows, cutoff = 11, 40
+	
 	#print(image.shape)
 	Centroids = []
 	Pixels    = []
@@ -36,17 +41,31 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 				ax2 = fig0.add_subplot(122)
 				#ax1.plot(np.arange(len(np.sum(image[clip:-clip, 0:numrows+1], axis=1))) + clip,
 				#	     np.sum(image[clip:-clip,0:numrows+1], axis=1))
-				ax1.plot(np.arange(len(np.sum(image[:, 0:20], axis=1))),
-					     np.sum(image[:, 0:20], axis=1) )#+ np.sum(image[:, -40:], axis=1))
-				ax2.plot(np.arange(len(np.sum(image[:, -40:-20], axis=1))),
-					     np.sum(image[:, -40:-20], axis=1) )#+ np.sum(image[:, -40:], axis=1))
+				if nirspec_constants.upgrade:
+					ax1.plot(np.arange(len(np.sum(image[:, 0:30], axis=1))),
+						     np.sum(image[:, 0:30], axis=1) )#+ np.sum(image[:, -40:], axis=1))
+					ax2.plot(np.arange(len(np.sum(image[:, -60:-40], axis=1))),
+						     np.sum(image[:, -60:-40], axis=1) )#+ np.sum(image[:, -40:], axis=1))
+				else:
+					ax1.plot(np.arange(len(np.sum(image[:, 0:20], axis=1))),
+						     np.sum(image[:, 0:20], axis=1) )#+ np.sum(image[:, -40:], axis=1))
+					ax2.plot(np.arange(len(np.sum(image[:, -40:-20], axis=1))),
+						     np.sum(image[:, -40:-20], axis=1) )#+ np.sum(image[:, -40:], axis=1))
 				plt.show()
 			
-			Xs0  = np.arange(len(np.sum(image[:, 0:20], axis=1)))
-			Ys0  = np.sum(image[:, 0:20], axis=1)
+			if nirspec_constants.upgrade:
+				Xs0  = np.arange(len(np.sum(image[:, 0:30], axis=1)))
+				Ys0  = np.sum(image[:, 0:30], axis=1)
 
-			Xs00 = np.arange(len(np.sum(image[:, -40:-20], axis=1)))
-			Ys00 = np.sum(image[:, -40:-20], axis=1)
+				Xs00 = np.arange(len(np.sum(image[:, -60:-40], axis=1)))
+				Ys00 = np.sum(image[:, -60:-40], axis=1)
+
+			else:
+				Xs0  = np.arange(len(np.sum(image[:, 0:20], axis=1)))
+				Ys0  = np.sum(image[:, 0:20], axis=1)
+
+				Xs00 = np.arange(len(np.sum(image[:, -40:-20], axis=1)))
+				Ys00 = np.sum(image[:, -40:-20], axis=1)
 
 			Xs  = np.arange(len(np.sum(image[:, 0:numrows*2+1], axis=1)))
 			Ys  = np.sum(image[clip:-clip, 0:numrows*2+1], axis=1)
@@ -56,7 +75,6 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 			#print('Guess', guess1, guess2)
 			#print(np.min([guess1, guess2]))
 			#print(np.max([guess1, guess2]))
-
 			range1 = np.min([guess1, guess2]) - 10
 			range2 = np.max([guess1, guess2]) + 10
 			if range1 < 0: range1 = 0
@@ -109,7 +127,7 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 				
 				#popt = [guess1]
 				if plotvid:
-					fig0 = plt.figure(199, figsize=(8,4))
+					fig0 = plt.figure(i, figsize=(8,4))
 					ax1 = fig0.add_subplot(121)
 					ax2 = fig0.add_subplot(122)
 					#ax1.imshow(image[clip:-clip, 0:numrows*2+1], origin='lower', aspect='auto')
@@ -125,7 +143,7 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 					ax2.minorticks_on()
 					#plt.show()
 					plt.draw()
-					plt.pause(0.05)
+					plt.pause(0.01)
 					plt.close('all')
 				
 				Pixels.append(i)
@@ -172,7 +190,7 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 				#	continue
 
 				if plotvid:
-					fig0 = plt.figure(199, figsize=(8,4))
+					fig0 = plt.figure(i, figsize=(8,4))
 					ax1 = fig0.add_subplot(121)
 					ax2 = fig0.add_subplot(122)
 					#ax1.imshow(image[clip:-clip, i-numrows:i+numrows+1], origin='lower', aspect='auto')
@@ -187,7 +205,7 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 					ax2.minorticks_on()
 					#plt.show()
 					plt.draw()
-					plt.pause(0.05)
+					plt.pause(0.01)
 					plt.close('all')
 				
 
@@ -208,7 +226,7 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 	unFitted = True
 	count    = 0
 
-	if plot:
+	if plotfinal:
 		fig = plt.figure(3)
 		ax = fig.add_subplot(111)
 		ax.scatter(pixels, Centroids, c='0.5', s=3, alpha=0.5)
@@ -240,7 +258,7 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 		#print(unFitted)
 		if len(Centroids) == len(newCent): 
 			
-			if plot:
+			if plotfinal:
 				ax.plot(np.arange(image.shape[1]), p1(np.arange(image.shape[1])), 'r--')
 				ax.scatter(newpix, newCent, marker='x', c='b', s=3)
 
@@ -249,7 +267,7 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 			sumsq = np.sum(hist**2)
 			#print(rms, sumsq)
 			#print(z1)
-			if plot:
+			if plotfinal:
 				ax.plot(np.arange(image.shape[1]), p1(np.arange(image.shape[1])), 'r--')
 				ax.scatter(newpix, newCent, marker='x', c='b', s=3)
 				"""
@@ -280,7 +298,7 @@ def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, cutof
 	
 	#plt.figure(1)
 	#plt.imshow(image, origin='lower')
-	if plot: 
+	if plotfinal: 
 		plt.show()
 	
 
