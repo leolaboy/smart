@@ -100,16 +100,16 @@ class Flat:
 
 
             # TESTING TO PLOT ORDER CUTOUTS XXX
-            '''
-            print(flatOrder.topCalc, flatOrder.botCalc)
-            plt.figure(7362)
-            plt.imshow(self.flatImg, origin='lower', aspect='auto')
-            plt.axhline(flatOrder.topCalc, c='r', ls='--')
-            plt.axhline(flatOrder.botCalc, c='b', ls='--')
-            #plt.show()
-            #sys.exit()
-            '''
+            if config.params['debug_tracing'] is True:
+                print(flatOrder.topCalc, flatOrder.botCalc)
+                plt.figure(7362)
+                plt.imshow(self.flatImg, origin='lower', aspect='auto')
+                plt.axhline(flatOrder.topCalc, c='r', ls='--')
+                plt.axhline(flatOrder.botCalc, c='b', ls='--')
+                plt.show()
+                #sys.exit()
             # TESTING TO PLOT ORDER CUTOUTS XXX
+            
             
             # determine if order is expected to be on the detector
             # if this order is off but previous order(s) was/were on then no more orders
@@ -142,41 +142,41 @@ class Flat:
                     continue
 
                 # TESTING TO PLOT ORDER CUTOUTS XXX
-                '''
-                print(flatOrder.topCalc, flatOrder.botCalc)
-                plt.figure(7363)
-                plt.imshow(self.flatImg, origin='lower', aspect='auto')
-                plt.axhline(flatOrder.topCalc, c='r', ls='--')
-                plt.axhline(flatOrder.botCalc, c='b', ls='--')
-                try:
-                    plt.axhline(flatOrder.topMeas, c='r', ls=':')
-                    plt.plot(flatOrder.topEdgeTrace)
-                except:
-                    print('Cannot plot measured top')
-                try:
-                    plt.axhline(flatOrder.botMeas, c='b', ls=':')
-                    plt.plot(flatOrder.botEdgeTrace)
-                except:
-                    print('Cannot plot measured bot')
-                plt.show()
-                sys.exit()
-                '''
-                # TESTING TO PLOT ORDER CUTOUTS XXX
+                if config.params['debug_tracing'] is True:
+                    print(flatOrder.topCalc, flatOrder.botCalc)
+                    plt.figure(7363)
+                    plt.imshow(self.flatImg, origin='lower', aspect='auto')
+                    plt.axhline(flatOrder.topCalc, c='r', ls='--')
+                    plt.axhline(flatOrder.botCalc, c='b', ls='--')
+                    try:
+                        plt.axhline(flatOrder.topMeas, c='r', ls=':')
+                        plt.plot(flatOrder.topEdgeTrace)
+                    except:
+                        print('Cannot plot measured top')
+                    try:
+                        plt.axhline(flatOrder.botMeas, c='b', ls=':')
+                        plt.plot(flatOrder.botEdgeTrace)
+                    except:
+                        print('Cannot plot measured bot')
+                    plt.show()
+                    #sys.exit()
+                    
+                    # TESTING TO PLOT ORDER CUTOUTS XXX
+                    
+                    ### TESTING TO PLOT ORDER CUTOUTS XXX
                 
-                ### TESTING TO PLOT ORDER CUTOUTS XXX
-                '''
-                print(flatOrder.botEdgeTrace)
-                fig = plt.figure(3898)
-                print('YESYESYES')
-                plt.imshow(self.flatImg, origin='lower', aspect='auto')
-                plt.plot(flatOrder.topEdgeTrace, c='r', ls='--')
-                plt.plot(flatOrder.botEdgeTrace, c='b', ls='--')
-                plt.minorticks_on()
-                fig.suptitle('TEST021')
-                plt.show()
-                print("NONONO")
-                #sys.exit()
-                '''
+                    print(flatOrder.botEdgeTrace)
+                    fig = plt.figure(3898)
+                    print('YESYESYES')
+                    plt.imshow(self.flatImg, origin='lower', aspect='auto')
+                    plt.plot(flatOrder.topEdgeTrace, c='r', ls='--')
+                    plt.plot(flatOrder.botEdgeTrace, c='b', ls='--')
+                    plt.minorticks_on()
+                    fig.suptitle('TEST021')
+                    plt.show()
+                    print("NONONO")
+                    #sys.exit()
+                
                 ### TESTING TO PLOT ORDER CUTOUTS XXX
                 
                 if flatOrder.spatialTraceFitResidual > config.params['max_spatial_trace_res']:
@@ -230,25 +230,27 @@ class Flat:
         self.botEdgePeaks = self.findPeaks(self.botEdgeProfile)
 
         ### TEST PLOT ORDER EDGE PEAKS XXX
-        '''
-        print(rolled)
-        print(self.topEdgeImg)
-        print(self.topEdgeProfile)
-        print(self.topEdgePeaks)
-        print(self.botEdgeImg)
-        print(self.botEdgeProfile)
-        print(self.botEdgePeaks)
+        if config.params['debug_tracing'] is True:
+            print(rolled)
+            print(self.topEdgeImg)
+            print(self.topEdgeProfile)
+            print(self.topEdgePeaks)
+            print(self.botEdgeImg)
+            print(self.botEdgeProfile)
+            print(self.botEdgePeaks)
 
-        fig1 = plt.figure(2647, figsize=(10,6))
-        ax1 = fig1.add_subplot(121)
-        ax2 = fig1.add_subplot(122)
-        ax1.plot(self.topEdgeProfile)
-        for i in self.topEdgePeaks: ax1.axvline(i, color='r', ls='--')
-        ax2.plot(self.botEdgeProfile)
-        for i in self.botEdgePeaks: ax2.axvline(i, color='r', ls='--')
-        plt.show()
-        sys.exit()
-        '''
+            fig1 = plt.figure(2647, figsize=(10,6))
+            ax1 = fig1.add_subplot(121)
+            ax2 = fig1.add_subplot(122)
+            ax1.set_title('Top Peaks')
+            ax2.set_title('Bottom Peaks')
+            ax1.plot(self.topEdgeProfile)
+            for i in self.topEdgePeaks: ax1.axvline(i, color='r', ls='--')
+            ax2.plot(self.botEdgeProfile)
+            for i in self.botEdgePeaks: ax2.axvline(i, color='r', ls='--')
+            plt.show()
+            #sys.exit()
+            
         ### TEST PLOT ORDER EDGE PEAKS XXX
 
         return
@@ -257,6 +259,7 @@ class Flat:
 
     def findPeaks(self, edgeProfile):
         
+        edgeProfile[0:15] = 0 # mask out the first few pixels (maybe this is a dirty fix)
         peak_rows = argrelextrema(edgeProfile, np.greater, order=35)[0]
         peak_intensities = edgeProfile[peak_rows]
         tall_peaks_i = np.where(peak_intensities > (np.amax(peak_intensities) * 0.10))

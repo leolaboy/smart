@@ -16,7 +16,7 @@ def NormDist(x, mean, sigma, baseline, amplitude):
 
 
 
-def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, plotfinal=True, cutoff=10):
+def CreateSpatialMap(image, numrows=5, clip=15, plot=False, plotvid=False, plotfinal=False, cutoff=10):
 
 	# Make some changes for the upgraded version of NIRSPEC
 	if nirspec_constants.upgrade: 

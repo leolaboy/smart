@@ -26,9 +26,12 @@ class GratingEq:
             coeffs['K-AO']      = { 'c1': 0.376787803, 'c2': 5.35337265e6, 'y0': -3.12732704e6,
                                     'r1': 0.23482994, 'r2': -33591.707, 'z0': 14891.3158}; 
                                 
-            coeffs['NIRSPEC-7'] = { 'c1': 0.376655776, 'c2': -4.22366351e6, 'y0': 2.45448586e6,
-                                    'r1': 0.23482994, 'r2': -33591.707, 'z0': 14891.3158};    
+            #coeffs['NIRSPEC-7'] = { 'c1': 0.376655776, 'c2': -4.22366351e6, 'y0': 2.45448586e6,
+            #                        'r1': 0.23482994, 'r2': -33591.707, 'z0': 14891.3158};    
                                           
+            coeffs['NIRSPEC-7'] = { 'c1': 0.366075635, 'c2': -4.13657603e5, 'y0': 2.34143097e5,
+                                    'r1': 0.23482994, 'r2': -33591.707, 'z0': 14891.3158};  
+
             coeffs['NIRSPEC-6'] = { 'c1': 0.24986411, 'c2': -35961.453, 'y0': 15944.8337,
                                     'r1': 0.23686484, 'r2': -33685.61,  'z0': 14901.32};   
                                                  
@@ -44,8 +47,12 @@ class GratingEq:
             coeffs['NIRSPEC-2'] = { 'c1': 0.49449345, 'c2': -35965.39,  'y0': 15987.1423,
                                     'r1': 0.46779492, 'r2': -31416.355, 'z0': 13601.3478};                                    
         
-            coeffs['NIRSPEC-1'] = { 'c1': 0.754348427, 'c2': -1.34342463e6, 'y0': 7.62950418e5,
+            #coeffs['NIRSPEC-1'] = { 'c1': 0.754348427, 'c2': -1.34342463e6, 'y0': 7.62950418e5,
+            #                        'r1': 0.4713783,  'r2': -38876.842, 'z0': 17880.5877}; 
+
+            coeffs['NIRSPEC-1'] = { 'c1': 0.755422321, 'c2': 2.15294367e6, 'y0': 1.23998391e6,
                                     'r1': 0.4713783,  'r2': -38876.842, 'z0': 17880.5877}; 
+
         else:
             coeffs['K-AO']      = { 'c1': 0.24792775, 'c2': -35906.947, 'y0': 15955.4515,
                                     'r1': 0.23482994, 'r2': -33591.707, 'z0': 14891.3158}; 
@@ -80,6 +87,7 @@ class GratingEq:
 
             k1 = 8.55030015e5 # Found these coeffs empirically using the new format simulator
             k2 = 1.61866180e1
+            k1, k2 = 8.53904913e5, 1.63484788e1 # New test coeffs
         else:
             pixel = np.arange(const.N_COLS, dtype=float)
     
@@ -124,11 +132,17 @@ class GratingEq:
             self.logger.info('using complicated order width calculation')
             # width of order depends on disperser angle
             if const.upgrade: 
-                k3 = -3.91408142e6 # Found these coeffs empirically using the new format simulator
-                k4 = -1.09796060e5
+
+                # Old values but work for our data (NIRSPEC upgrade N7)
+                #k3 = -3.91408142e6 # Found these coeffs empirically using the new format simulator
+                #k4 = -1.09796060e5
+
+                k3, k4 = 6.51668024e4, 1.82380582e3 # New test coeffs
+
                 if 'NIRSPEC-1' in filtername:
                     k3 = 5.23052614e6
                     k4 = 1.49654716e5
+                    k3, k4 = -5.31450186e5, -1.52086993e4 # New test coeffs
                 if 'K-' in filtername:
                     k3 = -3.75106282e6
                     k4 = -1.05224419e5
