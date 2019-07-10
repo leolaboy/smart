@@ -11,7 +11,7 @@ LARGE_TILT_THRESHOLD = 20
 LARGE_TILT_EXTRA_PADDING = 10
 OVERSCAN_WIDTH = 10
 
-def extract_order(order_num, obj, flat, top_calc, bot_calc, filter_name, slit_name):
+def extract_order(order_num, obj, flat, top_calc, bot_calc, filter_name, slit_name, eta=None):
     """
     
     filter and slit arguments are required to select filter and slit-specific 
@@ -58,12 +58,15 @@ def extract_order(order_num, obj, flat, top_calc, bot_calc, filter_name, slit_na
             order.botTrace += constants.LONG_SLIT_EDGE_MARGIN
     
     # cut out order from object frame and flat and compute on and off order masks
-    cut_out_order(obj, flat, order)
+    if eta is not None:
+        cut_out_order(obj, flat, order, eta=eta)
+    else:
+        cut_out_order(obj, flat, order)
              
     return order
 
 
-def cut_out_order(obj, flat, order):
+def cut_out_order(obj, flat, order, eta=None):
     """
     
     obj - the full frame object image
@@ -95,6 +98,8 @@ def cut_out_order(obj, flat, order):
          
     order.objCutout   = np.array(cut_out(obj, order.highestPoint, order.lowestPoint, order.padding))
     order.flatCutout  = np.array(cut_out(flat, order.highestPoint, order.lowestPoint, order.padding))
+    if ets is not None:
+        order.etaCutout  = np.array(cut_out(eta, order.highestPoint, order.lowestPoint, order.padding))
     order.shiftOffset = order.padding + order.botMeas
     
     if float(order.lowestPoint) > float(order.padding):
@@ -108,6 +113,7 @@ def cut_out_order(obj, flat, order):
         
     order.objCutout  = np.ma.masked_array(order.objCutout, mask=order.offOrderMask)
     order.flatCutout = np.ma.masked_array(order.flatCutout, mask=order.offOrderMask)
+    if eta is not None: order.flatCutout = np.ma.masked_array(order.flatCutout, mask=order.offOrderMask)
 
     return
     

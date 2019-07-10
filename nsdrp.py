@@ -86,6 +86,7 @@ def main():
         config.params['out_dir']               = args.out_dir
     config.params['jpg']                       = args.jpg
     config.params['override_ab']               = args.override_ab
+    config.params['extra_cutout']              = args.extra_cutout
     config.params['debug_tracing']             = args.debug_tracing
     config.params['sowc']                      = args.sowc;
 
@@ -286,6 +287,7 @@ def parse_cmnd_line_args():
             action='store_true')
     parser.add_argument('-sowc', help='enable simple order width calculation', action='store_true')
     parser.add_argument('-override_ab', help='removes AB pair check for the same object', action='store_true')
+    parser.add_argument('-extra_cutout', help='trim more of the order edges', action='store_true')
     parser.add_argument('-debug_tracing', help='debug order tracing', action='store_true')
 
     return(parser.parse_args())

@@ -86,11 +86,21 @@ def reduce_order(order, eta=None, arc=None):
     # rectify obj and flattened obj in spatial dimension
     __rectify_spatial(order, eta=eta, arc=arc)
  
+    '''
+    print('SHAPE:', order.ffObjImg['A'].shape, order.ffEtaImg.shape)
+    plt.figure(3)
+    norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
+    plt.imshow(order.ffEtaImg, origin='lower', norm=norm, aspect='auto')
+    #np.save('unrect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
+    #plt.savefig('%s_unrect.png'%order.flatOrder.orderNum, dpi=600, bbox_inches='tight')
+    '''
+
     # trim rectified order
     __trim(order, eta=eta, arc=arc)
 
-    """
+    '''
     plt.figure(4)
+    print('SHAPE:', order.ffObjImg['A'].shape, order.ffEtaImg.shape)
     norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
     plt.imshow(order.ffEtaImg, origin='lower', norm=norm, aspect='auto')
     #np.save('unrect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
@@ -104,7 +114,8 @@ def reduce_order(order, eta=None, arc=None):
     norm = ImageNormalize(order.ffObjImg['B'], interval=ZScaleInterval())
     plt.imshow(order.ffObjImg['B'], origin='lower', aspect='auto', norm=norm)
     plt.show(block=True)
-    """
+    sys.exit()
+    '''
 
     # save spatially rectified images before spectral rectify for diagnostics 
     # if AB pair then subtract B from A

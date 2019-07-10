@@ -62,7 +62,6 @@ class Flat:
         self.nOrdersExpected = 0
         self.nOrdersFound    = 0
         
-        
         self.flatOrders = []
         
         try:
@@ -424,6 +423,9 @@ class Flat:
         
         # determine cutout padding
         flatOrder.cutoutPadding = config.get_cutout_padding(self.filterName, self.slit)
+
+        # get the extra cutout if any
+        flatOrder.extraCutout  = config.get_extra_cutout(self.filterName, self.slit)
         
         # add extra padding for orders with large tilt
         tilt = abs(flatOrder.avgEdgeTrace[0] - flatOrder.avgEdgeTrace[-1])
@@ -432,6 +434,9 @@ class Flat:
                 ' threshold = ' + str(config.params['large_tilt_threshold']) + 
                 ' extra padding = ' + str(config.params['large_tilt_extra_padding']))
             flatOrder.cutoutPadding += config.params['large_tilt_extra_padding']
+        if config.params['extra_cutout']: 
+            self.logger.info('extra order cutout detected,' + 
+                ' extra cutout = ' + str(flatOrder.extraCutout) + ' pixels')
         self.logger.debug('cutout padding = ' + str(round(flatOrder.cutoutPadding, 0)))
         
         # determine highest point of top trace (ignore edge)
@@ -450,7 +455,7 @@ class Flat:
         flatOrder.cutout = np.array(image_lib.cut_out(
                 self.flatImg, flatOrder.highestPoint, flatOrder.lowestPoint, 
                 flatOrder.cutoutPadding))
-                
+
         if float(flatOrder.lowestPoint) > float(flatOrder.cutoutPadding):
             flatOrder.onOrderMask, flatOrder.offOrderMask = get_masks(
                     flatOrder.cutout.shape, 

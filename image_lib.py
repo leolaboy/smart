@@ -330,6 +330,7 @@ def cut_out(data, top, bot, padding):
         else:
             return data[0:int(top) + int(padding), :]
 
+
 def centroid(spec, width, window, approx):
     p0 = max(0, approx - (window // 2))
     p1 = min(width - 1, approx + (window // 2)) + 1
