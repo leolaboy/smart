@@ -53,19 +53,19 @@ def reduce_order(order, eta=None, arc=None):
     else:
         for frame in order.frames:
             if frame == 'AB': continue # Don't need to do this one
-            logger.info('bad pixel cleaning object frame %s'%frame)
+            logger.info('bad pixel cleaning object frame %s, order %s'%(frame, order.flatOrder.orderNum))
             order.ffObjImg[frame] = fixpix.fixpix_rs(order.ffObjImg[frame])
-            logger.debug('bad pixel cleaning object frame %s complete'%frame)
-        
+            logger.debug('bad pixel cleaning object frame %s, order %s complete'%(frame, order.flatOrder.orderNum))
+    
         if eta is not None:
-            logger.info('bad pixel cleaning etalon frame')
+            logger.info('bad pixel cleaning etalon frame %s, order %s'%(frame, order.flatOrder.orderNum))
             order.ffEtaImg = fixpix.fixpix_rs(order.ffEtaImg)
-            logger.debug('bad pixel cleaning etalon frame complete')
+            logger.debug('bad pixel cleaning etalon frame %s, order %s complete'%(frame, order.flatOrder.orderNum))
 
         if arc is not None:
-            logger.info('bad pixel cleaning arc lamp frame')
+            logger.info('bad pixel cleaning arc lamp frame %s, order %s'%(frame, order.flatOrder.orderNum))
             order.ffArcImg = fixpix.fixpix_rs(order.ffArcImg)
-            logger.debug('bad pixel cleaning arc lamp frame complete')
+            logger.debug('bad pixel cleaning arc lamp frame %s, order %s complete'%(frame, order.flatOrder.orderNum))
     
     ### XXX TESTING AREA
 
