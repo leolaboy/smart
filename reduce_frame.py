@@ -1,5 +1,6 @@
-import os
+import os, sys
 import logging
+import coloredlogs
 import numpy as np
 from astropy.io import fits
 
@@ -17,6 +18,7 @@ import imp
 import fixpix
 import nirspec_constants
 
+#logging.setLoggerClass(nsdrp.ColoredLogger)
 logger = logging.getLogger('obj')
 # main_logger = logging.getLogger('main')
 # main_logger = logging.getLogger('main')
@@ -275,7 +277,7 @@ def reduce_orders(reduced, eta=None, arc=None):
         if flatOrder.valid is not True:
             continue        
         
-        logger.info('*********** ORDER ' + str(flatOrder.orderNum) + ' ***********')
+        logger.info('*'*20 + ' ORDER {} '.format(flatOrder.orderNum) + '*'*20)
 
         #if flatOrder.orderNum != 32: continue #XXX
         #if flatOrder.orderNum != 33: continue #XXX
@@ -508,8 +510,7 @@ def init(baseName, out_dir):
     logger.handlers = []
     if config.params['debug']:
         logger.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s ' +
-                '%(levelname)s - %(filename)s:%(lineno)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s %(levelname)s - %(filename)s:%(lineno)s - %(message)s')
     else:
         logger.setLevel(logging.INFO)
         formatter = logging.Formatter('%(asctime)s %(levelname)s - %(message)s')
@@ -527,17 +528,21 @@ def init(baseName, out_dir):
         
     if os.path.exists(fn):
         os.rename(fn, fn + '.prev')
-        
+
     fh = logging.FileHandler(filename=fn)
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(formatter)
     logger.addHandler(fh)
-    
+
     if config.params['verbose'] is True:
         if config.params['debug']:
-            sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(filename)s:%(lineno)s - %(message)s')
+            #sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(filename)s:%(lineno)s - %(message)s')
+            sformatter = coloredlogs.ColoredFormatter(fmt='%(asctime)s,%(msecs)03d %(levelname)s - %(filename)s:%(lineno)s - %(message)s',
+                                                field_styles={'levelname': {'color': 'cyan'}})
         else:
-            sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(message)s')
+            #sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(message)s')
+            sformatter = coloredlogs.ColoredFormatter(fmt='%(asctime)s,%(msecs)03d %(levelname)s - %(message)s',
+                                                field_styles={'levelname': {'color': 'cyan'}})
         sh = logging.StreamHandler()
         sh.setLevel(logging.DEBUG)
         sh.setFormatter(sformatter)
@@ -579,6 +584,15 @@ def log_start_summary(reduced):
         logging.getLogger(l).log(INFO, 'n coadds = ' + str(reduced.getNCoadds()))
     logger.info('echelle angle = ' + str(reduced.getEchPos()) + ' deg')
     logger.info('cross disperser angle = ' + str(reduced.getDispPos()) + ' deg')
+    '''
+    logger.debug('DEBUG')
+    logger.error('ERROR')
+    logger.warning("WARNING")
+    logger.critical("CRITICAL")
+    logger.notice("NOTICE")
+    logger.success("SUCCESS")
+    sys.exit()
+    '''
     return
 
 

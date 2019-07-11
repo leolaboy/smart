@@ -3,6 +3,7 @@ import numpy as np
 from scipy.signal import argrelextrema
 #from astropy.io import fits
 import logging
+import coloredlogs
 #import traceback
 import nirspec_constants
 
@@ -86,7 +87,7 @@ class Flat:
         
         for orderNum in range(config.get_starting_order(self.filterName), 0, -1):
             
-            self.logger.info('*********** FLAT ORDER {} ***********'.format(orderNum))
+            self.logger.info('*'*20 + ' FLAT ORDER {} '.format(orderNum) + '*'*20)
 
             flatOrder = FlatOrder.FlatOrder(self.baseName, orderNum, self.logger)
             
@@ -100,7 +101,7 @@ class Flat:
 
             # TESTING TO PLOT ORDER CUTOUTS XXX
             if config.params['debug_tracing'] is True:
-                print(flatOrder.topCalc, flatOrder.botCalc)
+                print('TOP CALC, BOTTOM CALC:', flatOrder.topCalc, flatOrder.botCalc)
                 plt.figure(7362)
                 plt.imshow(self.flatImg, origin='lower', aspect='auto')
                 plt.axhline(flatOrder.topCalc, c='r', ls='--')
@@ -114,7 +115,7 @@ class Flat:
             # if this order is off but previous order(s) was/were on then no more orders
             # because orders are contiguous
             if not self.gratingEq.is_on_detector(flatOrder.topCalc, flatOrder.botCalc):
-                self.logger.info('order {} is not on the detector'.format(orderNum))
+                self.logger.warning('order {} is not on the detector'.format(orderNum))
                 if firstOrderFound:
                     break
                 
@@ -136,7 +137,7 @@ class Flat:
                 try:
                     self.findSpatialTrace(flatOrder)
                 except DrpException as e:
-                    self.logger.info('failed to find spatial trace: {}'.format(e.message))
+                    self.logger.error('failed to find spatial trace: {}'.format(e.message))
                     flatOrder.valid = False
                     continue
 
@@ -187,7 +188,7 @@ class Flat:
                 try:
                     self.cutOutOrder(flatOrder)
                 except DrpException as e:
-                    self.logger.warning('failed to extract flat order {}: {}'.format(
+                    self.logger.error('failed to extract flat order {}: {}'.format(
                             str(orderNum), e.message))
                     flatOrder.valid = False
                     continue
@@ -195,7 +196,7 @@ class Flat:
                 try:
                     flatOrder.reduce()
                 except DrpException as e:
-                    self.logger.warning('failed to reduce flat order{}: {}'.format(
+                    self.logger.error('failed to reduce flat order{}: {}'.format(
                         str(orderNum), e.message))
                     flatOrder.valid = False
                     continue
@@ -288,13 +289,13 @@ class Flat:
             flatOrder.topMeas = self.findEdge(flatOrder.botMeas + w, maxDelta, 'top')
 
         if flatOrder.topMeas is None:
-            self.logger.info('top edge not found')
+            self.logger.warning('top edge not found')
         else:
             self.logger.info('measured top edge location = {:.0f} pixels'.format(flatOrder.topMeas))
             self.logger.info('   top edge location delta = {:.0f} pixels'.format(
                 flatOrder.topCalc - flatOrder.topMeas))    
         if flatOrder.botMeas is None:
-            self.logger.info('bottom edge not found')
+            self.logger.warning('bottom edge not found')
         else:
             self.logger.info('measured bot edge location = {:.0f} pixels'.format(flatOrder.botMeas))
             self.logger.info('   bot edge location delta = {:.0f} pixels'.format(
@@ -366,12 +367,12 @@ class Flat:
             flatOrder.avgEdgeTrace = (flatOrder.topEdgeTrace + flatOrder.botEdgeTrace) / 2.0
     
         elif flatOrder.botEdgeTrace is None:
-            self.logger.info('using top trace only')
+            self.logger.warning('using top trace only')
             flatOrder.avgEdgeTrace = flatOrder.topEdgeTrace - \
                     ((flatOrder.topMeas - flatOrder.botCalc) / 2.0) + 1.0
             
         else:
-            self.logger.info('using bottom trace only')
+            self.logger.warning('using bottom trace only')
             flatOrder.avgEdgeTrace = flatOrder.botEdgeTrace + \
                     ((flatOrder.topCalc - flatOrder.botMeas) / 2.0) + 1.0
                     
@@ -492,9 +493,13 @@ class Flat:
         
         if config.params['verbose'] is True:
             if config.params['debug']:
-                sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(filename)s:%(lineno)s - %(message)s')
+                #sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(filename)s:%(lineno)s - %(message)s')
+                sformatter = coloredlogs.ColoredFormatter(fmt='%(asctime)s,%(msecs)03d %(levelname)s - %(filename)s:%(lineno)s - %(message)s',
+                                                field_styles={'levelname': {'color': 'cyan'}})
             else:
-                sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(message)s')
+                #sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(message)s')
+                sformatter = coloredlogs.ColoredFormatter(fmt='%(asctime)s,%(msecs)03d %(levelname)s - %(message)s',
+                                                field_styles={'levelname': {'color': 'cyan'}})
             sh = logging.StreamHandler()
             sh.setLevel(logging.DEBUG)
             sh.setFormatter(sformatter)

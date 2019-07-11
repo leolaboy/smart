@@ -51,16 +51,16 @@ def create(in_dir):
 #            logger.info('Ignored {} files because they are not object frames'.format(
 #                    failed2reduce.get('itype')))
         if failed2reduce.get('dismode') is not None:
-            logger.info('Failed to reduced {} files because of low dispersion mode'.format(
+            logger.warning('Failed to reduced {} files because of low dispersion mode'.format(
                     failed2reduce.get('dispmode')))
         elif failed2reduce.get('n1') is not None:
-            logger.info('Failed to reduced {} files because NAXIS1 != 1024 or 2048'.format(
+            logger.warning('Failed to reduced {} files because NAXIS1 != 1024 or 2048'.format(
                     failed2reduce.get('n1')))
         elif failed2reduce.get('n2') is not None:
-            logger.info('Failed to reduced {} files because NAXIS2 != 1024 or 2048'.format(
+            logger.warning('Failed to reduced {} files because NAXIS2 != 1024 or 2048'.format(
                     failed2reduce.get('n2')))
         elif failed2reduce.get('fil') is not None:
-            logger.info('Failed to reduce {} files because of unsupported filter'.format(
+            logger.warning('Failed to reduce {} files because of unsupported filter'.format(
                     failed2reduce.get('fil')))
         else:
             pass

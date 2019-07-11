@@ -48,6 +48,9 @@ params['extra_cutout'] = False  # do not do any extra trimming
 
 params['sowc'] = False  # simple order width calculation
 
+params['log_dir']  = False  # log directory
+params['log_file'] = False  # full path to the log file
+
 
 # expected order number at bottom of detector
 starting_order = {

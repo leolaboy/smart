@@ -43,7 +43,7 @@ def extract_order(order_num, obj, flat, top_calc, bot_calc, filter_name, slit_na
     find_edge_traces(tops, bots, order, slit_name)
     
     if order.topTrace is None and order.botTrace is None:
-        logger.info('could not trace top or bottom of order edge on flat')
+        logger.warning('could not trace top or bottom of order edge on flat')
         return None
     
     if order.botTrace is not None:
@@ -159,11 +159,11 @@ def find_edge_traces(tops, bots, order, slit_name):
         order.avgTrace = (order.topTrace + order.botTrace) / 2.0
 
     elif order.botTrace is None:
-        logger.info('using top trace only')
+        logger.warning('using top trace only')
         order.avgTrace = order.topTrace - ((order.topMeas - order.botCalc) / 2.0) + 1.0
         
     else:
-        logger.info('using bottom trace only')
+        logger.warning('using bottom trace only')
         order.avgTrace = order.botTrace + ((order.topCalc - order.botMeas) / 2.0) + 1.0
         
     return
@@ -179,7 +179,7 @@ def determine_edge_locations(tops, bots, order, min_intensity, max_delta):
         logger.debug('reducing edge detection threshold')
         order.topMeas = find_peak(tops, order.topCalc, min_intensity / 2)
         if order.topMeas is None:
-            logger.info('cannot find top edge of order')
+            logger.warning('cannot find top edge of order')
 
     if order.topMeas is not None:
         if (order.topMeas < 1) or (abs(order.topMeas - order.topCalc) > (max_delta)):
@@ -196,7 +196,7 @@ def determine_edge_locations(tops, bots, order, min_intensity, max_delta):
         logger.info('reducing edge detection threshold')
         order.botMeas = find_peak(bots, order.botCalc, min_intensity / 2) 
         if order.botMeas is None:
-            logger.info('cannot find bottom edge of order')
+            logger.warning('cannot find bottom edge of order')
 
     if order.botMeas is not None:
         if (order.botMeas < 1) or (abs(order.botMeas - order.botCalc) > (max_delta)):

@@ -3,6 +3,7 @@ import numpy as np
 import scipy.stats
 import scipy.optimize
 #import scipy.ndimage
+import coloredlogs, verboselogs
 
 import config
 import image_lib
@@ -18,7 +19,9 @@ import CAT_Functions as cat
 import matplotlib.pyplot as plt 
 import nirspec_constants
 
+verboselogs.install()
 logger = logging.getLogger('obj')
+#logger = verboselogs.VerboseLogger('obj')
 
 def reduce_order(order, eta=None, arc=None):
         
@@ -268,7 +271,7 @@ def reduce_order(order, eta=None, arc=None):
         else:
             oh_wavelengths, oh_intensities = wavelength_utils.get_oh_lines()
     except IOError as e:
-        logger.critical('cannot read OH/Etalon/Arc line file: ' + str(e))
+        logger.critical('cannot read OH/etalon/arc line file: ' + str(e))
         raise
         
 

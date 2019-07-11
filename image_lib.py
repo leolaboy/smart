@@ -337,7 +337,6 @@ def centroid(spec, width, window, approx):
     c  = p0 + ndimage.center_of_mass(spec[p0:p1])[0]
     
     if abs(c - approx) > 1:
-        #logger.debug('centroid error, approx = {}, centroid = {:.3f}'.format(approx, c))
         return(approx)    
     
     return(c)            
