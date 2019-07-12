@@ -208,7 +208,10 @@ class Flat:
         self.logger.info('flat reduction complete')
         self.logger.info('n orders expected = {}'.format(self.nOrdersExpected))
         self.nOrdersFound = len([p for p in self.flatOrders if p.valid == True])
-        self.logger.info('n orders found = {}'.format(self.nOrdersFound))
+        if self.nOrdersExpected != self.nOrdersFound:
+            self.logger.warning('n orders found = {}'.format(self.nOrdersFound))
+        else:
+            self.logger.info('n orders found = {}'.format(self.nOrdersFound))
         return
         
 

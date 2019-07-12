@@ -282,6 +282,7 @@ def reduce_orders(reduced, eta=None, arc=None):
         #if flatOrder.orderNum != 32: continue #XXX
         #if flatOrder.orderNum != 33: continue #XXX
         #if flatOrder.orderNum != 37: continue #XXX
+        #if flatOrder.orderNum != 68: continue #XXX
             
         order = Order.Order(reduced.frames, reduced.baseNames, flatOrder, etaImg=reduced.etaImg)
         
@@ -302,8 +303,47 @@ def reduce_orders(reduced, eta=None, arc=None):
             plt.show()
             '''
             ### TESTING
+
+
+            ### TEST to mask out pixels outside of trace
+            # Mask out the pixels above and below the trace
+            #onOrderMask, offOrderMask = Flat.get_masks(
+            #        flatOrder.cutout.shape, flatOrder.topEdgeTrace, flatOrder.botEdgeTrace)
+            if float(flatOrder.lowestPoint) > float(flatOrder.cutoutPadding):
+                onOrderMask, offOrderMask = Flat.get_masks(
+                        flatOrder.cutout.shape, 
+                        flatOrder.topEdgeTrace - flatOrder.lowestPoint + flatOrder.cutoutPadding, 
+                        flatOrder.botEdgeTrace - flatOrder.lowestPoint + flatOrder.cutoutPadding)
+            else:
+                onOrderMask, offOrderMask = Flat.get_masks(
+                    flatOrder.cutout.shape, flatOrder.topEdgeTrace, flatOrder.botEdgeTrace)
+            ### TEST to mask out pixels outside of trace
+
+
             order.objCutout[frame] = np.array(image_lib.cut_out(reduced.objImg[frame], 
                     flatOrder.highestPoint, flatOrder.lowestPoint, flatOrder.cutoutPadding))  
+            '''
+            import matplotlib.pyplot as plt
+            plt.figure(64781)
+            plt.imshow(order.objCutout[frame], origin='lower', aspect='auto')
+            #plt.plot(np.arange(2048), topTrace, c='b', ls=':')
+            #plt.plot(np.arange(2048), botTrace, c='r', ls=':')
+            #plt.axhline(top, c='b', ls='--')
+            #plt.axhline(bot, c='r', ls='--')
+            plt.show(block=False)
+            '''
+
+            order.objCutout[frame] = np.ma.masked_array(order.objCutout[frame], mask=offOrderMask)
+
+            '''
+            plt.figure(64782)
+            plt.imshow(order.objCutout[frame], origin='lower', aspect='auto')
+            #plt.plot(np.arange(2048), topTrace, c='b', ls=':')
+            #plt.plot(np.arange(2048), botTrace, c='r', ls=':')
+            #plt.axhline(top, c='b', ls='--')
+            #plt.axhline(bot, c='r', ls='--')
+            plt.show()
+            '''
 
         if eta is not None:
             order.etaCutout = np.array(image_lib.cut_out(reduced.etaImg, 

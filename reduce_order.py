@@ -28,6 +28,7 @@ def reduce_order(order, eta=None, arc=None):
     #print('ETA BEGINNING', eta)
     #print('REDUCE ORDER BEGINNING', order.flatOrder.orderNum)
     #if order.flatOrder.orderNum != 33: return 0
+    #if order.flatOrder.orderNum != 68: return 0
     #if order.flatOrder.orderNum != 77: return 0
     #sys.exit()
 
@@ -69,10 +70,10 @@ def reduce_order(order, eta=None, arc=None):
     
     ### XXX TESTING AREA
 
-    """
-    plt.figure(3)
-    norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
-    plt.imshow(order.ffEtaImg, origin='lower', norm=norm, aspect='auto')
+    '''
+    #plt.figure(3)
+    #norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
+    #plt.imshow(order.ffEtaImg, origin='lower', norm=norm, aspect='auto')
     #np.save('unrect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
     #plt.savefig('%s_unrect.png'%order.flatOrder.orderNum, dpi=600, bbox_inches='tight')
     plt.figure(33)
@@ -84,7 +85,7 @@ def reduce_order(order, eta=None, arc=None):
     norm = ImageNormalize(order.ffObjImg['B'], interval=ZScaleInterval())
     plt.imshow(order.ffObjImg['B'], origin='lower', aspect='auto', norm=norm)
     plt.show(block=True)
-    """
+    '''
 
     # rectify obj and flattened obj in spatial dimension
     __rectify_spatial(order, eta=eta, arc=arc)
@@ -369,6 +370,12 @@ def __flatten(order, eta=None, arc=None):
         
         order.objImg[frame]   = np.array(order.objCutout[frame]) 
         order.ffObjImg[frame] = np.array(order.objCutout[frame] / order.flatOrder.normFlatImg)
+
+        #Also cut out the flat fielded object
+        order.ffObjCutout[frame] = np.array(image_lib.cut_out(order.ffObjImg[frame], 
+                    order.flatOrder.highestPoint, order.flatOrder.lowestPoint, order.flatOrder.cutoutPadding))
+        # Add then mask it
+        order.ffObjCutout[frame] = np.ma.masked_array(order.objCutout[frame], mask=order.flatOrder.offOrderMask)
         
         if frame != 'AB':
             if np.amin(order.ffObjImg[frame]) < 0:
@@ -404,7 +411,8 @@ def __rectify_spatial(order, eta=None, arc=None):
     for frame in order.frames:
         if frame == 'AB': continue # Skip the AB frame, we will subtract them after rectification
 
-        logger.info('attempting spatial rectification using object trace')
+        logger.info('attempting spatial rectification of frame {} using object trace'.format(frame))
+
         try:
             if frame in ['A', 'B']:
                 #print('FRAME', frame)
@@ -414,10 +422,12 @@ def __rectify_spatial(order, eta=None, arc=None):
                     logger.info('frame %s rectified using object trace'%frame)
 
                 else:
-                    polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
+                    #polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
+                    polyVals1             = cat.CreateSpatialMap(order.objCutout[frame])  
                     order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
                     logger.info('frame %s rectified using object trace'%frame)
-                    polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
+                    #polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
+                    polyVals2             = cat.CreateSpatialMap(order.ffObjCutout[frame])  
                     order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
                     logger.info('flat fielded frame %s rectified using object trace'%frame)
 
