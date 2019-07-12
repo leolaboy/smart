@@ -419,17 +419,20 @@ def __rectify_spatial(order, eta=None, arc=None):
                 if config.params['onoff'] == True and frame == 'B': 
                     order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
                     order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
-                    logger.info('frame %s rectified using object trace'%frame)
+                    logger.info('frame {}, order {} rectified using object trace'.format(
+                        frame, order.flatOrder.orderNum))
 
                 else:
                     #polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
                     polyVals1             = cat.CreateSpatialMap(order.objCutout[frame])  
                     order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
-                    logger.info('frame %s rectified using object trace'%frame)
+                    logger.info('frame {}, order {} rectified using object trace'.format(
+                        frame, order.flatOrder.orderNum))
                     #polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
                     polyVals2             = cat.CreateSpatialMap(order.ffObjCutout[frame])  
                     order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
-                    logger.info('flat fielded frame %s rectified using object trace'%frame)
+                    logger.info('flat fielded frame {}, order {} rectified using object trace'.format(
+                        frame, order.flatOrder.orderNum))
 
                 if eta is not None:
                     if frame == 'B':
@@ -439,12 +442,14 @@ def __rectify_spatial(order, eta=None, arc=None):
                         else:
                             order.etaImgB     = image_lib.rectify_spatial(order.etaImgB, polyVals1)
                             order.ffEtaImgB   = image_lib.rectify_spatial(order.ffEtaImgB, polyVals2)
-                            logger.info('etalon frame %s rectified using object trace'%frame)
+                            logger.info('etalon frame {}, order {} rectified using object trace'.format(
+                                frame, order.flatOrder.orderNum))
 
                     else:
                         order.etaImg      = image_lib.rectify_spatial(order.etaImg, polyVals1)
                         order.ffEtaImg    = image_lib.rectify_spatial(order.ffEtaImg, polyVals2)
-                        logger.info('etalon frame %s rectified using object trace'%frame)
+                        logger.info('etalon frame {}, order {} rectified using object trace'.format(
+                            frame, order.flatOrder.orderNum))
 
                 if arc is not None:
                     if frame == 'B':
@@ -454,12 +459,14 @@ def __rectify_spatial(order, eta=None, arc=None):
                         else:
                             order.arcImgB     = image_lib.rectify_spatial(order.arcImgB, polyVals1)
                             order.ffArcImgB   = image_lib.rectify_spatial(order.ffArcImgB, polyVals2)
-                            logger.info('arc lamp frame %s rectified using object trace'%frame)
+                            logger.info('arc lamp frame {}, order {} rectified using object trace'.format(
+                                frame, order.flatOrder.orderNum))
 
                     else:
                         order.arcImg      = image_lib.rectify_spatial(order.arcImg, polyVals1)
                         order.ffArcImg    = image_lib.rectify_spatial(order.ffArcImg, polyVals2)
-                        logger.info('arc lamp frame %s rectified using object trace'%frame)
+                        logger.info('arc lamp frame {}, order {} rectified using object trace'.format(
+                            frame, order.flatOrder.orderNum))
             else:
                 order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
                 order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
