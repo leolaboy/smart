@@ -124,6 +124,7 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, arc=None, ov
         
         obj_B_header = fits.PrimaryHDU.readfrom(obj_B_fn, ignore_missing_end=True).header
         if create_raw_data_sets.is_valid_pair(obj_header, obj_B_header, override=override):
+            logger.debug('Reducing AB pair, A= ' + obj_fn + ' , B= ' + obj_B_fn)
             rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header, eta=eta, arc=arc, dark=dark)
 
         else:
@@ -192,3 +193,6 @@ def write_summary(rds):
             logger.info('{:>34}'.format(val[0]) + ' = ' + str(val[1]).format(val[2]))
         except ValueError as e:
             logger.info('{:>27}'.format(val[0]) + ' = ')
+        except TypeError as e:
+            logger.debug('Excepting TypeError: {}'.format(e))
+            pass

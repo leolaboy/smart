@@ -98,7 +98,7 @@ def cut_out_order(obj, flat, order, eta=None):
          
     order.objCutout   = np.array(cut_out(obj, order.highestPoint, order.lowestPoint, order.padding))
     order.flatCutout  = np.array(cut_out(flat, order.highestPoint, order.lowestPoint, order.padding))
-    if ets is not None:
+    if eta is not None:
         order.etaCutout  = np.array(cut_out(eta, order.highestPoint, order.lowestPoint, order.padding))
     order.shiftOffset = order.padding + order.botMeas
     
@@ -113,7 +113,8 @@ def cut_out_order(obj, flat, order, eta=None):
         
     order.objCutout  = np.ma.masked_array(order.objCutout, mask=order.offOrderMask)
     order.flatCutout = np.ma.masked_array(order.flatCutout, mask=order.offOrderMask)
-    if eta is not None: order.flatCutout = np.ma.masked_array(order.flatCutout, mask=order.offOrderMask)
+    if eta is not None: 
+    	order.etaCutout = np.ma.masked_array(order.etaCutout, mask=order.offOrderMask)
 
     return
     

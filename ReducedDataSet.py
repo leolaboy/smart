@@ -180,12 +180,17 @@ class ReducedDataSet:
         return self.header['OBJECT']
     
     def subtractDark(self):   
+        """
+        Modified from the previous version @Dino Hsu
+        Removed the dependency on the object.
+        Left with only dark subtracted flat frame.
+        """
         if self.hasDark:
             frames = ['A']
             if self.isPair:
                 frames.append('B')
-            for frame in frames:
-                self.objImg[frame]  = np.subtract(self.objImg[frame], self.dark)
+            #for frame in frames:
+            #    self.objImg[frame]  = np.subtract(self.objImg[frame], self.dark)
             self.flatImg = np.subtract(self.flatImg, self.dark) 
             self.darkSubtracted = True
             
