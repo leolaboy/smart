@@ -435,7 +435,7 @@ def smooth_spectral_trace(data, l, eta=None, arc=None, version2=True, plot=False
             rmse = np.sqrt(np.mean((centroids - z0(Pixels))**2))
             if rmse > 0.15: 
             	logger.debug('RMSE of the line is {:.3f} pixels (outlier)'.format(rmse))
-            else
+            else:
             	logger.debug('RMSE of the line is {:.3f} pixels'.format(rmse))
             if rmse > 0.15: continue
 
