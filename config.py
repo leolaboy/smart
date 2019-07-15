@@ -32,9 +32,9 @@ params['out_dir']               = './nsdrp_out'       # used only in command lin
 params['jpg']                   = False     # if True then write preview plots in JPG not PNG
 
 # configuration and tuning parameters
-params['max_n_flats']           = 31
-params['max_n_darks']           = 31
-params['max_n_etas']            = 8
+params['max_n_flats']           = 8
+params['max_n_darks']           = 8
+params['max_n_etas']            = 4
 params['max_spatial_trace_res'] = 1.0
 
 
