@@ -12,7 +12,9 @@ import DrpException
 from datetime import datetime
 
 def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, arc=None, override=False):
-    
+
+    logger = logging.getLogger('main')
+   
     flat_fn    = None
     obj_fn     = None
     
@@ -141,8 +143,6 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, arc=None, ov
             msg = 'output directory {} does not exist and cannot be created'.format(out_dir)
             raise IOError(msg)
                 
-    logger = logging.getLogger('main')
-
     # generate reduced data set by reducing raw data set
     reducedDataSet = reduce_frame.reduce_frame(rawDataSet, out_dir, eta=eta, arc=arc, dark=dark)
     
