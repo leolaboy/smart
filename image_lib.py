@@ -3,7 +3,9 @@ import scipy.ndimage as ndimage
 #from skimage.feature.peak import peak_local_max
 import cosmics
 #from __builtin__ import None
+import matplotlib.pyplot as plt
 import os
+import nirspec_constants
 
 
 def rectify_spatial(data, curve):
@@ -111,8 +113,11 @@ def normalize(data, on_order, off_order):
     if np.count_nonzero(on_order) == 0:
         return
 
-    # ignore pixels beyond column 1000 by setting value to 1.0
-    data_copy[:, 1000:] = 1.0
+    # ignore pixels beyond the dropoff at the red end by setting value to 1.0
+    if nirspec_constants.upgrade:
+        data_copy[:, 2048-48:] = 1.0
+    else:    
+        data_copy[:, 1024-24:] = 1.0
 
     # take median (mean) of only the on-order pixels
     #mean = np.ma.masked_array(data_copy, mask=off_order).mean()
@@ -270,14 +275,19 @@ def extract_spectra(obj, flat, noise, obj_range, sky_range_top, sky_range_bot, e
     '''
     noise_sp = np.sqrt(obj_noise_sum + (k * (sky_noise_top_sum + sky_noise_bot_sum)))
     '''
+    print(obj_range, sky_range_top, sky_range_bot)
     print(obj_noise_sum)
-    print((k * (sky_noise_top_sum + sky_noise_bot_sum)))
+    print(k)
     print(sky_noise_top_sum)
     print(sky_noise_bot_sum)
+    print((k * (sky_noise_top_sum + sky_noise_bot_sum)))
     print(noise_sp)
 
+    plt.figure()
+    plt.plot(obj_sp, label='Object')
+    plt.plot(noise_sp, label='Noise')
     plt.show()
-    sys.exit()
+    #sys.exit()
     '''
     
     if eta is not None:
@@ -320,13 +330,13 @@ def cut_out(data, top, bot, padding):
         else:
             return data[0:int(top) + int(padding), :]
 
+
 def centroid(spec, width, window, approx):
     p0 = max(0, approx - (window // 2))
     p1 = min(width - 1, approx + (window // 2)) + 1
     c  = p0 + ndimage.center_of_mass(spec[p0:p1])[0]
     
     if abs(c - approx) > 1:
-        #logger.debug('centroid error, approx = {}, centroid = {:.3f}'.format(approx, c))
         return(approx)    
     
     return(c)            

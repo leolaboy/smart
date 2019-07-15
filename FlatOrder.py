@@ -3,6 +3,8 @@ import numpy as np
 import image_lib
 import matplotlib.pyplot as plt
 from astropy.visualization import ZScaleInterval, ImageNormalize
+import nirspec_constants
+import config
 
 #logger = logging.getLogger('obj')
 
@@ -35,6 +37,8 @@ class FlatOrder:
 
         self.longSlitEdgeMargin = 0
         self.cutoutPadding      = 0
+
+        self.extraTrim          = 0
         
         self.highestPoint       = None
         self.lowestPoint        = None
@@ -85,18 +89,41 @@ class FlatOrder:
         
         ### TESTING PLOT XXX
         '''
-        norm = ImageNormalize(self.rectFlatImg, interval=ZScaleInterval())
-        plt.figure()
-        plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
+        from skimage import exposure
+        #norm = ImageNormalize(self.rectFlatImg, interval=ZScaleInterval())
+
+        fig = plt.figure(1985)
+        #plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
+        plt.imshow(self.cutout, origin='lower', aspect='auto')#, norm=norm)
         plt.axhline(self.botTrim, c='r', ls=':')
         plt.axhline(self.topTrim, c='b', ls=':')
         #plt.axhline(self.lowestPoint, c='r', ls='--')
         #plt.axhline(self.highestPoint, c='b', ls='--')
-        plt.title('Order: %s'%self.orderNum)
+        fig.suptitle('Order: %s'%self.orderNum)
+
+        fig = plt.figure(1986)
+        #plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
+        plt.imshow(self.normFlatImg, origin='lower', aspect='auto')#, norm=norm)
+        plt.axhline(self.botTrim, c='r', ls=':')
+        plt.axhline(self.topTrim, c='b', ls=':')
+        #plt.axhline(self.lowestPoint, c='r', ls='--')
+        #plt.axhline(self.highestPoint, c='b', ls='--')
+        fig.suptitle('Order: %s'%self.orderNum)
+
+        fig = plt.figure(1987)
+        #plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
+        plt.imshow(exposure.equalize_hist(self.rectFlatImg), origin='lower', aspect='auto')#, norm=norm)
+        plt.axhline(self.botTrim, c='r', ls=':')
+        plt.axhline(self.topTrim, c='b', ls=':')
+        #plt.axhline(self.botTrim+10, c='r', ls='--')
+        #plt.axhline(self.topTrim-10, c='b', ls='--')
+        #plt.axhline(self.lowestPoint, c='r', ls='--')
+        #plt.axhline(self.highestPoint, c='b', ls='--')
+        fig.suptitle('Order: %s'%self.orderNum)
         print(self.cutoutPadding)
         print(self.highestPoint, self.lowestPoint, self.topEdgeTrace - self.botEdgeTrace)
         plt.show()
-        #sys.exit()
+        sys.exit()
         '''
         ### TESTING PLOT XXX
 
@@ -108,21 +135,31 @@ class FlatOrder:
         self.logger.debug('reduction of flat order {} complete'.format(self.orderNum))
         
         return
+
+
     
     def calcTrimPoints(self):
+
         if self.lowestPoint > self.cutoutPadding:
             self.topTrim = self.highestPoint - self.lowestPoint + self.cutoutPadding - 3
         else:
             self.topTrim = self.highestPoint - 3
         h = np.amin(self.topEdgeTrace - self.botEdgeTrace) # Old way
         h = int(np.around(np.mean(self.topEdgeTrace - self.botEdgeTrace))) # New way
-        '''
-        plt.figure()
-        plt.hist(self.topEdgeTrace - self.botEdgeTrace, bins=int(np.sqrt(len(self.botEdgeTrace))))
-        '''
+
+        if nirspec_constants.upgrade:
+            endPix = 2048
+        else:
+            endPix = 1024
+
         self.botTrim = self.topTrim - h + 3
         self.botTrim = int(max(0, self.botTrim))
-        self.topTrim = int(min(self.topTrim, 1023))
+        self.topTrim = int(min(self.topTrim, endPix-1))
+
+        # Trim a little more from the edges. Useful for overlapping edges.
+        if config.params['extra_cutout']:
+            self.botTrim += 10
+            self.topTrim -= 10
         
         return
 

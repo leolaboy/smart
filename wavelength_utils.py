@@ -17,6 +17,7 @@ import pylab as pl
 from statsmodels.formula.api import ols
 import config
 import matplotlib.pyplot as plt
+import nirspec_constants
 
 import logging
 from scipy.signal._peak_finding import argrelextrema, find_peaks_cwt
@@ -177,7 +178,7 @@ def line_id(order, oh_wavelengths, oh_intensities, eta=None, arc=None):
             lines.append((matchesidx[i], matchesohx[i]))
         return lines 
     else:
-        logger.warning('per-order wavelength fit slope out of limits, not using sky lines from this order')
+        logger.warning('per-order wavelength fit slope out of limits, not using sky/etalon/arc lines from this order')
         return None
 
     #plt.figure(1078)
@@ -278,12 +279,12 @@ def get_etalon_lines():
             if etalon_filename is None:
                 etalon_filename = config.params['etalon_filename']
              
-        logger.info('reading Etalon line data from ' + etalon_filename)
+        logger.info('reading etalon line data from ' + etalon_filename)
         
         try:
             lines = open(etalon_filename).readlines()
         except:
-            logger.error('failed to open Etalon emission line file: ' + etalon_filename)
+            logger.error('failed to open etalon emission line file: ' + etalon_filename)
             raise
     
         get_etalon_lines.etalon_wavelengths = []
@@ -350,7 +351,7 @@ def gen_synthesized_sky(oh_wavelengths, oh_intensities, wavelength_scale_calc, e
     if y.any():
         all_g = y[0]
     else:
-        logger.warning('no OH/Etalon/Arc lines in wavelength range')
+        logger.warning('no OH/etalon/arc lines in wavelength range')
         return None
 
     for i in np.arange(0, x.size):
@@ -463,7 +464,7 @@ SKY_THRESHOLD = 3.0
 def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=None, arc=None):
     """
     """
-    debug    = True
+    debug    = False
     theory_x = np.array(wavelength_scale_shifted)
          
     # if theory_x.min() < 20500:
@@ -533,7 +534,7 @@ def identify(sky, wavelength_scale_shifted, oh_wavelengths, oh_intensities, eta=
         bigohx = np.delete(bigohx, deletelist, None)
     else:
         # there were no sky lines in the table that match theoretical wavelength range
-        logger.info('could not find known sky/etalon/arc lines in expected wavelength range')
+        logger.warning('could not find known sky/etalon/arc lines in expected wavelength range')
         return []
  
         
@@ -1042,7 +1043,7 @@ def twodfit(dataX, dataY, dataZ):
     
 
     if sigma >= 100.0:
-        logger.warning('wavelength calibration failed, fit residual too large')
+        logger.critical('wavelength calibration failed, fit residual too large')
         return None, None, None, None
 
     logger.info('wavelength calibration rms fit residual = ' + str(round(sigma, 3)))
@@ -1064,7 +1065,11 @@ def twodfit(dataX, dataY, dataZ):
 
 def applySolution(order_object, p1):
     if len(p1) > 0:
-        newdx = np.arange(1024)
+
+        if nirspec_constants: endPix = 2048
+        else: endPix = 1024
+        
+        newdx = np.arange(endPix)
         newy = 1. / order_object.sciorder.order_num
         newoh = np.ravel(
             p1[0] + p1[1] * newdx + p1[2] * newdx ** 2 + p1[3] * newy + p1[4] * newdx * newy + p1[5] * (

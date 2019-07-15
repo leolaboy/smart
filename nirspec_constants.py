@@ -1,6 +1,9 @@
 
-N_COLS = 1024
-N_ROWS = 1024
+N_COLS          = 1024
+N_ROWS          = 1024
+upgrade         = False
+N_COLS_upgrade  = 2048
+N_ROWS_upgrade  = 2048
 
 LONG_SLIT_EDGE_MARGIN = 6
 
@@ -17,8 +20,8 @@ def get_starting_order(filtername):
     return starting_order[filtername.upper()]
 
 order_edge_peak_thresh = {'NIRSPEC-1': 300, 'NIRSPEC-2': 300, 'NIRSPEC-3': 300, 
-                'NIRSPEC-4': 600, 'NIRSPEC-5': 600, 'NIRSPEC-6': 500, 'NIRSPEC-7': 100,
-                'K-AO': 300 }
+                		  'NIRSPEC-4': 600, 'NIRSPEC-5': 600, 'NIRSPEC-6': 500, 'NIRSPEC-7': 100,
+                		  'K-AO': 300 }
 
 def get_order_edge_peak_thresh(filtername):
     return order_edge_peak_thresh[filtername.upper()]

@@ -19,12 +19,13 @@ from skimage import exposure
 import image_lib
 import config
 import nsdrp
+import nirspec_constants as const
 
 warnings.filterwarnings('ignore')
 
 main_logger = logging.getLogger('main')
-obj_logger = logging.getLogger('obj')
-file_count = [0]
+obj_logger  = logging.getLogger('obj')
+file_count  = [0]
 
 #import ReducedDataSet
 #from statsmodels.sandbox.regression.ols_anova_original import products
@@ -32,11 +33,11 @@ file_count = [0]
 #def produceProfileFitsTable(name, order,profile):
 #    continue
 
-saveFitsTables = True
+saveFitsTables  = True
 saveAsciiTables = True
-savePlots = True
-showPlots = False
-saveJpgs = False
+savePlots       = True
+showPlots       = False
+saveJpgs        = False
 
 # This dictionary maps data product filename suffix (e.g. flux_tbl.fits)
 # to output subdirectory (e.g. fitstbl/flux).
@@ -75,6 +76,7 @@ subdirs = dict([
 #add noise in products
 
 
+
 def constructFileName(outpath, base_name, order, fn_suffix):
     """
     Constructs data product filename, including directory path given:
@@ -88,11 +90,15 @@ def constructFileName(outpath, base_name, order, fn_suffix):
         return fn
     else:
         return fn[:fn.rfind(base_name) + len(base_name) + 1] + str(order) + fn[fn.rfind(fn_suffix)-1:]
-   
+  
+
+
 def log_fn(fn):  
         #obj_logger.info('saving {}'.format(fn))
         file_count[0] += 1 
         return
+
+
 
 def gen(reduced, out_dir, eta=None, arc=None):
     """
@@ -382,6 +388,7 @@ def gen(reduced, out_dir, eta=None, arc=None):
             reduced.getBaseName(), str(file_count[0])))
     return 
     
+
     
 def tracePlot(outpath, base_name, order_num, raw, fit, mask):
 
@@ -414,6 +421,8 @@ def tracePlot(outpath, base_name, order_num, raw, fit, mask):
     log_fn(fn)
     
     return
+
+
 
 def traceFits(outpath, base_name, order_num, trace):
     hdu     = fits.PrimaryHDU(trace)
@@ -464,6 +473,7 @@ def traceFits(outpath, base_name, order_num, trace):
 #     return
 
 
+
 def profileAsciiTable(outpath, base_name, order_num, profile):
     
     names   = ['row', 'mean_flux'] 
@@ -503,6 +513,7 @@ def profileAsciiTable(outpath, base_name, order_num, profile):
  
     return
 
+
  
 def profileFitsTable(outpath, base_name, order_num, profile):  
     
@@ -518,6 +529,8 @@ def profileFitsTable(outpath, base_name, order_num, profile):
     thdulist.writeto(fn, clobber=True)  
     log_fn(fn)
     return  
+
+
 
 def profileFits(outpath, base_name, order_num, profile, header):
     hdu = fits.PrimaryHDU(profile)
@@ -536,6 +549,8 @@ def profileFits(outpath, base_name, order_num, profile, header):
     log_fn(fn)
     return
     
+
+
 def profilePlot(outpath, base_name, order_num, profile, peak, centroid,
             ext_range, sky_range_top, sky_range_bot, top_bg_mean, bot_bg_mean, gaussian, snr):
 
@@ -635,20 +650,22 @@ def profilePlot(outpath, base_name, order_num, profile, peak, centroid,
     log_fn(fn)
     return
 
+
+
 def fluxAsciiTable(outpath, base_name, order_num, wave, flux, sky, synth_sky, snr,
                      flat, trace_upper, trace_lower, trace_mean, trace_fit, fit_res):
      
-    names = [   'col',         'wave',         'flux',         'sky', 
+    names   = [ 'col',         'wave',         'flux',         'sky', 
                 'synth_sky',   'snr',          'flat',         'trace_upper', 
                 'trace_lower', 'trace_mean',   'trace_fit',    'fit_res']
-    units = [   'pixels',      'Angstroms',    'counts',       'counts', 
+    units   = [ 'pixels',      'Angstroms',    'counts',       'counts', 
                 '',            '',             '',             'pixel', 
                 'pixels',      'pixels',       'pixels',       'pixels']
     formats = [ 'd',           '.6e',          '.3e',          '.3e',
                 '.3e',         '.3e',          '.3e',          '.3e',
                 '.3e',         '.3e',          '.3e',          '.3e']
     nominal_width = 10
-    widths = []
+    widths        = []
     
     if config.params['pipes'] is True:
         p_char = '|'
@@ -656,9 +673,15 @@ def fluxAsciiTable(outpath, base_name, order_num, wave, flux, sky, synth_sky, sn
         p_char = ' '
         
     if trace_lower is None:
-        trace_lower = np.zeros(1024, dtype=float)
+        if const.upgrade:
+            trace_lower = np.zeros(2048, dtype=float)
+        else:
+            trace_lower = np.zeros(1024, dtype=float)
     if trace_mean is None:
-        trace_mean = np.zeros(1024, dtype=float)
+        if const.upgrade:
+            trace_lower = np.zeros(2048, dtype=float)
+        else:
+            trace_lower = np.zeros(1024, dtype=float)
         
     for name in names:
         widths.append(max(len(name), nominal_width))
@@ -699,6 +722,7 @@ def fluxAsciiTable(outpath, base_name, order_num, wave, flux, sky, synth_sky, sn
     return
 
     
+
 def fluxFitsTable(outpath, base_name, order_num, wave, flux, sky, synth_sky, error,
                      flat, trace_upper, trace_lower, trace_mean, trace_fit, fit_res):
     # create binary FITS table
@@ -706,8 +730,13 @@ def fluxFitsTable(outpath, base_name, order_num, wave, flux, sky, synth_sky, err
 
     prihdu = fits.PrimaryHDU(header=prihdr)
 
+    if const.upgrade:
+        length1 = 2048
+    else:
+        length1 = 1024
+
     tbhdu = fits.BinTableHDU.from_columns([
-                fits.Column(name='col', format='1I', array=np.arange(1024, dtype=int)),
+                fits.Column(name='col', format='1I', array=np.arange(length1, dtype=int)),
                 fits.Column(name='wave (A)', format='1D', array=wave),
                 fits.Column(name='flux (cnts)', format='1D', array=flux),
                 fits.Column(name='noise (cnts)', format='1D', array=error),
@@ -725,9 +754,16 @@ def fluxFitsTable(outpath, base_name, order_num, wave, flux, sky, synth_sky, err
     log_fn(fn)
     return
 
+
+
 def spectrumPlot(outpath, base_name, title, order_num, y_units, cont, wave, 
                  wave_note='unknown'):
-    
+
+    if const.upgrade:
+        endPix = 2048 - 40
+    else:
+        endPix = 1024 - 20
+
     pl.figure(title, facecolor='white')
     pl.clf()
     pl.title(title + ', ' + base_name + ", order " + str(order_num), fontsize=12)
@@ -737,11 +773,12 @@ def spectrumPlot(outpath, base_name, title, order_num, y_units, cont, wave,
     else:
         pl.ylabel(title)
     pl.grid(True)
-    pl.plot(wave[:1004], cont[:1004], "k-", mfc="none", ms=3.0, linewidth=1)
+    pl.plot(wave[:endPix], cont[:endPix], "k-", mfc="none", ms=3.0, linewidth=1)
     
     ymin, ymax = pl.ylim()
     pl.plot(wave, cont, "k-", mfc="none", ms=3.0, linewidth=1)
     pl.ylim(ymin, ymax)
+    pl.minorticks_on()
     
 #     axes = pl.gca()
     #axes.set_ylim(0, 300)
@@ -751,11 +788,13 @@ def spectrumPlot(outpath, base_name, title, order_num, y_units, cont, wave,
     log_fn(fn)
     return
     
+
+
 def fitsSpectrum(outpath, base_name, title, order_num, y_units, cont, wave, header):
     
-    hdu = fits.PrimaryHDU(cont)
+    hdu     = fits.PrimaryHDU(cont)
     hdulist = fits.HDUList(hdu)
-    hdr = hdulist[0].header
+    hdr     = hdulist[0].header
     for k, v in header.items():
         try:
             hdr[k] = v
@@ -768,13 +807,15 @@ def fitsSpectrum(outpath, base_name, title, order_num, y_units, cont, wave, head
     log_fn(fn)
     return
 
+
+
 def fitsSpectrumWave(outpath, base_name, title, order_num, y_units, cont, wave, header):
     """
     Generate a fits file of wavelength for the corresponding spectra
     """
-    hdu = fits.PrimaryHDU(wave)
+    hdu     = fits.PrimaryHDU(wave)
     hdulist = fits.HDUList(hdu)
-    hdr = hdulist[0].header
+    hdr     = hdulist[0].header
     for k, v in header.items():
         try:
             hdr[k] = v
@@ -786,6 +827,8 @@ def fitsSpectrumWave(outpath, base_name, title, order_num, y_units, cont, wave, 
     hdulist.writeto(fn, clobber=True)
     log_fn(fn)
     return
+
+
 
 def fitsSpectrumAll(outpath, base_name, title, order_num, cont, wave, noise, sky, header):
     """
@@ -813,6 +856,8 @@ def fitsSpectrumAll(outpath, base_name, title, order_num, cont, wave, noise, sky
     log_fn(fn)
     return
 
+
+
 #Add spectrumPlot2 and fitsSpectrum2 by Dino
 
 def spectrumPlot2(outpath, base_name, title, order_num, y_units, cont1, cont2, wave, 
@@ -820,6 +865,12 @@ def spectrumPlot2(outpath, base_name, title, order_num, y_units, cont1, cont2, w
     """
     Borrow from the code in NSDRP: products.py: to compare flux and noise
     """
+
+    if const.upgrade:
+        endPix = 2048 - 40
+    else:
+        endPix = 1024 - 20
+
     pl.figure(title, facecolor='white')
     pl.clf()
     pl.title(title + ', ' + base_name + ", order " + str(order_num), fontsize=12)
@@ -829,11 +880,12 @@ def spectrumPlot2(outpath, base_name, title, order_num, y_units, cont1, cont2, w
     else:
         pl.ylabel(title)
     pl.grid(True)
-    pl.plot(wave[:1004], cont1[:1004], "k-", wave[:1004], cont2[:1004], "r-", mfc="none", ms=3.0, linewidth=1)
+    pl.plot(wave[:endPix], cont1[:endPix], "k-", wave[:endPix], cont2[:endPix], "r-", mfc="none", ms=3.0, linewidth=1)
     
     ymin, ymax = pl.ylim()
     pl.plot(wave, cont1, "k-", wave, cont2, "r-", mfc="none", ms=3.0, linewidth=1)
     pl.ylim(ymin, ymax)
+    pl.minorticks_on()
     
 #     axes = pl.gca()
     #axes.set_ylim(0, 300)
@@ -865,6 +917,11 @@ def fitsSpectrum2(outpath, base_name, title, order_num, y_units, cont, wave1, wa
     
 def multiSpectrumPlot(outpath, base_name, order, y_units, cont, sky, noise, wave):
     
+    if const.upgrade:
+        endPix = 2048 - 40
+    else:
+        endPix = 1024 - 20
+
     title = 'spectrum'
     pl.figure(title, facecolor='white')
     pl.clf()
@@ -873,11 +930,12 @@ def multiSpectrumPlot(outpath, base_name, order, y_units, cont, sky, noise, wave
     pl.ylabel(title + '(' + y_units + ')')
     pl.grid(True)
     
-    pl.plot(wave[:1004], cont[:1004], "k-", mfc="none", ms=3.0, linewidth=1, label='object')
-    pl.plot(wave[:1004], sky[:1004], "b-", mfc="none", ms=3.0, linewidth=1, label='sky')
-    pl.plot(wave[:1004], noise[:1004], "r-", mfc="none", ms=3.0, linewidth=1, label='noise (1 sigma)')
+    pl.plot(wave[:endPix], cont[:endPix], "k-", mfc="none", ms=3.0, linewidth=1, label='object')
+    pl.plot(wave[:endPix], sky[:endPix], "b-", mfc="none", ms=3.0, linewidth=1, label='sky')
+    pl.plot(wave[:endPix], noise[:endPix], "r-", mfc="none", ms=3.0, linewidth=1, label='noise (1 sigma)')
 
     pl.legend(loc='best', prop={'size': 8})
+    pl.minorticks_on()
 
     fn = constructFileName(outpath, base_name, order, 'spectra.png')
         
@@ -893,6 +951,8 @@ def multiSpectrumPlot(outpath, base_name, order, y_units, cont, sky, noise, wave
 #     logger.info('writing ' + title + ' plot for order ' + str(order) + ' to ' + fits_fn)
 #     hdulist.writeto(fits_fn, clobber=True)
     
+
+
 def wavelengthCalAsciiTable(outpath, base_name, order, col, source, wave_exp, wave_fit, res, peak, 
         slope):
     
@@ -971,6 +1031,8 @@ def wavelengthCalFitsTable(outpath, base_name, order, col, source, wave_exp, wav
     log_fn(fn)
     return
     
+
+
 def twoDimOrderPlot(outpath, base_name, title, base_filename, order_num, data, x_scale,
             wave_note='unknown'):
     """
@@ -998,6 +1060,7 @@ def twoDimOrderPlot(outpath, base_name, title, base_filename, order_num, data, x
 #    pl.set_cmap('jet')
     pl.set_cmap('gray')
 #     pl.set_cmap('Blues_r')
+    pl.minorticks_on()
 
     fn = constructFileName(outpath, base_name, order_num, base_filename)
     savePreviewPlot(fn)
@@ -1005,6 +1068,8 @@ def twoDimOrderPlot(outpath, base_name, title, base_filename, order_num, data, x
     pl.close()
         
     return
+
+
 
 def twoDimNoiseOrderPlot(outpath, base_name, title, base_filename, order_num, data, x_scale,
             wave_note='unknown'):
@@ -1033,6 +1098,7 @@ def twoDimNoiseOrderPlot(outpath, base_name, title, base_filename, order_num, da
 #    pl.set_cmap('jet')
     pl.set_cmap('gray')
 #     pl.set_cmap('Blues_r')
+    pl.minorticks_on()
 
     fn = constructFileName(outpath, base_name, order_num, base_filename)
     savePreviewPlot(fn)
@@ -1041,6 +1107,7 @@ def twoDimNoiseOrderPlot(outpath, base_name, title, base_filename, order_num, da
         
     return
     
+
 
 def twoDimOrderFits(outpath, base_name, order_num, data, header):     
     hdu     = fits.PrimaryHDU(data)
@@ -1058,6 +1125,8 @@ def twoDimOrderFits(outpath, base_name, order_num, data, header):
     log_fn(fn)
     return
 
+
+
 def twoDimNoiseOrderFits(outpath, base_name, order_num, data, header):     
     hdu     = fits.PrimaryHDU(data)
     hdulist = fits.HDUList(hdu)
@@ -1073,6 +1142,7 @@ def twoDimNoiseOrderFits(outpath, base_name, order_num, data, header):
     hdulist.writeto(fn, clobber=True)
     log_fn(fn)
     return
+
 
 
 def savePreviewPlot(fn):

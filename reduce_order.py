@@ -3,6 +3,7 @@ import numpy as np
 import scipy.stats
 import scipy.optimize
 #import scipy.ndimage
+import coloredlogs, verboselogs
 
 import config
 import image_lib
@@ -16,27 +17,34 @@ import fixpix
 
 import CAT_Functions as cat
 import matplotlib.pyplot as plt 
+import nirspec_constants
 
+verboselogs.install()
 logger = logging.getLogger('obj')
+#logger = verboselogs.VerboseLogger('obj')
 
 def reduce_order(order, eta=None, arc=None):
         
     #print('ETA BEGINNING', eta)
-    print(order.flatOrder.orderNum)
+    #print('REDUCE ORDER BEGINNING', order.flatOrder.orderNum)
     #if order.flatOrder.orderNum != 33: return 0
+    #if order.flatOrder.orderNum != 68: return 0
+    #if order.flatOrder.orderNum != 77: return 0
     #sys.exit()
 
     # flatten object images for this order
     __flatten(order, eta=eta, arc=arc)
 
-    """
+    ### TEST PLOT XXX
+    '''
     from astropy.visualization import ZScaleInterval, ImageNormalize
-    plt.figure(1)
+    plt.figure(198)
     norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
     plt.imshow(order.ffEtaImg, origin='lower')
     plt.show()
-    sys.exit()
-    """
+    #sys.exit()
+    '''
+    ### TEST PLOT XXX
 
     ### XXX TESTING AREA
     
@@ -46,26 +54,26 @@ def reduce_order(order, eta=None, arc=None):
     else:
         for frame in order.frames:
             if frame == 'AB': continue # Don't need to do this one
-            logger.info('bad pixel cleaning object frame %s'%frame)
+            logger.info('bad pixel cleaning object frame %s, order %s'%(frame, order.flatOrder.orderNum))
             order.ffObjImg[frame] = fixpix.fixpix_rs(order.ffObjImg[frame])
-            logger.debug('bad pixel cleaning object frame %s complete'%frame)
-        
+            logger.debug('bad pixel cleaning object frame %s, order %s complete'%(frame, order.flatOrder.orderNum))
+    
         if eta is not None:
-            logger.info('bad pixel cleaning etalon frame')
+            logger.info('bad pixel cleaning etalon frame %s, order %s'%(frame, order.flatOrder.orderNum))
             order.ffEtaImg = fixpix.fixpix_rs(order.ffEtaImg)
-            logger.debug('bad pixel cleaning etalon frame complete')
+            logger.debug('bad pixel cleaning etalon frame %s, order %s complete'%(frame, order.flatOrder.orderNum))
 
         if arc is not None:
-            logger.info('bad pixel cleaning arc lamp frame')
+            logger.info('bad pixel cleaning arc lamp frame %s, order %s'%(frame, order.flatOrder.orderNum))
             order.ffArcImg = fixpix.fixpix_rs(order.ffArcImg)
-            logger.debug('bad pixel cleaning arc lamp frame complete')
+            logger.debug('bad pixel cleaning arc lamp frame %s, order %s complete'%(frame, order.flatOrder.orderNum))
     
     ### XXX TESTING AREA
 
-    """
-    plt.figure(3)
-    norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
-    plt.imshow(order.ffEtaImg, origin='lower', norm=norm, aspect='auto')
+    '''
+    #plt.figure(3)
+    #norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
+    #plt.imshow(order.ffEtaImg, origin='lower', norm=norm, aspect='auto')
     #np.save('unrect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
     #plt.savefig('%s_unrect.png'%order.flatOrder.orderNum, dpi=600, bbox_inches='tight')
     plt.figure(33)
@@ -77,16 +85,26 @@ def reduce_order(order, eta=None, arc=None):
     norm = ImageNormalize(order.ffObjImg['B'], interval=ZScaleInterval())
     plt.imshow(order.ffObjImg['B'], origin='lower', aspect='auto', norm=norm)
     plt.show(block=True)
-    """
- 
+    '''
+
     # rectify obj and flattened obj in spatial dimension
     __rectify_spatial(order, eta=eta, arc=arc)
  
+    '''
+    print('SHAPE:', order.ffObjImg['A'].shape, order.ffEtaImg.shape)
+    plt.figure(3)
+    norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
+    plt.imshow(order.ffEtaImg, origin='lower', norm=norm, aspect='auto')
+    #np.save('unrect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
+    #plt.savefig('%s_unrect.png'%order.flatOrder.orderNum, dpi=600, bbox_inches='tight')
+    '''
+
     # trim rectified order
     __trim(order, eta=eta, arc=arc)
 
-    """
+    '''
     plt.figure(4)
+    print('SHAPE:', order.ffObjImg['A'].shape, order.ffEtaImg.shape)
     norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
     plt.imshow(order.ffEtaImg, origin='lower', norm=norm, aspect='auto')
     #np.save('unrect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
@@ -100,7 +118,8 @@ def reduce_order(order, eta=None, arc=None):
     norm = ImageNormalize(order.ffObjImg['B'], interval=ZScaleInterval())
     plt.imshow(order.ffObjImg['B'], origin='lower', aspect='auto', norm=norm)
     plt.show(block=True)
-    """
+    sys.exit()
+    '''
 
     # save spatially rectified images before spectral rectify for diagnostics 
     # if AB pair then subtract B from A
@@ -109,6 +128,7 @@ def reduce_order(order, eta=None, arc=None):
         order.ffObjImg['AB'] = np.subtract(order.ffObjImg['A'], order.ffObjImg['B'])
         # reFlatten
         if np.amin(order.ffObjImg['AB']) < 0: order.ffObjImg['AB'] -= np.amin(order.ffObjImg['AB'])
+        
     order.srNormFlatImg = order.flatOrder.rectFlatImg
     for frame in order.frames:
         order.srFfObjImg[frame] = order.ffObjImg[frame]
@@ -217,11 +237,18 @@ def reduce_order(order, eta=None, arc=None):
         if np.amin(order.ffObjImg['AB']) < 0: order.ffObjImg['AB'] -= np.amin(order.ffObjImg['AB'])
     
 
-    #plt.figure(666) #XXX
+    # TEST PLOT XXX
+    '''
+    from skimage import exposure
+    plt.figure(666, figsize=(10,6))
     #plt.imshow(order.ffEtaImg, origin='lower')
+    plt.imshow(exposure.equalize_hist(order.ffArcImg), origin='lower', aspect='auto')
     #np.save('rect_%s.npy'%order.flatOrder.orderNum, order.ffEtaImg) 
     #plt.savefig('%s_rect.png'%order.flatOrder.orderNum, dpi=600, bbox_inches='tight')
-    #plt.show()
+    plt.show()
+    #sys.exit()
+    '''
+    # TEST PLOT XXX
     
 
     # compute noise image
@@ -245,7 +272,7 @@ def reduce_order(order, eta=None, arc=None):
         else:
             oh_wavelengths, oh_intensities = wavelength_utils.get_oh_lines()
     except IOError as e:
-        logger.critical('cannot read OH/Etalon/Arc line file: ' + str(e))
+        logger.critical('cannot read OH/etalon/arc line file: ' + str(e))
         raise
         
 
@@ -281,10 +308,15 @@ def reduce_order(order, eta=None, arc=None):
         logger.info(str(len(line_pairs)) + ' matched sky/etalon/arc lines found in order')
 
         # add line pairs to Order object as Line objects
+        if nirspec_constants.upgrade:
+            endPix = 2048
+        else:
+            endPix = 1024
+
         for line_pair in line_pairs:
             col, waveAccepted = line_pair
             peak = order.skySpec['A'][col]
-            cent = image_lib.centroid(order.skySpec['A'], 1024, 5, col)
+            cent = image_lib.centroid(order.skySpec['A'], endPix, 5, col)
             line = Line.Line(order.baseNames['A'], order.flatOrder.orderNum, 
                     waveAccepted, col, cent, peak)
             order.lines.append(line)
@@ -311,13 +343,20 @@ def reduce_order(order, eta=None, arc=None):
                     (order.orderCalSlope * order.flatOrder.gratingEqWaveScale[line.col])    
                 line.orderFitRes = abs(line.orderWaveFit - line.waveAccepted)  
                 line.orderFitSlope = (order.orderCalSlope * 
-                        (order.flatOrder.gratingEqWaveScale[1023] - 
-                         order.flatOrder.gratingEqWaveScale[0]))/1024.0
+                        (order.flatOrder.gratingEqWaveScale[endPix-1] - 
+                         order.flatOrder.gratingEqWaveScale[0]))/float(endPix)
     else:
         logger.warning('not enough matched sky/etalon/arc lines in order ' + str(order.flatOrder.orderNum))
         order.orderCal = False 
 
-    #plt.show()
+    # TEST PLOT FLAT XXX
+    '''
+    from skimage import exposure
+    plt.figure(figsize=(10,6))
+    plt.imshow(exposure.equalize_hist(order.flatOrder.cutout), aspect='auto')
+    plt.show()
+    '''
+    # TEST PLOT FLAT XXX
                         
     return
 
@@ -331,6 +370,12 @@ def __flatten(order, eta=None, arc=None):
         
         order.objImg[frame]   = np.array(order.objCutout[frame]) 
         order.ffObjImg[frame] = np.array(order.objCutout[frame] / order.flatOrder.normFlatImg)
+
+        #Also cut out the flat fielded object
+        order.ffObjCutout[frame] = np.array(image_lib.cut_out(order.ffObjImg[frame], 
+                    order.flatOrder.highestPoint, order.flatOrder.lowestPoint, order.flatOrder.cutoutPadding))
+        # Add then mask it
+        order.ffObjCutout[frame] = np.ma.masked_array(order.objCutout[frame], mask=order.flatOrder.offOrderMask)
         
         if frame != 'AB':
             if np.amin(order.ffObjImg[frame]) < 0:
@@ -366,19 +411,28 @@ def __rectify_spatial(order, eta=None, arc=None):
     for frame in order.frames:
         if frame == 'AB': continue # Skip the AB frame, we will subtract them after rectification
 
-        logger.info('attempting spatial rectification using object trace')
+        logger.info('attempting spatial rectification of frame {} using object trace'.format(frame))
+
         try:
             if frame in ['A', 'B']:
                 #print('FRAME', frame)
                 if config.params['onoff'] == True and frame == 'B': 
                     order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
                     order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+                    logger.info('frame {}, order {} rectified using object trace'.format(
+                        frame, order.flatOrder.orderNum))
 
                 else:
-                    polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
+                    #polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
+                    polyVals1             = cat.CreateSpatialMap(order.objCutout[frame])  
                     order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
-                    polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
+                    logger.info('frame {}, order {} rectified using object trace'.format(
+                        frame, order.flatOrder.orderNum))
+                    #polyVals2             = cat.CreateSpatialMap(order.ffObjImg[frame])  
+                    polyVals2             = cat.CreateSpatialMap(order.ffObjCutout[frame])  
                     order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+                    logger.info('flat fielded frame {}, order {} rectified using object trace'.format(
+                        frame, order.flatOrder.orderNum))
 
                 if eta is not None:
                     if frame == 'B':
@@ -388,10 +442,14 @@ def __rectify_spatial(order, eta=None, arc=None):
                         else:
                             order.etaImgB     = image_lib.rectify_spatial(order.etaImgB, polyVals1)
                             order.ffEtaImgB   = image_lib.rectify_spatial(order.ffEtaImgB, polyVals2)
+                            logger.info('etalon frame {}, order {} rectified using object trace'.format(
+                                frame, order.flatOrder.orderNum))
 
                     else:
                         order.etaImg      = image_lib.rectify_spatial(order.etaImg, polyVals1)
                         order.ffEtaImg    = image_lib.rectify_spatial(order.ffEtaImg, polyVals2)
+                        logger.info('etalon frame {}, order {} rectified using object trace'.format(
+                            frame, order.flatOrder.orderNum))
 
                 if arc is not None:
                     if frame == 'B':
@@ -401,13 +459,18 @@ def __rectify_spatial(order, eta=None, arc=None):
                         else:
                             order.arcImgB     = image_lib.rectify_spatial(order.arcImgB, polyVals1)
                             order.ffArcImgB   = image_lib.rectify_spatial(order.ffArcImgB, polyVals2)
+                            logger.info('arc lamp frame {}, order {} rectified using object trace'.format(
+                                frame, order.flatOrder.orderNum))
 
                     else:
                         order.arcImg      = image_lib.rectify_spatial(order.arcImg, polyVals1)
                         order.ffArcImg    = image_lib.rectify_spatial(order.ffArcImg, polyVals2)
+                        logger.info('arc lamp frame {}, order {} rectified using object trace'.format(
+                            frame, order.flatOrder.orderNum))
             else:
                 order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], polyVals1)
                 order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
+
         except:
             logger.warning('could not rectify using object trace, falling back to edge trace')
             order.objImg[frame]   = image_lib.rectify_spatial(order.objImg[frame], 
@@ -543,6 +606,29 @@ def __extract_spectra(order, eta=None, arc=None):
                 image_lib.get_extraction_ranges(order.objImg[frame].shape[0], 
                 order.peakLocation[frame], config.params['obj_window'], 
                 config.params['sky_window'], config.params['sky_separation'])
+
+
+        
+        ### TEST PLOT SKY EXTRACTION REGION XXX
+        '''
+        from skimage import exposure
+        fig = plt.figure(3285)
+        #plt.imshow(self.rectFlatImg, origin='lower', aspect='auto', norm=norm)
+        plt.imshow(exposure.equalize_hist(order.objImg[frame]), origin='lower', aspect='auto')#, norm=norm)
+        plt.axhline(np.min(order.objWindow[frame]), c='b', ls='-')
+        plt.axhline(np.max(order.objWindow[frame]), c='b', ls='-')
+        plt.axhline(np.min(order.topSkyWindow[frame]), c='r', ls='-')
+        plt.axhline(np.max(order.topSkyWindow[frame]), c='r', ls='-')
+        plt.axhline(np.min(order.botSkyWindow[frame]), c='r', ls=':')
+        plt.axhline(np.max(order.botSkyWindow[frame]), c='r', ls=':')
+        #plt.axhline(self.lowestPoint, c='r', ls='--')
+        #plt.axhline(self.highestPoint, c='b', ls='--')
+        fig.suptitle('Extraction Regions')
+        plt.show()
+        #sys.exit()
+        '''
+        ### TEST PLOT SKY EXTRACTION REGION XXX
+        
                 
         logger.info('frame {} extraction window width = {}'.format(
                 frame, str(len(order.objWindow[frame]))))

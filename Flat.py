@@ -3,7 +3,9 @@ import numpy as np
 from scipy.signal import argrelextrema
 #from astropy.io import fits
 import logging
+import coloredlogs
 #import traceback
+import nirspec_constants
 
 import config
 import GratingEq
@@ -36,9 +38,17 @@ class Flat:
         names = ', '.join(str(x) for x in self.baseFns)
         self.logger.info('creating {} from {}'.format(self.fn, names))
 
-        self.flatImg        = data
+        if nirspec_constants.upgrade: 
+            self.flatImg = np.rot90(data, k=3)
+        else: 
+            self.flatImg        = data
 
-        self.filterName     = self.header['filname']
+        if nirspec_constants.upgrade: 
+            filtername1, filtername2 = self.header['SCIFILT2'], ''
+            if self.header['SCIFILT1'] == 'AO-stop': filtername2 = '-AO'
+            self.filterName = filtername1.upper()+filtername2.upper()
+        else:
+            self.filterName = self.header['filname']
         self.slit           = self.header['slitname']
         self.echelleAngle   = self.header['echlpos']
         self.disperserAngle = self.header['disppos']
@@ -51,8 +61,7 @@ class Flat:
         self.botEdgePeaks   = None      # filtered bottom edge profile peaks
         
         self.nOrdersExpected = 0
-        self.nOrdersFound = 0
-        
+        self.nOrdersFound    = 0
         
         self.flatOrders = []
         
@@ -78,32 +87,35 @@ class Flat:
         
         for orderNum in range(config.get_starting_order(self.filterName), 0, -1):
             
-            self.logger.info('*********** FLAT ORDER {} ***********'.format(orderNum))
+            self.logger.info('*'*20 + ' FLAT ORDER {} '.format(orderNum) + '*'*20)
 
             flatOrder = FlatOrder.FlatOrder(self.baseName, orderNum, self.logger)
             
             # get expected location of order on detector
             flatOrder.topCalc, flatOrder.botCalc, flatOrder.gratingEqWaveScale = self.gratingEq.evaluate(
                     orderNum, self.filterName, self.slit, self.echelleAngle, self.disperserAngle)
-
-            """
-            # TESTING TO PLOT ORDER CUTOUTS XXX
-            print(flatOrder.topCalc, flatOrder.botCalc)
-            plt.imshow(self.flatImg, origin='lower', aspect='auto')
-            plt.axhline(flatOrder.topCalc, c='r', ls='--')
-            plt.axhline(flatOrder.botCalc, c='b', ls='--')
-            plt.show()
-            #sys.exit()
-            """
             
             self.logger.info('predicted top edge location = {:.0f} pixels'.format(flatOrder.topCalc))
             self.logger.info('predicted bot edge location = {:.0f} pixels'.format(flatOrder.botCalc))
+
+
+            # TESTING TO PLOT ORDER CUTOUTS XXX
+            if config.params['debug_tracing'] is True:
+                print('TOP CALC, BOTTOM CALC:', flatOrder.topCalc, flatOrder.botCalc)
+                plt.figure(7362)
+                plt.imshow(self.flatImg, origin='lower', aspect='auto')
+                plt.axhline(flatOrder.topCalc, c='r', ls='--')
+                plt.axhline(flatOrder.botCalc, c='b', ls='--')
+                plt.show()
+                #sys.exit()
+            # TESTING TO PLOT ORDER CUTOUTS XXX
+            
             
             # determine if order is expected to be on the detector
             # if this order is off but previous order(s) was/were on then no more orders
             # because orders are contiguous
             if not self.gratingEq.is_on_detector(flatOrder.topCalc, flatOrder.botCalc):
-                self.logger.info('order {} is not on the detector'.format(orderNum))
+                self.logger.warning('order {} is not on the detector'.format(orderNum))
                 if firstOrderFound:
                     break
                 
@@ -121,24 +133,50 @@ class Flat:
                     continue
                 
                 # find spatial trace from edge traces
+                #if orderNum != 76: continue
                 try:
                     self.findSpatialTrace(flatOrder)
                 except DrpException as e:
-                    self.logger.info('failed to find spatial trace: {}'.format(e.message))
+                    self.logger.error('failed to find spatial trace: {}'.format(e.message))
                     flatOrder.valid = False
                     continue
+
+                # TESTING TO PLOT ORDER CUTOUTS XXX
+                if config.params['debug_tracing'] is True:
+                    print(flatOrder.topCalc, flatOrder.botCalc)
+                    plt.figure(7363)
+                    plt.imshow(self.flatImg, origin='lower', aspect='auto')
+                    plt.axhline(flatOrder.topCalc, c='r', ls='--')
+                    plt.axhline(flatOrder.botCalc, c='b', ls='--')
+                    try:
+                        plt.axhline(flatOrder.topMeas, c='r', ls=':')
+                        plt.plot(flatOrder.topEdgeTrace)
+                    except:
+                        print('Cannot plot measured top')
+                    try:
+                        plt.axhline(flatOrder.botMeas, c='b', ls=':')
+                        plt.plot(flatOrder.botEdgeTrace)
+                    except:
+                        print('Cannot plot measured bot')
+                    plt.show()
+                    #sys.exit()
+                    
+                    # TESTING TO PLOT ORDER CUTOUTS XXX
+                    
+                    ### TESTING TO PLOT ORDER CUTOUTS XXX
                 
-                ### TESTING TO PLOT ORDER CUTOUTS XXX
-                '''
-                print(flatOrder.botEdgeTrace)
-                plt.figure()
-                plt.imshow(self.flatImg, origin='lower', aspect='auto')
-                plt.plot(flatOrder.topEdgeTrace, c='r', ls='--')
-                plt.plot(flatOrder.botEdgeTrace, c='b', ls='--')
-                plt.title('TEST021')
-                #plt.show()
-                #sys.exit()
-                '''
+                    print(flatOrder.botEdgeTrace)
+                    fig = plt.figure(3898)
+                    print('YESYESYES')
+                    plt.imshow(self.flatImg, origin='lower', aspect='auto')
+                    plt.plot(flatOrder.topEdgeTrace, c='r', ls='--')
+                    plt.plot(flatOrder.botEdgeTrace, c='b', ls='--')
+                    plt.minorticks_on()
+                    fig.suptitle('TEST021')
+                    plt.show()
+                    print("NONONO")
+                    #sys.exit()
+                
                 ### TESTING TO PLOT ORDER CUTOUTS XXX
                 
                 if flatOrder.spatialTraceFitResidual > config.params['max_spatial_trace_res']:
@@ -150,7 +188,7 @@ class Flat:
                 try:
                     self.cutOutOrder(flatOrder)
                 except DrpException as e:
-                    self.logger.warning('failed to extract flat order {}: {}'.format(
+                    self.logger.error('failed to extract flat order {}: {}'.format(
                             str(orderNum), e.message))
                     flatOrder.valid = False
                     continue
@@ -158,7 +196,7 @@ class Flat:
                 try:
                     flatOrder.reduce()
                 except DrpException as e:
-                    self.logger.warning('failed to reduce flat order{}: {}'.format(
+                    self.logger.error('failed to reduce flat order{}: {}'.format(
                         str(orderNum), e.message))
                     flatOrder.valid = False
                     continue
@@ -170,7 +208,10 @@ class Flat:
         self.logger.info('flat reduction complete')
         self.logger.info('n orders expected = {}'.format(self.nOrdersExpected))
         self.nOrdersFound = len([p for p in self.flatOrders if p.valid == True])
-        self.logger.info('n orders found = {}'.format(self.nOrdersFound))
+        if self.nOrdersExpected != self.nOrdersFound:
+            self.logger.warning('n orders found = {}'.format(self.nOrdersFound))
+        else:
+            self.logger.info('n orders found = {}'.format(self.nOrdersFound))
         return
         
 
@@ -185,23 +226,50 @@ class Flat:
         self.topEdgeImg = rolled - self.flatImg
         self.botEdgeImg = self.flatImg - rolled
         
-        self.topEdgeProfile = np.median(self.topEdgeImg[:, 40:50], axis=1)
-        self.botEdgeProfile = np.median(self.botEdgeImg[:, 40:50], axis=1)
+        self.topEdgeProfile = np.median(self.topEdgeImg[:, 40:60], axis=1)
+        self.botEdgeProfile = np.median(self.botEdgeImg[:, 40:60], axis=1)
 
         self.topEdgePeaks = self.findPeaks(self.topEdgeProfile)
         self.botEdgePeaks = self.findPeaks(self.botEdgeProfile)
-        
+
+        ### TEST PLOT ORDER EDGE PEAKS XXX
+        if config.params['debug_tracing'] is True:
+            print(rolled)
+            print(self.topEdgeImg)
+            print(self.topEdgeProfile)
+            print(self.topEdgePeaks)
+            print(self.botEdgeImg)
+            print(self.botEdgeProfile)
+            print(self.botEdgePeaks)
+
+            fig1 = plt.figure(2647, figsize=(10,6))
+            ax1 = fig1.add_subplot(121)
+            ax2 = fig1.add_subplot(122)
+            ax1.set_title('Top Peaks')
+            ax2.set_title('Bottom Peaks')
+            ax1.plot(self.topEdgeProfile)
+            for i in self.topEdgePeaks: ax1.axvline(i, color='r', ls='--')
+            ax2.plot(self.botEdgeProfile)
+            for i in self.botEdgePeaks: ax2.axvline(i, color='r', ls='--')
+            plt.show()
+            #sys.exit()
+            
+        ### TEST PLOT ORDER EDGE PEAKS XXX
+
         return
         
 
+
     def findPeaks(self, edgeProfile):
         
+        edgeProfile[0:15] = 0 # mask out the first few pixels (maybe this is a dirty fix)
         peak_rows = argrelextrema(edgeProfile, np.greater, order=35)[0]
         peak_intensities = edgeProfile[peak_rows]
         tall_peaks_i = np.where(peak_intensities > (np.amax(peak_intensities) * 0.10))
         
         return(peak_rows[tall_peaks_i[0]])
         
+
 
     def findOrderSowc(self, flatOrder):
         
@@ -224,13 +292,13 @@ class Flat:
             flatOrder.topMeas = self.findEdge(flatOrder.botMeas + w, maxDelta, 'top')
 
         if flatOrder.topMeas is None:
-            self.logger.info('top edge not found')
+            self.logger.warning('top edge not found')
         else:
             self.logger.info('measured top edge location = {:.0f} pixels'.format(flatOrder.topMeas))
             self.logger.info('   top edge location delta = {:.0f} pixels'.format(
                 flatOrder.topCalc - flatOrder.topMeas))    
         if flatOrder.botMeas is None:
-            self.logger.info('bottom edge not found')
+            self.logger.warning('bottom edge not found')
         else:
             self.logger.info('measured bot edge location = {:.0f} pixels'.format(flatOrder.botMeas))
             self.logger.info('   bot edge location delta = {:.0f} pixels'.format(
@@ -302,12 +370,12 @@ class Flat:
             flatOrder.avgEdgeTrace = (flatOrder.topEdgeTrace + flatOrder.botEdgeTrace) / 2.0
     
         elif flatOrder.botEdgeTrace is None:
-            self.logger.info('using top trace only')
+            self.logger.warning('using top trace only')
             flatOrder.avgEdgeTrace = flatOrder.topEdgeTrace - \
                     ((flatOrder.topMeas - flatOrder.botCalc) / 2.0) + 1.0
             
         else:
-            self.logger.info('using bottom trace only')
+            self.logger.warning('using bottom trace only')
             flatOrder.avgEdgeTrace = flatOrder.botEdgeTrace + \
                     ((flatOrder.topCalc - flatOrder.botMeas) / 2.0) + 1.0
                     
@@ -359,6 +427,9 @@ class Flat:
         
         # determine cutout padding
         flatOrder.cutoutPadding = config.get_cutout_padding(self.filterName, self.slit)
+
+        # get the extra cutout if any
+        flatOrder.extraCutout  = config.get_extra_cutout(self.filterName, self.slit)
         
         # add extra padding for orders with large tilt
         tilt = abs(flatOrder.avgEdgeTrace[0] - flatOrder.avgEdgeTrace[-1])
@@ -367,6 +438,9 @@ class Flat:
                 ' threshold = ' + str(config.params['large_tilt_threshold']) + 
                 ' extra padding = ' + str(config.params['large_tilt_extra_padding']))
             flatOrder.cutoutPadding += config.params['large_tilt_extra_padding']
+        if config.params['extra_cutout']: 
+            self.logger.info('extra order cutout detected,' + 
+                ' extra cutout = ' + str(flatOrder.extraCutout) + ' pixels')
         self.logger.debug('cutout padding = ' + str(round(flatOrder.cutoutPadding, 0)))
         
         # determine highest point of top trace (ignore edge)
@@ -385,7 +459,7 @@ class Flat:
         flatOrder.cutout = np.array(image_lib.cut_out(
                 self.flatImg, flatOrder.highestPoint, flatOrder.lowestPoint, 
                 flatOrder.cutoutPadding))
-                
+
         if float(flatOrder.lowestPoint) > float(flatOrder.cutoutPadding):
             flatOrder.onOrderMask, flatOrder.offOrderMask = get_masks(
                     flatOrder.cutout.shape, 
@@ -422,9 +496,13 @@ class Flat:
         
         if config.params['verbose'] is True:
             if config.params['debug']:
-                sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(filename)s:%(lineno)s - %(message)s')
+                #sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(filename)s:%(lineno)s - %(message)s')
+                sformatter = coloredlogs.ColoredFormatter(fmt='%(asctime)s,%(msecs)03d %(levelname)s - %(filename)s:%(lineno)s - %(message)s',
+                                                field_styles={'levelname': {'color': 'cyan'}})
             else:
-                sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(message)s')
+                #sformatter = logging.Formatter('%(asctime)s %(levelname)s - %(message)s')
+                sformatter = coloredlogs.ColoredFormatter(fmt='%(asctime)s,%(msecs)03d %(levelname)s - %(message)s',
+                                                field_styles={'levelname': {'color': 'cyan'}})
             sh = logging.StreamHandler()
             sh.setLevel(logging.DEBUG)
             sh.setFormatter(sformatter)

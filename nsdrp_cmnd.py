@@ -9,50 +9,84 @@ import config
 import products
 import dgn
 import DrpException
+from datetime import datetime
 
 def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, arc=None, override=False):
-    
+
+    logger = logging.getLogger('main')
+   
     flat_fn    = None
     obj_fn     = None
     
     fn1_header = fits.PrimaryHDU.readfrom(fn1, ignore_missing_end=True).header
     fn2_header = fits.PrimaryHDU.readfrom(fn2, ignore_missing_end=True).header
 
+    # Get the observation date to determine if this is upgraded NIRSPEC
+    if datetime.strptime(fn1_header['date-obs'], '%Y-%m-%d') > datetime.strptime('2018-10-10', '%Y-%m-%d'):
+        nirspec_constants.upgrade = True
+
     # Do the case for the etalon lamp
     if eta is not None:
         eta_header = fits.PrimaryHDU.readfrom(eta, ignore_missing_end=True).header
-        if eta_header['etalon'] == 1 and eta_header['calmpos'] == 1:
-            eta_fn = eta
+        if nirspec_constants.upgrade:
+            if eta_header['etalon'] == 'On' and eta_header['calmpos'] == 'In':
+                eta_fn = eta
+        else:
+            if eta_header['etalon'] == 1 and eta_header['calmpos'] == 1:
+                eta_fn = eta
 
     # Do the case for the arc lamp
     if arc is not None:
         arc_header = fits.PrimaryHDU.readfrom(arc, ignore_missing_end=True).header
-        if (arc_header['neon'] == 1 or arc_header['argon'] == 1 or arc_header['krypton'] == 1 or \
-            arc_header['xenon'] == 1) and arc_header['calmpos'] == 1:
-            arc_fn = arc
+        if nirspec_constants.upgrade:
+            if (arc_header['neon'] == 'On' or arc_header['argon'] == 'On' or arc_header['krypton'] == 'On' or \
+                arc_header['xenon'] == 'On') and arc_header['calmpos'] == 'In':
+                arc_fn = arc
+        else:
+            if (arc_header['neon'] == 1 or arc_header['argon'] == 1 or arc_header['krypton'] == 1 or \
+                arc_header['xenon'] == 1) and arc_header['calmpos'] == 1:
+                arc_fn = arc
 
     # Get the master dark frame if given
     if dark is not None:
         dark_header = fits.PrimaryHDU.readfrom(dark, ignore_missing_end=True).header
-        if dark_header['flat'] == 0 and dark_header['calmpos'] == 1 and \
-           dark_header['neon'] != 1 and dark_header['argon'] != 1 and dark_header['krypton'] != 1 and \
-           dark_header['xenon'] != 1:
-            dark_fn = dark
+        if nirspec_constants.upgrade:
+            if dark_header['halogen'] == 'On' and dark_header['calmpos'] == 'In' and \
+               dark_header['neon'] != 'On' and dark_header['argon'] != 'On' and dark_header['krypton'] != 'On' and \
+               dark_header['xenon'] != 'On':
+                dark_fn = dark
+        else:
+            if dark_header['flat'] == 0 and dark_header['calmpos'] == 1 and \
+               dark_header['neon'] != 1 and dark_header['argon'] != 1 and dark_header['krypton'] != 1 and \
+               dark_header['xenon'] != 1:
+                dark_fn = dark
 
     # Get the flat and object fits
-    if fn1_header['flat'] == 1 and fn1_header['calmpos'] == 1:
-        flat_fn = fn1
-        obj_fn = fn2
-        obj_header = fn2_header
-        flat_header = fn1_header
-    if fn2_header['flat'] == 1 and fn2_header['calmpos'] == 1:
-        if flat_fn is not None:
-            raise DrpException.DrpException('two flats, no object frame')
-        else:
-            flat_fn = fn2
-            obj_fn = fn1
-            obj_header = fn1_header
-            flat_header = fn2_header
+    if nirspec_constants.upgrade:
+        if fn1_header['halogen'] == 'On' and fn1_header['calmpos'] == 'In':
+            flat_fn     = fn1
+            obj_fn      = fn2
+            obj_header  = fn2_header
+            flat_header = fn1_header
+        if fn1_header['halogen'] == 'On' and fn1_header['calmpos'] == 'In':
+            flat_fn     = fn1
+            obj_fn      = fn2
+            obj_header  = fn2_header
+            flat_header = fn1_header
+    else:
+        if fn1_header['flat'] == 1 and fn1_header['calmpos'] == 1:
+            flat_fn     = fn1
+            obj_fn      = fn2
+            obj_header  = fn2_header
+            flat_header = fn1_header
+        if fn2_header['flat'] == 1 and fn2_header['calmpos'] == 1:
+            if flat_fn is not None:
+                raise DrpException.DrpException('two flats, no object frame')
+            else:
+                flat_fn     = fn2
+                obj_fn      = fn1
+                obj_header  = fn1_header
+                flat_header = fn2_header
     if flat_fn is None:
         raise DrpException.DrpException('no flat')
 
@@ -60,12 +94,23 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, arc=None, ov
         print('ERROR: cannot reduce low-resolution image (ECHLPOS > 100')
         exit(1)
         
-    if obj_header['NAXIS1'] != nirspec_constants.N_COLS:
-        raise DrpException.DrpException('NAXIS1 != {}'.format(nirspec_constants.N_COLS))
-    if obj_header['NAXIS2'] != nirspec_constants.N_ROWS:
-        raise DrpException.DrpException('NAXIS2 != {}'.format(nirspec_constants.N_COLS))
-    if obj_header['FILNAME'].upper() not in nirspec_constants.filter_names:
-        raise DrpException.DrpException('unsupported filter: {}'.format(obj_header['FILNAME']))
+    # Check the array size is correct
+    if nirspec_constants.upgrade:
+        if obj_header['NAXIS1'] != nirspec_constants.N_COLS_upgrade:
+            raise DrpException.DrpException('NAXIS1 != {}'.format(nirspec_constants.N_COLS_upgrade))
+        if obj_header['NAXIS2'] != nirspec_constants.N_ROWS_upgrade:
+            raise DrpException.DrpException('NAXIS2 != {}'.format(nirspec_constants.N_COLS_upgrade))
+        filtername1, filtername2 = obj_header['SCIFILT2'], ''
+        if obj_header['SCIFILT1'] == 'AO-stop': filtername2 = '-AO'
+        if filtername1.upper()+filtername2.upper() not in nirspec_constants.filter_names:
+            raise DrpException.DrpException('unsupported filter: {}'.format(obj_header['SCIFILT2']))
+    else:
+        if obj_header['NAXIS1'] != nirspec_constants.N_COLS:
+            raise DrpException.DrpException('NAXIS1 != {}'.format(nirspec_constants.N_COLS))
+        if obj_header['NAXIS2'] != nirspec_constants.N_ROWS:
+            raise DrpException.DrpException('NAXIS2 != {}'.format(nirspec_constants.N_COLS))
+        if obj_header['FILNAME'].upper() not in nirspec_constants.filter_names:
+            raise DrpException.DrpException('unsupported filter: {}'.format(obj_header['FILNAME']))
     
     if create_raw_data_sets.flat_criteria_met(obj_header, flat_header, ignore_dispers=True) is False:
         raise DrpException.DrpException('flat is not compatible with object frame')
@@ -81,6 +126,7 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, arc=None, ov
         
         obj_B_header = fits.PrimaryHDU.readfrom(obj_B_fn, ignore_missing_end=True).header
         if create_raw_data_sets.is_valid_pair(obj_header, obj_B_header, override=override):
+            logger.debug('Reducing AB pair, A= ' + obj_fn + ' , B= ' + obj_B_fn)
             rawDataSet = RawDataSet.RawDataSet(obj_fn, obj_B_fn, obj_header, eta=eta, arc=arc, dark=dark)
 
         else:
@@ -97,8 +143,6 @@ def process_frame(fn1, fn2, obj_B_fn, out_dir, dark=None, eta=None, arc=None, ov
             msg = 'output directory {} does not exist and cannot be created'.format(out_dir)
             raise IOError(msg)
                 
-    logger = logging.getLogger('main')
-
     # generate reduced data set by reducing raw data set
     reducedDataSet = reduce_frame.reduce_frame(rawDataSet, out_dir, eta=eta, arc=arc, dark=dark)
     
@@ -140,8 +184,8 @@ def write_summary(rds):
     v.append(('SNR min',                            '{:.1f}',   rds.snrMin))
     v.append(('spatial peak width mean (pixels)',   '{:.1f}',   rds.wMean))
     v.append(('spatial peak width max (pixels)',    '{:.1f}',   rds.wMax))
-    v.append(('n sky/etalon/arc lines found',           '{:d}',     rds.nLinesFound))
-    v.append(('n sky/etalon/arc lines used',            '{:d}',     rds.nLinesUsed))
+    v.append(('n sky/etalon/arc lines found',       '{:d}',     rds.nLinesFound))
+    v.append(('n sky/etalon/arc lines used',        '{:d}',     rds.nLinesUsed))
     v.append(('RMS fit residual (Angstroms)',       '{:.3f}',   rds.frameCalRmsRes))
     
     for val in v:
@@ -150,4 +194,5 @@ def write_summary(rds):
         except ValueError as e:
             logger.info('{:>27}'.format(val[0]) + ' = ')
         except TypeError as e:
+            logger.debug('Excepting TypeError: {}'.format(e))
             pass
