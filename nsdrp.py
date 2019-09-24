@@ -83,6 +83,7 @@ def main():
         config.params['ut']                     = args.ut
     config.params['gunzip']                     = args.gunzip
     config.params['spatial_jump_override']      = args.spatial_jump_override
+    config.params['spatial_rect_flat']          = args.spatial_rect_flat
     if args.out_dir is not None:
         config.params['out_dir']                = args.out_dir
     config.params['jpg']                        = args.jpg
@@ -138,6 +139,16 @@ def init(out_dir, in_dir = None):
         
     # set up main logger
     logger = logging.getLogger('main')
+
+    # Add in the "success" level to logging
+    SUCCESS_LEVEL_NUM = 29 
+    logging.addLevelName(SUCCESS_LEVEL_NUM, "SUCCESS")
+    def successv(self, message, *args, **kws):
+        if self.isEnabledFor(SUCCESS_LEVEL_NUM):
+            # Yes, logger takes its '*args' as 'args'.
+            self._log(SUCCESS_LEVEL_NUM, message, args, **kws) 
+    logging.Logger.success = successv
+
 
     # if NOT command line mode
     if (config.params['cmnd_line_mode'] is False):
@@ -283,6 +294,9 @@ def parse_cmnd_line_args():
                 directly so it is not necessary to decompress them.',  action='store_true')
     parser.add_argument('-spatial_jump_override',
             help='inhibit rejection of order edge traces based on \'jump\' limit)', 
+            action='store_true')
+    parser.add_argument('-spatial_rect_flat',
+            help='using flat frame to spatially rectify the frame', 
             action='store_true')
     parser.add_argument('-out_dir', 
             help='output directory path used in command line mode, default is current working \

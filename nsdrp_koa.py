@@ -14,7 +14,7 @@ import dgn
 import NirspecConfig
 
 
-def process_dir(in_dir, base_out_dir, dark=None, eta=None, arc=None, override=False):
+def process_dir(in_dir, base_out_dir):
     """
     NSDRP. Assembles raw data sets from FITS files in the input directory,
     then generates reduced data sets from raw data sets.  Level 1 data products

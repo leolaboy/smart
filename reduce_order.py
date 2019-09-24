@@ -305,7 +305,7 @@ def reduce_order(order, eta=None, arc=None):
         
     if line_pairs is not None:
         
-        logger.info(str(len(line_pairs)) + ' matched sky/etalon/arc lines found in order')
+        logger.success(str(len(line_pairs)) + ' matched sky/etalon/arc lines found in order')
 
         # add line pairs to Order object as Line objects
         if nirspec_constants.upgrade:
@@ -422,6 +422,15 @@ def __rectify_spatial(order, eta=None, arc=None):
                     logger.info('frame {}, order {} rectified using object trace'.format(
                         frame, order.flatOrder.orderNum))
 
+                elif config.params['spatial_rect_flat'] == True:
+                    order.objImg[frame] = image_lib.rectify_spatial(
+                        order.objImg[frame], order.flatOrder.smoothedSpatialTrace)
+                    order.ffObjImg[frame] = image_lib.rectify_spatial(
+                        order.ffObjImg[frame], order.flatOrder.smoothedSpatialTrace)
+                    
+                    logger.info('frame {}, order {} rectified in the spatial dimension using flat frame'.format(
+                        frame, order.flatOrder.orderNum))
+
                 else:
                     #polyVals1             = cat.CreateSpatialMap(order.objImg[frame])  
                     polyVals1             = cat.CreateSpatialMap(order.objCutout[frame])  
@@ -504,7 +513,7 @@ def __rectify_spatial(order, eta=None, arc=None):
 
 
     order.spatialRectified = True
-    logger.info('order has been rectified in the spatial dimension')
+    logger.success('order has been rectified in the spatial dimension')
         
     return   
  

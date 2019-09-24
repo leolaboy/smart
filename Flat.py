@@ -68,7 +68,10 @@ class Flat:
         try:
             self.reduce()
         except Exception as e:
-            self.logger.error('flat reduction failed: ' + e.message)
+            try: 
+                self.logger.error('flat reduction failed: ' + e.message)
+            except:
+                self.logger.error('flat reduction failed: ' + '%s' %e)
 #             traceback.print_tb()
             raise
         
@@ -202,16 +205,16 @@ class Flat:
                     continue
                 
                 flatOrder.valid = True
-                self.logger.debug('flat order {} validated'.format(orderNum))
+                self.logger.success('flat order {} validated'.format(orderNum))
                 self.flatOrders.append(flatOrder)
                         
-        self.logger.info('flat reduction complete')
+        self.logger.success('flat reduction complete')
         self.logger.info('n orders expected = {}'.format(self.nOrdersExpected))
         self.nOrdersFound = len([p for p in self.flatOrders if p.valid == True])
         if self.nOrdersExpected != self.nOrdersFound:
             self.logger.warning('n orders found = {}'.format(self.nOrdersFound))
         else:
-            self.logger.info('n orders found = {}'.format(self.nOrdersFound))
+            self.logger.success('n orders found = {}'.format(self.nOrdersFound))
         return
         
 
@@ -366,7 +369,7 @@ class Flat:
             raise DrpException('could not trace top or bottom edge')
     
         if flatOrder.topEdgeTrace is not None and flatOrder.botEdgeTrace is not None:
-            self.logger.info('using top and bottom trace')
+            self.logger.success('using top and bottom trace')
             flatOrder.avgEdgeTrace = (flatOrder.topEdgeTrace + flatOrder.botEdgeTrace) / 2.0
     
         elif flatOrder.botEdgeTrace is None:
