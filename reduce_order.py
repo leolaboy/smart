@@ -428,7 +428,7 @@ def __rectify_spatial(order, eta=None, arc=None):
                     order.ffObjImg[frame] = image_lib.rectify_spatial(
                         order.ffObjImg[frame], order.flatOrder.smoothedSpatialTrace)
                     
-                    logger.info('frame {}, order {} rectified in the spatial dimension using flat frame'.format(
+                    logger.info('frame {}, order {} rectified in the spatial dimension using flat order trace'.format(
                         frame, order.flatOrder.orderNum))
 
                 else:
