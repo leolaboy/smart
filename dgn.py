@@ -12,11 +12,11 @@ import config
 import nirspec_constants as const
 
 import scipy.misc
-try: 
-    from scipy.misc.pilutil import imresize # deprecated in newer versions of scipy
-except:
-    from skimage.transform import resize as imresize # this is where it exists now
-from astropy.visualization import ZScaleInterval, ImageNormalize
+#try: 
+#    from scipy.misc.pilutil import imresize # deprecated in newer versions of scipy
+#except:
+#    from skimage.transform import resize as imresize # this is where it exists now
+from astropy.visualization import ZScaleInterval, ImageNormalize, SquaredStretch
 
 # import Order
 # import ReducedDataSet
@@ -375,10 +375,13 @@ def cutouts_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, fla
     pl.set_cmap('Blues_r')
 
     obj_plot = pl.subplot(2, 1, 1)
-    try:
-        obj_plot.imshow(exposure.equalize_hist(obj_img), aspect='auto', origin='lower')
-    except:
-        obj_plot.imshow(obj_img, aspect='auto', origin='lower')
+
+    norm = ImageNormalize(obj_img, interval=ZScaleInterval(), stretch=SquaredStretch())
+    obj_plot.imshow(obj_img, origin='lower', aspect='auto', norm=norm)
+    #try:
+    #    obj_plot.imshow(exposure.equalize_hist(obj_img), aspect='auto', origin='lower')
+    #except:
+    #    obj_plot.imshow(obj_img, aspect='auto', origin='lower')
     obj_plot.plot(np.arange(endPix), top_trace, 'y-', linewidth=1.5)
     obj_plot.plot(np.arange(endPix), bot_trace, 'y-', linewidth=1.5)
     obj_plot.plot(np.arange(endPix), trace, 'y-', linewidth=1.5)
@@ -386,10 +389,13 @@ def cutouts_plot(outpath, obj_base_name, flat_base_name, order_num, obj_img, fla
     #obj_plot.set_xlim([0, endPix-1])
     
     flat_plot = pl.subplot(2, 1, 2)
-    try:
-        flat_plot.imshow(exposure.equalize_hist(flat_img), aspect='auto', origin='lower')
-    except:
-        flat_plot.imshow(flat_img, aspect='auto', origin='lower')
+
+    norm = ImageNormalize(flat_img, interval=ZScaleInterval(), stretch=SquaredStretch())
+    flat_plot.imshow(flat_img, origin='lower', aspect='auto', norm=norm)
+    #try:
+    #    flat_plot.imshow(exposure.equalize_hist(flat_img), aspect='auto', origin='lower')
+    #except:
+    #    flat_plot.imshow(flat_img, aspect='auto', origin='lower')
     flat_plot.plot(np.arange(endPix), top_trace, 'y-', linewidth=1.5)
     flat_plot.plot(np.arange(endPix), bot_trace, 'y-', linewidth=1.5)    
     flat_plot.plot(np.arange(endPix), trace, 'y-', linewidth=1.5)    
@@ -417,19 +423,25 @@ def spatrect_plot(outpath, base_name, order_num, obj, flat):
     pl.set_cmap('Blues_r')
 
     obj_plot = pl.subplot(2, 1, 1)
-    try:
-        obj_plot.imshow(exposure.equalize_hist(obj), aspect='auto', origin='lower')
-    except:
-        obj_plot.imshow(obj, aspect='auto', origin='lower')
+
+    norm = ImageNormalize(obj, interval=ZScaleInterval(), stretch=SquaredStretch())
+    obj_plot.imshow(obj, origin='lower', aspect='auto', norm=norm)
+    #try:
+    #    obj_plot.imshow(exposure.equalize_hist(obj), aspect='auto', origin='lower')
+    #except:
+    #    obj_plot.imshow(obj, aspect='auto', origin='lower')
     obj_plot.set_title('object')
 #     obj_plot.set_ylim([1023, 0])
     obj_plot.set_xlim([0, endPix-1])
     
     flat_plot = pl.subplot(2, 1, 2)
-    try:
-        flat_plot.imshow(exposure.equalize_hist(flat), aspect='auto', origin='lower')
-    except:
-        flat_plot.imshow(flat, aspect='auto', origin='lower')
+
+    norm = ImageNormalize(flat, interval=ZScaleInterval(), stretch=SquaredStretch())
+    flat_plot.imshow(flat, origin='lower', aspect='auto', norm=norm)
+    #try:
+    #    flat_plot.imshow(exposure.equalize_hist(flat), aspect='auto', origin='lower')
+    #except:
+    #    flat_plot.imshow(flat, aspect='auto', origin='lower')
     flat_plot.set_title('flat')
 #     flat_plot.set_ylim([1023, 0])
     flat_plot.set_xlim([0, endPix-1])
@@ -457,13 +469,13 @@ def specrect_plot(outpath, base_name, order_num, before, after):
 
     before_plot = pl.subplot(2, 1, 1)
     
-    before = imresize(before, (500, endPix), interp='bilinear')
-    
+    #before = imresize(before, (500, endPix), interp='bilinear')
+
     try:
         before[np.where(before < 0)] = np.median(before)
-        #norm = ImageNormalize(before, interval=ZScaleInterval())
-        #before_plot.imshow(before, aspect='auto', norm=norm)
-        before_plot.imshow(exposure.equalize_hist(before), aspect='auto', origin='lower')
+        norm = ImageNormalize(before, interval=ZScaleInterval(), stretch=SquaredStretch())
+        before_plot.imshow(before, origin='lower', aspect='auto', norm=norm)
+        #before_plot.imshow(exposure.equalize_hist(before), aspect='auto', origin='lower')
     except:
         before_plot.imshow(before, aspect='auto', origin='lower')
     before_plot.set_title('before')
@@ -472,13 +484,13 @@ def specrect_plot(outpath, base_name, order_num, before, after):
     
     after_plot = pl.subplot(2, 1, 2)
     
-    after = imresize(after, (500, endPix), interp='bilinear')
+    #after = imresize(after, (500, endPix), interp='bilinear')
     
     try:
         after[np.where(after < 0)] = np.median(after)
-        #norm = ImageNormalize(after, interval=ZScaleInterval())
-        #after_plot.imshow(after, aspect='auto', norm=norm)
-        after_plot.imshow(exposure.equalize_hist(after), aspect='auto', origin='lower')
+        norm = ImageNormalize(after, interval=ZScaleInterval(), stretch=SquaredStretch())
+        after_plot.imshow(after, origin='lower', aspect='auto', norm=norm)
+        #after_plot.imshow(exposure.equalize_hist(after), aspect='auto', origin='lower')
     except:
         after_plot.imshow(after, aspect='auto', origin='lower')
     after_plot.set_title('after')

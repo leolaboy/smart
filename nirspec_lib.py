@@ -19,22 +19,21 @@ def calc_noise_img(obj, flat, integration_time):
     G  = 5.8  # e-/ADU    
     RN = 23.0 # e-/pixel
     DC = 0.8  # e-/second/pixel
-    if nirspec_constants.upgrade:
-        G  = 2.15 # e-/ADU    
-        RN = 5.0  # e-/pixel
-        DC = 0.1  # e-/second/pixel
+    if nirspec_constants.upgrade: # updated from website (9/25/2018)
+        G  = 2.85 # e-/ADU    
+        RN = 10.  # e-/pixel
+        DC = 0.67 # e-/second/pixel
     
     # calculate photon noise
-    #noise = obj / G # What is this?
-    noise = obj # This is ALREADY in ADU!
-    #noise = obj * G # This is in electrons
+    noise = obj / G  # This is in ADU
+    #noise = obj * G  # This is in electrons
     
     # add read noise
     noise += np.square(RN / G) # This is in ADU
     #noise += np.square(RN) # This is in electrons
     
     # add dark current noise
-    noise += (DC / G) * integration_time # This is in ADU
+    noise += DC * integration_time / np.square(G) # This is in ADU
     #noise += (DC / G) * integration_time # This is in electrons
     
     # divide by normalized flat squared

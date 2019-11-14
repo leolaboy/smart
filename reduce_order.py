@@ -103,6 +103,26 @@ def reduce_order(order, eta=None, arc=None):
     __trim(order, eta=eta, arc=arc)
 
     '''
+    from astropy.visualization import ZScaleInterval, ImageNormalize, SquaredStretch
+    norm = ImageNormalize(order.ffObjImg['A'], interval=ZScaleInterval(), stretch=SquaredStretch())
+    plt.figure(1)
+    plt.imshow(order.ffObjImg['A'], origin='lower', aspect='auto', norm=norm)
+
+    norm = ImageNormalize(order.ffObjImg['B'], interval=ZScaleInterval(), stretch=SquaredStretch())
+    plt.figure(2)
+    plt.imshow(order.ffObjImg['B'], origin='lower', aspect='auto', norm=norm)
+
+    plt.figure(3)
+    plt.plot(np.sum(order.ffObjImg['A'], axis=1))
+
+    plt.figure(4)
+    plt.plot(np.sum(order.ffObjImg['B'], axis=1))
+
+    plt.show()
+    #sys.exit()
+    '''
+
+    '''
     plt.figure(4)
     print('SHAPE:', order.ffObjImg['A'].shape, order.ffEtaImg.shape)
     norm = ImageNormalize(order.ffEtaImg, interval=ZScaleInterval())
@@ -421,14 +441,16 @@ def __rectify_spatial(order, eta=None, arc=None):
                     order.ffObjImg[frame] = image_lib.rectify_spatial(order.ffObjImg[frame], polyVals2)
                     logger.info('frame {}, order {} rectified using object trace'.format(
                         frame, order.flatOrder.orderNum))
-
+                
                 elif config.params['spatial_rect_flat'] == True:
+
+                    logger.info('order will be rectified in the spatial dimension using the median order trace')
                     order.objImg[frame] = image_lib.rectify_spatial(
                         order.objImg[frame], order.flatOrder.smoothedSpatialTrace)
                     order.ffObjImg[frame] = image_lib.rectify_spatial(
                         order.ffObjImg[frame], order.flatOrder.smoothedSpatialTrace)
-                    
-                    logger.info('frame {}, order {} rectified in the spatial dimension using flat order trace'.format(
+
+                    logger.info('frame {}, order {} rectified in the spatial dimension using flat frame'.format(
                         frame, order.flatOrder.orderNum))
 
                 else:
@@ -890,6 +912,7 @@ def __find_spatial_profile_and_peak(order):
 
         else:
             order.spatialProfile[frame] = order.ffObjImg[frame].mean(axis=1)
+
             if len(order.spatialProfile[frame]) < (2 * MARGIN) + 2:
                 raise DrpException.DrpException(
                         'cannot find spatial profile for frame {} order {}'.format(

@@ -84,6 +84,7 @@ def main():
     config.params['gunzip']                     = args.gunzip
     config.params['spatial_jump_override']      = args.spatial_jump_override
     config.params['spatial_rect_flat']          = args.spatial_rect_flat
+    config.params['boost_signal']               = args.boost_signal
     if args.out_dir is not None:
         config.params['out_dir']                = args.out_dir
     config.params['jpg']                        = args.jpg
@@ -283,32 +284,47 @@ def parse_cmnd_line_args():
             action='store_true')
     parser.add_argument('-shortsubdir',
             help='use file ID only, rather than full KOA ID, for subdirectory names, ' +
-            'ignored in command line mode',
+                 'ignored in command line mode',
             action='store_true')
     parser.add_argument('-ut',
             help='specify UT to be used for summary log file, overrides automatic UT \
-            determination based on UT of first frame')
+                  determination based on UT of first frame')
     parser.add_argument('-gunzip',
             help='forces decompression of compressed FITS files, leaves both the .gz and .fits \
-                files in the source directory.  Note that the compressed files can be read \
-                directly so it is not necessary to decompress them.',  action='store_true')
+                  files in the source directory.  Note that the compressed files can be read \
+                  directly so it is not necessary to decompress them.',  
+            action='store_true')
     parser.add_argument('-spatial_jump_override',
             help='inhibit rejection of order edge traces based on \'jump\' limit)', 
             action='store_true')
     parser.add_argument('-spatial_rect_flat',
-            help='using flat frame to spatially rectify the frame', 
+            help='using median order trace from flat frame to perform spatial rectification', 
+            action='store_true')
+    parser.add_argument('-boost_signal',
+            help='use more columns when tracing the object for spatial rectification. \
+                  Useful for faint sources if the spatial rectification fails. Also see -spatial_rect_flat', 
             action='store_true')
     parser.add_argument('-out_dir', 
             help='output directory path used in command line mode, default is current working \
             directory, ignored in KOA mode')
     parser.add_argument('-b',
             help='filename of frame B in AB pair')
-    parser.add_argument('-jpg', help='store preview plots in JPG format instead of PNG',
+    parser.add_argument('-jpg', 
+            help='store preview plots in JPG format instead of PNG',
             action='store_true')
-    parser.add_argument('-sowc', help='enable simple order width calculation', action='store_true')
-    parser.add_argument('-override_ab', help='removes AB pair check for the same object', action='store_true')
-    parser.add_argument('-extra_cutout', help='trim more of the order edges', action='store_true')
-    parser.add_argument('-debug_tracing', help='debug order tracing', action='store_true')
+    parser.add_argument('-sowc', 
+            help='enable simple order width calculation', 
+            action='store_true')
+    parser.add_argument('-override_ab', 
+            help='removes AB pair check for the same object', 
+            action='store_true')
+    parser.add_argument('-extra_cutout', 
+            help='trim more of the order edges. This can provide better source extraction if the sources \
+                  are not close to the order edges.', 
+            action='store_true')
+    parser.add_argument('-debug_tracing', 
+            help='debug order tracing', 
+            action='store_true')
 
     return(parser.parse_args())
           
