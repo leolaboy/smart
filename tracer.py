@@ -122,7 +122,7 @@ def trace_edge(data, start, searchWidth, bgWidth, jumpThresh, plot=False):
             else:
                 # use the first one found
                 trace[i] = trace[i - 1]
-        print('Final trace', i, trace[i])
+        #print('Final', i, trace[i])
     return trace, nJumps
 
 

@@ -14,7 +14,7 @@ import dgn
 import NirspecConfig
 
 
-def process_dir(in_dir, base_out_dir, dark=None, eta=None, arc=None, override=False):
+def process_dir(in_dir, base_out_dir):
     """
     NSDRP. Assembles raw data sets from FITS files in the input directory,
     then generates reduced data sets from raw data sets.  Level 1 data products
@@ -58,7 +58,7 @@ def process_dir(in_dir, base_out_dir, dark=None, eta=None, arc=None, override=Fa
                     if len(reducedDataSets) > 1:
                         mcal(reducedDataSets)
     
-                    gen_data_products(reducedDataSets, nirspecConfig, base_out_dir, ssFptr, eta=eta, arc=arc)
+                    gen_data_products(reducedDataSets, nirspecConfig, base_out_dir, ssFptr)
     
                     del reducedDataSets[:] 
                     logger.info('starting new multi-frame set for nirpsec config: {}'.format(
@@ -66,7 +66,7 @@ def process_dir(in_dir, base_out_dir, dark=None, eta=None, arc=None, override=Fa
                     nirspecConfig = NirspecConfig.NirspecConfig(rawDataSet.objHeader)
             
         
-        reducedDataSets.append(reduce_frame.reduce_frame(rawDataSet, out_dir, flatCacher, eta=eta, arc=arc, dark=dark))
+        reducedDataSets.append(reduce_frame.reduce_frame(rawDataSet, out_dir, flatCacher))
 
 #        except DrpException as e:
 #            n_reduced -= 1
@@ -82,7 +82,7 @@ def process_dir(in_dir, base_out_dir, dark=None, eta=None, arc=None, override=Fa
         mcal(reducedDataSets)
 
     if len(rawDataSets) > 0:
-        gen_data_products(reducedDataSets, nirspecConfig, base_out_dir, ssFptr, eta=eta, arc=arc)
+        gen_data_products(reducedDataSets, nirspecConfig, base_out_dir, ssFptr)
         logger.info('n object frames reduced = {}/{}'.format(
                 n_reduced, len(rawDataSets)))   
         
@@ -91,7 +91,7 @@ def process_dir(in_dir, base_out_dir, dark=None, eta=None, arc=None, override=Fa
     logger.info('end nsdrp')
     return    
 
-def gen_data_products(reducedDataSets, nirspecConfig, base_out_dir, ssFptr, eta=None, arc=None):
+def gen_data_products(reducedDataSets, nirspecConfig, base_out_dir, ssFptr):
     
     logger = logging.getLogger('main')
 
@@ -106,12 +106,12 @@ def gen_data_products(reducedDataSets, nirspecConfig, base_out_dir, ssFptr, eta=
         logger.info('data product generation inhibited by command line switch')
     else:
         for reducedDataSet in reducedDataSets:
-            products.gen(reducedDataSet, get_out_dir(reducedDataSet.getBaseName(), base_out_dir), eta=eta, arc=arc)
+            products.gen(reducedDataSet, get_out_dir(reducedDataSet.getBaseName(), base_out_dir))
 
     if config.params['dgn'] is True:
         logger.info('diagnostic mode enabled, generating diagnostic data products')
         for reducedDataSet in reducedDataSets:
-            dgn.gen(reducedDataSet, get_out_dir(reducedDataSet.getBaseName(), base_out_dir), eta=eta, arc=arc)    
+            dgn.gen(reducedDataSet, get_out_dir(reducedDataSet.getBaseName(), base_out_dir))    
             
     for reducedDataSet in reducedDataSets:
         append_to_summary_ss(reducedDataSet, ssFptr)    

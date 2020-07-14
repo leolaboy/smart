@@ -25,7 +25,8 @@ def calc_noise_img(obj, flat, integration_time):
         DC = 0.67 # e-/second/pixel
     
     # calculate photon noise
-    noise = obj / G  # This is in ADU
+    noise = obj      # This is already in ADU!
+    #noise = obj / G  # This is in ADU (only works if obj is in electrons!)
     #noise = obj * G  # This is in electrons
     
     # add read noise
@@ -375,7 +376,7 @@ def smooth_spectral_trace(data, l, eta=None, arc=None, version2=True, plot=False
                 p0 = np.polyfit(newPix2, newData, deg=1)  # end always drops off
                 z0 = np.poly1d(p0)
 
-                filtered_data = sigma_clip(newData - z0(newPix2), sigma=2., iters=None)
+                filtered_data = sigma_clip(newData - z0(newPix2), sigma=2., maxiters=None)
 
                 newCent = newData[~filtered_data.mask]
                 newPix  = newPix2[~filtered_data.mask]
