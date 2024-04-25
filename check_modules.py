@@ -1,5 +1,5 @@
 import importlib
-
+import importlib.util
 modules = ['os', 'numpy', 'math', 'subprocess', 'fnmatch', 'logging', 'pylab', 'errno', 'datetime', 
            'warnings', 'astropy', 'scipy', 'argparse', 'statsmodels', 'PIL', 'coloredlogs']
 missingModules = []
