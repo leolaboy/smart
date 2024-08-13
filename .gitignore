@@ -147,6 +147,4 @@ smart/forward_model/apogee/*.fits
 # Ignore model symbolic links
 smart/libraries/APOGEE-*
 smart/libraries/telluric
-/smart/.gitignore
-.gitignore
-sma`rt/forward_model/InterpolateModel.py
+smart/libraries/PHOENIX_ACES_AGSS_COND_2011/APOGEE-*
