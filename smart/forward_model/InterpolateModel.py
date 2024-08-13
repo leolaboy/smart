@@ -9,21 +9,22 @@ from ..utils.interpolations import trilinear_interpolation
 ##############################################################################################################
 
 
-def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond-2011', instrument='nirspec', order='O33'):
+def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond-2011', instrument='nirspec', order=33):
     #print('Parameters', teff, logg, modelset, instrument, order)
     FULL_PATH  = os.path.realpath(__file__)
     BASE, NAME = os.path.split(FULL_PATH)
 
+    if modelset.lower() == 'btsettl08':
+        model_dir = 'btsettl08'
+    else:
+        model_dir = smart.ModelSets[modelset.lower()]
+    
     # Check the model set and instrument
     if instrument.lower() in ['nirspec', 'hires', 'igrins']:
-        path     = BASE + '/../libraries/%s/%s-O%s/'%(smart.ModelSets[modelset.lower()], instrument.upper(), str(order).upper().strip('Oo'))
+        path     = BASE + '/../libraries/%s/%s-O%s/'%(model_dir, instrument.upper(), str(order).upper().strip('Oo'))
     else:
-        path     = BASE + '/../libraries/%s/%s-%s/'%(smart.ModelSets[modelset.lower()], instrument.upper(), order.upper())
-    Gridfile = BASE + '/../libraries/%s/%s_gridparams.csv'%(smart.ModelSets[modelset.lower()], smart.ModelSets[modelset.lower()])
-
-    if modelset.lower() == 'btsettl08':
-            path     = BASE + '/../libraries/btsettl08/NIRSPEC-O%s-RAW/'%order
-            Gridfile = BASE + '/../libraries/btsettl08/btsettl08_gridparams.csv'
+        path     = BASE + '/../libraries/%s/%s-%s/'%(model_dir, instrument.upper(), str(order).upper())
+    Gridfile = BASE + '/../libraries/%s/%s_gridparams.csv'%(model_dir, model_dir)
 
     # Read the grid file
     T1 = Table.read(Gridfile)
@@ -46,18 +47,18 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond
             filename = 'btsettl08_t'+ str(int(temp.data[0])) + '_g' + '{0:.2f}'.format(float(logg)) + '_z-' + '{0:.2f}'.format(float(metal)) + '_en' + '{0:.2f}'.format(float(alpha)) + '_NIRSPEC-O' + str(order) + '-RAW.txt'    
         elif modelset.lower() == 'sonora':
             if instrument.lower() == 'nirspec':
-                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-O%s.fits'%(instrument.upper(), order.upper())
+                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-O%s.fits'%(instrument.upper(), str(order))
             else:
-                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-%s.fits'%(instrument.upper(), order.upper())
+                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_FeH0.00_Y0.28_CO1.00' + '_%s-%s.fits'%(instrument.upper(), str(order))
         elif modelset.lower() == 'marcs-apogee-dr15':
             cm      = kwargs.get('cm', 0)
             nm      = kwargs.get('nm', 0) 
-            filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_cm{0:.2f}'.format(float(cm)) + '_nm{0:.2f}'.format(float(nm)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+            filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_cm{0:.2f}'.format(float(cm)) + '_nm{0:.2f}'.format(float(nm)) + '_%s-%s.fits'%(instrument.upper(), str(order).upper())
         else: 
             if instrument.lower()in ['nirspec', 'hires', 'igrins']:
-                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_%s-O%s.fits'%(instrument.upper(), order.upper())
+                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_%s-O%s.fits'%(instrument.upper(), str(order))
             else:
-                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_%s-%s.fits'%(instrument.upper(), order.upper())
+                filename = '%s'%smart.ModelSets[modelset.lower()] + '_t{0:03d}'.format(int(temp.data[0])) + '_g{0:.2f}'.format(float(logg)) + '_z{0:.2f}'.format(float(metal)) + '_en{0:.2f}'.format(float(alpha)) + '_%s-%s.fits'%(instrument.upper(), str(order))
         
         # Read in the model FITS file
         if modelset.lower() == 'btsettl08': 
@@ -159,7 +160,7 @@ def InterpModel(teff, logg=4, metal=0, alpha=0, modelset='phoenix-aces-agss-cond
                              set(T1['en'][np.where( (T1['teff'] == x1) & (T1['logg'] == y1) & (T1['M_H'] == z1) & (T1['en'] >= alpha) )])))
             #print('alpha:', z0, alpha, z1)
     except:
-        raise ValueError('Model Parameters Teff: %0.3f, logg: %0.3f, [M/H]: %0.3f, Alpha: %0.3f are outside the model grid.'%(teff, logg, metal, alpha))
+        raise ValueError(f"Model parameters out of range: Teff: {teff:.3f} ({np.min(T1['teff']):.2f} -- {np.max(T1['teff']):.2f}), logg: {logg:.3f} ({np.min(T1['logg']):.2f} -- {np.max(T1['logg']):.2f}), [M/H]: {metal:.3f} ({np.min(T1['M_H']):.2f} -- {np.max(T1['M_H']):.2f}), Alpha: {alpha:.3f} ({np.min(T1['en']):.2f} -- {np.max(T1['en']):.2f}).")
 
 
     if modelset.lower() == 'sonora':

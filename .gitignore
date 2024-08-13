@@ -143,3 +143,10 @@ smart/libraries/.DS_Store
 smart/libraries/*/*/*.txt
 smart/libraries/*/*/*.fits
 smart/forward_model/apogee/*.fits
+
+# Ignore model symbolic links
+smart/libraries/APOGEE-*
+smart/libraries/telluric
+/smart/.gitignore
+.gitignore
+sma`rt/forward_model/InterpolateModel.py

@@ -1561,7 +1561,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			residual_telluric_wavesol.wave = residual_telluric_wavesol.wave[select]
 
 		# plot the telluric for comparison
-		plt.tick_params(labelsize=20)
+		# plt.tick_params(labelsize=20)
 		fig = plt.figure(figsize=(16,6))
 		ax1 = fig.add_subplot(111)
 		ax1.plot(data.wave, data.flux, color='black', linestyle='-', 
@@ -1593,7 +1593,7 @@ def run_wave_cal(data_name, data_path, order_list,
 			        bbox_inches='tight')
 		plt.close()
 
-		plt.tick_params(labelsize=20)
+		# plt.tick_params(labelsize=20)
 		fig = plt.figure(figsize=(16,8))
 		gs  = gridspec.GridSpec(2, 1, height_ratios=[3, 1]) 
 		ax1 = fig.add_subplot(gs[0])
